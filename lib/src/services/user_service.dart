@@ -25,8 +25,6 @@ class UserService extends GetxService {
       lastName: lastName,
       preferredName: preferredName,
       note: note,
-      // branchRef: HardcodedDomains.colman.id,
-      // organizationRef: HardcodedDomains.ygs.id,
       role: role,
     );
     commit.addObjectToPush(userToRegister);
