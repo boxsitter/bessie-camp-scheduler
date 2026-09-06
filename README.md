@@ -4,9 +4,11 @@
 
 Bessie helps summer-camp staff manage rosters, sessions, and assigning hundreds of campers to activities each day while respecting capacities, avoiding repetition, and honoring as many camper preferences as possible.
 
-<img src="docs/2.png" height="400" alt="Bessie roster view">
-<img src="docs/1.png" height="400" alt="Bessie activity view">
-<img src="docs/3.png" height="400" alt="Bessie preference selector">
+<p align="left">
+  <img src="docs/2.png" height="350" alt="Bessie roster view">
+  <img src="docs/1.png" height="350" alt="Bessie activity view">
+  <img src="docs/3.png" height="350" alt="Bessie preference selector">
+</p>
 
 ---
 
