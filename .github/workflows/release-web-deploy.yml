@@ -6,7 +6,7 @@ on:
       - release/web
 
 env:
-  PROJECT_DIR: projects/bessie # This is from your existing workflow file
+  PROJECT_DIR: . # App now lives at the repository root
   PUB_CACHE: ~/.pub-cache
   SENTRY_RELEASE_VERSION: bessie-web-${{ github.sha }}
 

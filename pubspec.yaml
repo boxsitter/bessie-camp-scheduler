@@ -1,9 +1,137 @@
-name: emberlight_monorepo
-description: Monorepo for Emberlight projects.
+name: bessie
+description: A camp activity scheduling and logistics manager built with Flutter.
+version: 0.1.0
 publish_to: 'none'
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.7.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management & DI
+  get: ^4.7.2
+
+  # Firebase backend
+  firebase_core: ^3.14.0
+  firebase_auth: ^5.6.0
+  cloud_firestore: ^5.6.9
+  firebase_crashlytics: ^4.3.7
+  firebase_analytics: ^11.5.0
+
+  # Error monitoring
+  sentry_flutter: ^8.14.2
+
+  # UI
+  shadcn_ui: ^0.26.5
+  lottie: ^3.3.1
+  shimmer: ^3.0.0
+  cached_network_image: ^3.4.1
+  reorderable_grid_view: ^2.2.8
+  flutter_native_splash: ^2.4.6
+
+  # Desktop / platform
+  window_manager: ^0.4.3
+  device_info_plus: ^11.5.0
+  web: ^1.1.1
+
+  # In-app console / terminal
+  xterm: ^4.0.0
+  ansicolor: ^2.0.3
+  tabular: ^0.6.3+1
+  args: ^2.7.0
+  cli_util: ^0.4.2
+  completion: ^1.0.1
+
+  # Data / documents / IO
+  pdf: ^3.11.3
+  file_picker: ^10.2.0
+  file_saver: ^0.3.0
+  csv: ^6.0.0
+  shared_preferences: ^2.5.3
+
+  # Utilities
+  rxdart: ^0.28.0
+  collection: ^1.19.1
+  logger: ^2.6.0
+  intl: any
+  path: ^1.9.1
+
+dependency_overrides:
+  intl: ^0.20.2
 
 dev_dependencies:
-  melos: ^6.1.0
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  #--------------- LOCAL ASSETS ------------------#
+  assets:
+    - assets/logos/
+    - assets/images/content/
+    - assets/images/animations/
+  #--------------- LOCAL FONTS ------------------#
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/inter/Inter_18pt-Light.ttf
+          weight: 300
+        - asset: assets/fonts/inter/Inter_18pt-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/inter/Inter_24pt-Italic.ttf
+          style: italic
+        - asset: assets/fonts/inter/Inter_28pt-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/inter/Inter_28pt-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/inter/Inter_24pt-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/inter/Inter_24pt-Black.ttf
+          weight: 900
+
+    - family: FiraCodeMono
+      fonts:
+        - asset: assets/fonts/fira_code_mono/FiraCodeNerdFontMono-Retina.ttf
+          weight: 400
+
+flutter_native_splash:
+  # dart run flutter_native_splash:create
+
+  # color or background_image is the only required parameter.  Use color to set the background
+  # of your splash screen to a solid color.  Use background_image to set the background of your
+  # splash screen to a png image.
+  color: "#eff1f5"
+  #background_image: "assets/background.png"
+
+  # The image parameter allows you to specify an image used in the splash screen.  It must be a
+  # png file and should be sized for 4x pixel density.
+  image: assets/logos/splash-logo.png
+
+  # The branding property allows you to specify an image used as branding in the splash screen.
+  # It must be a png file. It is supported for Android, iOS and the Web.  For Android 12,
+  # see the Android 12 section below.
+  # branding: assets/logos/ember-core-branding.png
+
+  # Set the branding padding from the bottom of the screen.  The default value is 0
+  # (Not supported on web yet)
+  # branding_bottom_padding: 24
+
+  # The color_dark, background_image_dark, image_dark, branding_dark are parameters that set the background
+  # and image when the device is in dark mode.
+  # color_dark and background_image_dark cannot both be set.
+  #color_dark: "#042a49"
+  #background_image_dark: "assets/dark-background.png"
+  #image_dark: assets/splash-invert.png
+  #branding_dark: assets/dart_dark.png
+
+  android_12:
+    color: "#eff1f5"
+    image: assets/logos/splash-logo.png
+    branding: assets/logos/ember-core-branding.png
+    branding_bottom_padding: 24
+
+  fullscreen: true
+
