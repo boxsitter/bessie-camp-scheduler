@@ -2,12 +2,11 @@
 
 **A cross-platform camp activity scheduling and logistics manager, built with Flutter.**
 
-Bessie helps summer-camp staff manage rosters, sessions, and the genuinely hard part of running a camp: assigning hundreds of campers to activities each day while respecting capacities, avoiding repetition, and honoring as many camper preferences as possible. It was originally built for a real YMCA camp and pairs a polished desktop/web UI with a constraint-based scheduling engine.
+Bessie helps summer-camp staff manage rosters, sessions, and assigning hundreds of campers to activities each day while respecting capacities, avoiding repetition, and honoring as many camper preferences as possible.
 
-> **Status:** Portfolio project. The scheduling engine, data model, and UI are functional; some administrative flows are still stubbed. Backed by Firebase (Firestore + Auth).
-
-<!-- TODO: add a screenshot or short GIF here — it's the single highest-impact thing you can add.
-     e.g. ![Bessie roster view](docs/screenshot-rosters.png) -->
+<img src="docs/2.png" height="400" alt="Bessie roster view">
+<img src="docs/1.png" height="400" alt="Bessie activity view">
+<img src="docs/3.png" height="400" alt="Bessie preference selector">
 
 ---
 
@@ -95,7 +94,3 @@ flutter build web    # release web build
 ```
 
 Firebase is configured via `firebase_options.dart` (client keys are public by design). To run against the local emulator instead of production, start it with `scripts/start_firestore_emu.ps1` and enable the emulator flag in the debug config.
-
-## About
-
-Built by Leyton Houck. Bessie began as a summer internship project for a YMCA camp and grew into a full scheduling application; this repository is a cleaned-up, single-package version of that work.
