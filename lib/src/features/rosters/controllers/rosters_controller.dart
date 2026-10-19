@@ -446,6 +446,9 @@ class RostersController extends GetxController with RouteAwareControllerMixin {
 
   final RxBool importing = false.obs;
 
+  /// True while the activity switcher's assignment is being stored.
+  bool assigning = false;
+
   bool get canAssignToSelectedActivity => canEdit && hasSelection && selectedScheduled != null;
   bool get canUnassignFromSelectedBlock => canEdit && hasSelection && selectedBlock != null;
 
@@ -495,8 +498,15 @@ class RostersController extends GetxController with RouteAwareControllerMixin {
 
   Future<void> assignSelected() async {
     final target = selectedScheduled;
-    if (!canAssignToSelectedActivity || target == null) return;
-    await _actions.assign(campers: selectedCampers, target: target, activityName: activityName(target), seats: seatsOf(target));
+    if (!canAssignToSelectedActivity || target == null || assigning) return;
+    assigning = true;
+    update();
+    try {
+      await _actions.assign(campers: selectedCampers, target: target, activityName: activityName(target), seats: seatsOf(target));
+    } finally {
+      assigning = false;
+      update();
+    }
   }
 
   Future<void> unassignSelectedFromActivity() async {

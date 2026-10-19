@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../models/organization.dart';
+import '../../../shared/constants/colors.dart';
 import '../../../shared/constants/sizes.dart';
 import '../../branch_manager/widgets/form_widgets.dart';
 import '../session_setup_logic.dart';
@@ -94,6 +94,7 @@ class _NewSessionDialogState extends State<NewSessionDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(height: BessSizes.sm),
           LabeledField(
             label: 'Name',
             error: _errors.name,
@@ -109,6 +110,10 @@ class _NewSessionDialogState extends State<NewSessionDialog> {
               initialMonth: startsOn,
               placeholder: const Text('Pick a date'),
               formatDate: DateFormat.yMMMEd().format,
+              // The app's outline buttons are red; a date is not a warning.
+              foregroundColor: BessColors.textPrimary,
+              hoverForegroundColor: BessColors.textPrimary,
+              hoverBackgroundColor: BessColors.crust,
               onChanged: (date) {
                 setState(() => _startsOn = date == null ? null : DateTime(date.year, date.month, date.day));
                 _revalidate();

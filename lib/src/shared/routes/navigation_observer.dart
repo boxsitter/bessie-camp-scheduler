@@ -1,9 +1,11 @@
-import 'package:bessie/src/shared/routes/routes.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../widgets/layouts/sidebars/sidebar_controller.dart';
+import 'routes.dart';
 
+/// Tells page controllers when their page appears and disappears, and keeps
+/// the sidebar's highlighted item in step with the current route.
 class BessNavigationObserver extends NavigatorObserver {
   String? _currentPageRoute;
 
@@ -28,32 +30,18 @@ class BessNavigationObserver extends NavigatorObserver {
   void _handleNavigation(String? to, String? from, {required bool isPush}) {
     if (to == null) return;
 
-    // Notify the controller of the page we are LEAVING
-    final fromController = BessRoutes.getControllerForRoute(from);
-    if (fromController != null) {
-      fromController.onNavigateFrom(from!, to);
-    }
+    // The page we are leaving.
+    BessRoutes.getControllerForRoute(from)?.onNavigateFrom(from!, to);
 
     final toController = BessRoutes.getControllerForRoute(to);
-    if (toController != null) {
-      bool shouldCallOnNavigateTo = true;
-
-      // If this is a 'pop' event AND we are returning to the route
-      // we already considered the main page, it means an overlay was
-      // just closed. In this case, we should NOT call onNavigateTo.
-      if (!isPush && to == _currentPageRoute) {
-        shouldCallOnNavigateTo = false;
-      }
-
-      if (shouldCallOnNavigateTo) {
-        toController.onNavigateTo(to, from);
-        // Since a true navigation occurred to a registered page,
-        // update our state to reflect the new current page.
-        _currentPageRoute = to;
-      }
+    // Popping back to the page that is already current means an overlay (a
+    // dialog, a popup) closed; the page itself never went away.
+    final overlayClosed = !isPush && to == _currentPageRoute;
+    if (toController != null && !overlayClosed) {
+      toController.onNavigateTo(to, from);
+      _currentPageRoute = to;
     }
 
-    // Update the sidebar's active item regardless of the controller logic.
     if (Get.isRegistered<SidebarController>()) {
       Get.find<SidebarController>().changeActiveItem(to);
     }

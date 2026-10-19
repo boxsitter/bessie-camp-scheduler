@@ -27,8 +27,12 @@ class _ScheduleViewerState extends State<ScheduleViewer> {
     return scale.clamp(0.1, 1.0);
   }
 
+  /// A uniform scale on all three axes, which is what [InteractiveViewer]
+  /// reads the current zoom from.
+  Matrix4 _fittedMatrix() => Matrix4.diagonal3Values(_fitScale, _fitScale, _fitScale);
+
   void _fit() {
-    _transform?.value = Matrix4.diagonal3Values(_fitScale, _fitScale, 1);
+    _transform?.value = _fittedMatrix();
   }
 
   @override
@@ -42,7 +46,7 @@ class _ScheduleViewerState extends State<ScheduleViewer> {
     return LayoutBuilder(
       builder: (context, constraints) {
         _fitScale = _fitFor(constraints.maxWidth);
-        _transform ??= TransformationController(Matrix4.diagonal3Values(_fitScale, _fitScale, 1));
+        _transform ??= TransformationController(_fittedMatrix());
 
         return GestureDetector(
           onDoubleTap: _fit,

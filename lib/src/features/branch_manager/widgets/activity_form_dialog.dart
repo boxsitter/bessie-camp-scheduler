@@ -119,6 +119,7 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(height: BessSizes.sm),
           LabeledField(
             label: 'Name',
             error: _errors.name,

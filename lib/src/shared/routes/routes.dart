@@ -1,133 +1,78 @@
-import 'package:bessie/src/shared/routes/routes_middleware.dart';
-import 'package:bessie/src/features/activity_preferences/controllers/activity_preferences_controller_diplomatic.dart';
-import 'package:bessie/src/features/dev_testing/dev_testing.dart';
 import 'package:get/get.dart';
 
+import '../../features/activity_preferences/controllers/activity_preferences_controller.dart';
 import '../../features/activity_preferences/views/activity_preferences.dart';
 import '../../features/authentication/view/forgot_password/forgot_password.dart';
 import '../../features/authentication/view/login/login.dart';
 import '../../features/authentication/view/reset_password/reset_password.dart';
 import '../../features/branch_manager/branch_manager.dart';
+import '../../features/branch_manager/branch_manager_controller.dart';
 import '../../features/console/view/console.dart';
 import '../../features/rosters/controllers/rosters_controller.dart';
 import '../../features/rosters/rosters.dart';
 import '../../features/schedule/schedule_page.dart';
+import '../../features/schedule/schedule_page_controller.dart';
 import '../../features/session_manager/session_manager.dart';
 import '../../features/session_manager/session_manager_controller.dart';
 import '../../features/unknown_route/unknown_route.dart';
 import '../mixins/route_aware_controller_mixin.dart';
+import 'routes_middleware.dart';
 
 class BessRoutes {
-  // static const home = '/';
-  static const unknown = '/unknown';
-
-  static const responsiveDesignExample = '/responsive-design';
-  static const console = '/console';
-  static const dev_testing = '/dev_testing';
-  static const rosters = '/';
-  static const schedulePage = '/schedule-page';
-  static const sessionManager = '/session-manager';
-  static const branchManager = '/branch-manager';
-
-  static const activityPreferences = '/activity-preferences';
-  static const activityPreferencesCampers = '/activity-preferences-campers';
-  static const activityPreferencesSelector = '/activity-preferences-selector';
+  const BessRoutes._();
 
   static const login = '/login';
   static const forgotPassword = '/forgotPassword';
   static const resetPassword = '/resetPassword';
 
-  static Set sideMenuItems = {
-    console,
-    dev_testing,
-    rosters,
-    activityPreferences,
-    sessionManager,
-    branchManager,
-    schedulePage,
-  };
+  static const rosters = '/';
+  static const activityPreferences = '/activity-preferences';
+  static const schedulePage = '/schedule-page';
+  static const sessionManager = '/session-manager';
+  static const branchManager = '/branch-manager';
+  static const console = '/console';
+  static const unknown = '/unknown';
 
-  static Set publicRoutes = {
-    login,
-    forgotPassword,
-    resetPassword,
-    unknown,
-  };
+  /// Reachable without being signed in.
+  static const Set<String> publicRoutes = {login, forgotPassword, resetPassword, unknown};
+
+  /// For people who are not signed in yet; signed-in users are sent to [rosters].
+  static const Set<String> guestOnlyRoutes = {login, forgotPassword};
+
+  /// Pages that change session data or the camp's structure: directors and admins only.
+  static const Set<String> writerOnlyRoutes = {sessionManager, branchManager, console};
+
+  static final GetPage unknownPage = GetPage(name: unknown, page: () => const UnknownRoute());
 
   static final List<GetPage> pages = [
-    // GetPage(
-    //   name: BessRoutes.home,
-    //   page: () => const HomeScreen(),
-    //   middlewares: [AuthMiddleware()], // PROTECTED
-    // ),
-    GetPage(
-      name: BessRoutes.console,
-      page: () => const ConsoleScreen(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: BessRoutes.dev_testing,
-      page: () => const DevTesting(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: BessRoutes.rosters,
-      page: () => const Rosters(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: BessRoutes.schedulePage,
-      page: () => const SchedulePage(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: BessRoutes.sessionManager,
-      page: () => const SessionManager(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: BessRoutes.activityPreferences,
-      page: () => const ActivityPreferences(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: BessRoutes.activityPreferencesSelector,
-      page: () => const ActivityPreferences(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: BessRoutes.branchManager,
-      page: () => const BranchManager(),
-      middlewares: [AuthMiddleware()],
-    ),
-
-    // --- AUTHENTICATION ROUTES (Public for unauthenticated users) ---
-    // No AuthMiddleware here to block unauthenticated access,
-    // but AuthMiddleware will redirect *away* if already logged in.
-    GetPage(name: BessRoutes.login, page: () => const LoginScreen()),
-    GetPage(name: BessRoutes.forgotPassword, page: () => const ForgotPasswordScreen()),
-    GetPage(name: BessRoutes.resetPassword, page: () => const ResetPasswordScreen()),
-
-    // THIS MUST BE LAST IN THE LIST!!!
-    GetPage(
-      name: BessRoutes.unknown,
-      page: () => const UnknownRoute(),
-    ),
+    _page(rosters, () => const Rosters()),
+    _page(activityPreferences, () => const ActivityPreferences()),
+    _page(schedulePage, () => const SchedulePage()),
+    _page(sessionManager, () => const SessionManager()),
+    _page(branchManager, () => const BranchManager()),
+    _page(console, () => const ConsoleScreen()),
+    _page(login, () => const LoginScreen()),
+    _page(forgotPassword, () => const ForgotPasswordScreen()),
+    _page(resetPassword, () => const ResetPasswordScreen()),
+    unknownPage,
   ];
 
-  static RouteAwareControllerMixin? getControllerForRoute(String? routeName) {
-    if (routeName == null) return null;
+  static GetPage _page(String name, GetPageBuilder page) => GetPage(name: name, page: page, middlewares: [AuthMiddleware()]);
 
-    if (routeName == BessRoutes.rosters && Get.isRegistered<RostersController>()) {
-      return Get.find<RostersController>();
-    }
-    if ((routeName == BessRoutes.activityPreferences || routeName == BessRoutes.activityPreferencesSelector) && Get.isRegistered<ActivityPreferencesControllerDiplomatic>()) {
-      return Get.find<ActivityPreferencesControllerDiplomatic>();
-    }
-    if (routeName == BessRoutes.sessionManager && Get.isRegistered<SessionManagerController>()) {
-      return Get.find<SessionManagerController>();
-    }
-    // Add other route-to-controller mappings here
-    return null;
+  /// The controller of the page at [routeName], or null when the route has none
+  /// or the controller doesn't exist (nobody is signed in).
+  static RouteAwareControllerMixin? getControllerForRoute(String? routeName) => switch (routeName) {
+    rosters => _controller<RostersController>(),
+    activityPreferences => _controller<ActivityPreferencesController>(),
+    schedulePage => _controller<SchedulePageController>(),
+    sessionManager => _controller<SessionManagerController>(),
+    branchManager => _controller<BranchManagerController>(),
+    _ => null,
+  };
+
+  static RouteAwareControllerMixin? _controller<T extends GetxController>() {
+    if (!Get.isRegistered<T>()) return null;
+    final controller = Get.find<T>();
+    return controller is RouteAwareControllerMixin ? controller : null;
   }
 }

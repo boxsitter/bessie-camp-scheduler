@@ -1,109 +1,88 @@
-import 'package:bessie/src/features/rosters/widgets/table/table_cell.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/constants/colors.dart';
 import '../../../../shared/widgets/buttons/card_button.dart';
+import '../../models/roster_view.dart';
+import '../../models/table_layout.dart';
+import 'table_cell.dart';
 
+/// One row of the roster table: a checkbox followed by a cell per column.
 class BessTableRow extends StatelessWidget {
-  final double height;
-  final List<String> data;
-  final List<double?>? widths;
-  final bool? isSelected;
-  final VoidCallback? onToggle;
-  final Color? color;
-  final TextStyle? textStyle;
-  final int? maxLines;
-  final TextOverflow? textOverflow;
-  final bool? showVerticalSeparators;
-  final bool? showHorizontalSeparator;
-  final Color? separatorsColor;
-  final bool toggleableRow;
-  final double indentWidth;
-  final bool showCheckbox;
-  final List<Color?>? backgroundColors;
-
-  final Set<String> makeRed = const {
-    'Unassigned',
-    'Error (not found)',
-    'Error (no principal activity)',
-    'No',
-  };
-
   const BessTableRow({
     super.key,
     required this.height,
-    required this.data,
-    this.widths,
+    required this.cells,
+    required this.widths,
     this.isSelected,
     this.onToggle,
     this.color,
     this.textStyle,
     this.maxLines,
     this.textOverflow,
-    this.showVerticalSeparators,
-    this.showHorizontalSeparator,
+    this.showVerticalSeparators = false,
+    this.showHorizontalSeparator = false,
     this.separatorsColor,
     this.toggleableRow = true,
-    this.indentWidth = 0,
     this.showCheckbox = true,
-    this.backgroundColors,
+    this.cellColors,
   });
+
+  final double height;
+  final List<RosterCell> cells;
+  final List<double> widths;
+  final bool? isSelected;
+  final VoidCallback? onToggle;
+  final Color? color;
+  final TextStyle? textStyle;
+  final int? maxLines;
+  final TextOverflow? textOverflow;
+  final bool showVerticalSeparators;
+  final bool showHorizontalSeparator;
+  final Color? separatorsColor;
+
+  /// Whether tapping the row toggles its selection.
+  final bool toggleableRow;
+  final bool showCheckbox;
+
+  /// Background of each cell, by column; null entries (or a null list) leave the row's color.
+  final List<Color?>? cellColors;
 
   @override
   Widget build(BuildContext context) {
-    final Widget dataRow = Row(
-      mainAxisSize: MainAxisSize.max,
+    final dataRow = Row(
       children: [
-        SizedBox(width: indentWidth),
         BessTableCell(
-          width: 50,
+          width: TableLayout.checkboxWidth,
           showVerticalSeparator: showVerticalSeparators,
           separatorColor: separatorsColor,
           padding: EdgeInsets.zero,
-          child: showCheckbox ? CheckboxCellContent(
-            value: isSelected,
-            onChanged: onToggle,
-            enabled: !toggleableRow,
-          ) : StringCellContent(content: ''),
+          child: showCheckbox ? CheckboxCellContent(value: isSelected, onChanged: onToggle) : const StringCellContent(content: ''),
         ),
-        // The rest are the data cells
-        ...List.generate(data.length, (index) {
-          final String content = data[index];
-          return BessTableCell(
-            width: widths?[index] ?? 100,
+        for (var i = 0; i < cells.length; i++)
+          BessTableCell(
+            width: widths[i],
             showVerticalSeparator: showVerticalSeparators,
             separatorColor: separatorsColor,
-            backgroundColor: backgroundColors?[index],
+            backgroundColor: cellColors?[i],
             child: StringCellContent(
-              content: content,
+              content: cells[i].text,
               textStyle: textStyle,
               maxLines: maxLines,
               textOverflow: textOverflow,
-              textColor: makeRed.contains(content) ? BessColors.red : null,
+              textColor: cells[i].tone == CellTone.alert ? BessColors.red : null,
             ),
-          );
-        }),
+          ),
       ],
     );
 
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: toggleableRow == true ? null : color,
-        border: showHorizontalSeparator == true
-            ? BorderDirectional(bottom: BorderSide(color: separatorsColor ?? BessColors.borderPrimary, width: 1))
-            : null,
+        color: toggleableRow ? null : color,
+        border: showHorizontalSeparator ? BorderDirectional(bottom: BorderSide(color: separatorsColor ?? BessColors.borderPrimary)) : null,
       ),
-      child: toggleableRow == true
-          ? CardButton(
-              onPressed: onToggle,
-              padding: EdgeInsets.zero,
-              radius: 0,
-              showBorder: false,
-              backgroundColor: color,
-              enabled: toggleableRow,
-              child: dataRow,
-            )
+      child: toggleableRow
+          ? CardButton(onPressed: onToggle, padding: EdgeInsets.zero, radius: 0, showBorder: false, backgroundColor: color, child: dataRow)
           : dataRow,
     );
   }

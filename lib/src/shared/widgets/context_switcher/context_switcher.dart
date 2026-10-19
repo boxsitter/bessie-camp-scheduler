@@ -1,128 +1,55 @@
-import 'package:bessie/src/shared/widgets/context_switcher/controller/session_selector_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
-import '../../../shared/services/popup_service.dart';
-import '../../../shared/theme/shad_theme.dart';
+import '../../services/popup_service.dart';
+import 'controller/session_selector_controller.dart';
 
-Future<dynamic> showContextSwitcher() {
-  // Initialize the controller when the dialog is shown.
-  // GetX will handle its lifecycle.
-  final controller = Get.find<SessionSelectorController>();
-
-  return Get.find<PopupService>().showFullScreenDialog(
-    title: 'Change active session',
-    description: 'Any unsaved changes or data will be discarded',
-    // Actions are now wrapped in an Obx to be reactive
+/// Opens the dialog for choosing which session to work in.
+Future<void> showContextSwitcher() async {
+  final controller = Get.find<SessionSelectorController>()..beginSelection();
+  await Get.find<PopupService>().showFullScreenDialog(
+    title: 'Change session',
+    description: controller.seasonName,
     actions: [
       Obx(
-            () => ShadButton(
-          // The button's onPressed is now connected to the controller.
-          // It's disabled if no session is selected.
-          onPressed: controller.selectedSessionKey.value == null
-              ? null
-              : controller.migrateToSelectedContext,
+        () => ShadButton(
+          onPressed: controller.canSwitch
+              ? () async {
+                  if (await controller.switchToSelected()) Get.back();
+                }
+              : null,
           child: const Text('Switch'),
         ),
       ),
     ],
-    child: Container(
-      width: 375,
+    child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'Session',
-            textAlign: TextAlign.end,
-            style: BessShadTheme.shadThemeData.textTheme.small,
-          ),
-          const SizedBox(width: 16),
-          // The dropdown area is now reactive
-          Obx(
-                () {
-              // Show a loading indicator while fetching data
-              if (controller.isLoading.value) {
-                return const SizedBox(
-                  width: 180,
-                  child: Center(child: ShadProgress()),
-                );
-              }
-              // Once loaded, show the dropdown with data from the controller
-              return SessionSelectWithSearch(
-                sessions: controller.sessions.value,
-                selectedValue: controller.selectedSessionKey.value,
-                onChanged: controller.updateSelection,
-              );
-            },
-          ),
-        ],
-      ),
+      child: SessionPicker(controller: controller, initialSessionId: controller.selectedSessionId.value),
     ),
   );
 }
 
-class SessionSelectWithSearch extends StatefulWidget {
-  const SessionSelectWithSearch({
-    super.key,
-    required this.sessions,
-    this.selectedValue,
-    this.onChanged,
-  });
+/// A dropdown of the season's sessions that records the choice in [controller].
+class SessionPicker extends StatelessWidget {
+  const SessionPicker({super.key, required this.controller, this.initialSessionId});
 
-  // These values are now provided by the parent widget
-  final Map<String, String> sessions;
-  final String? selectedValue;
-  final ValueChanged<String?>? onChanged;
-
-  @override
-  State<SessionSelectWithSearch> createState() =>
-      _SessionSelectWithSearchState();
-}
-
-class _SessionSelectWithSearchState extends State<SessionSelectWithSearch> {
-  var searchValue = '';
-
-  Map<String, String> get filteredSessions => {
-    for (final session in widget.sessions.entries)
-      if (session.value.toLowerCase().contains(searchValue.toLowerCase()))
-        session.key: session.value
-  };
+  final SessionSelectorController controller;
+  final String? initialSessionId;
 
   @override
   Widget build(BuildContext context) {
-    return ShadSelect<String>.withSearch(
-      minWidth: 180,
-      maxWidth: 300,
-      initialValue: widget.selectedValue, // Use the passed-in value
-      onChanged: widget.onChanged, // Use the passed-in callback
-      placeholder: const Text('Select session...'),
-      onSearchChanged: (value) => setState(() => searchValue = value),
-      searchPlaceholder: const Text('Search session'),
-      options: [
-        if (filteredSessions.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Text('No session found'),
-          ),
-        ...widget.sessions.entries.map(
-              (session) {
-            return Offstage(
-              offstage: !filteredSessions.containsKey(session.key),
-              child: ShadOption(
-                value: session.key,
-                child: Text(session.value),
-              ),
-            );
-          },
-        )
-      ],
-      selectedOptionBuilder: (context, value) {
-        // Look up the name from the passed-in sessions map
-        return Text(widget.sessions[value] ?? '');
-      },
-    );
+    return Obx(() {
+      final sessions = controller.sessions.toList();
+      if (sessions.isEmpty) return const Text('This season has no sessions yet.');
+      return ShadSelect<String>(
+        minWidth: 260,
+        initialValue: initialSessionId,
+        placeholder: const Text('Choose a session'),
+        onChanged: controller.select,
+        options: [for (final session in sessions) ShadOption(value: session.id, child: Text(session.name))],
+        selectedOptionBuilder: (context, id) => Text(sessions.where((s) => s.id == id).firstOrNull?.name ?? ''),
+      );
+    });
   }
 }

@@ -1,56 +1,50 @@
-import 'package:bessie/src/ember_core.dart';
 import 'package:get/get.dart';
 
+import '../../../../models/camp_session.dart';
+import '../../../../services/context_service.dart';
+import '../../../services/toast.dart';
+
+/// Which session of the season the user is working in, and changing it.
+///
+/// Switching only tells [ContextService]; page controllers reload on their
+/// own when the session changes, and the user stays on the page they are on.
 class SessionSelectorController extends GetxController {
-  // Observable for the currently selected session key in the dropdown
-  final RxnString selectedSessionKey = RxnString(); // Nullable observable
+  SessionSelectorController({ContextService? context}) : _context = context ?? Get.find<ContextService>();
 
-  // --- State Variables ---
-  // Holds the session data fetched from the service
-  final sessions = Rx<Map<String, String>>({});
-  // Manages the loading state to show a progress indicator in the UI
-  final isLoading = true.obs;
+  final ContextService _context;
 
-  final RxString sessionName = RxString('loading...');
-  final RxString seasonName = RxString('loading...');
+  /// The sessions of the current season, oldest first.
+  RxList<CampSession> get sessions => _context.sessions;
 
-  /// Called automatically when the controller is initialized.
-  @override
-  void onInit() {
-    super.onInit();
-    _fetchSessions();
-    setSessionName();
-    setSeasonName();
-  }
+  /// The names below read observables, so use them inside an `Obx`.
+  String get seasonName => _context.season.value?.name ?? '';
+  String get sessionName => _context.session.value?.name ?? 'No session';
 
-  /// Fetches the session names from the ContextService and updates the state.
-  Future<void> _fetchSessions() async {
-    // Set loading to true before fetching
-    isLoading.value = true;
-    // Fetch the data from the service (no mapping needed)
-    sessions.value = await Get.find<ContextService>().getSessionNames();
-    isLoading.value = false;
-  }
+  /// The choice being made in the switcher dialog.
+  final RxnString selectedSessionId = RxnString();
+  final RxBool isSwitching = false.obs;
 
-  // Method to update the selection from the dropdown
-  void updateSelection(String? key) {
-    selectedSessionKey.value = key;
-  }
+  /// Whether the dialog's "Switch" button should do something.
+  bool get canSwitch => !isSwitching.value && selectedSessionId.value != null && selectedSessionId.value != _context.session.value?.id;
 
-  /// Called by the "Switch" button to perform the migration.
-  Future<void> migrateToSelectedContext() async {
-    final selectedId = selectedSessionKey.value;
-    if (selectedId != null) {
-      // Call the existing migrateContext method from your service
-      await Get.find<ContextService>().migrateContext(selectedId);
+  /// Starts a new choice with the current session selected.
+  void beginSelection() => selectedSessionId.value = _context.session.value?.id;
+
+  void select(String? sessionId) => selectedSessionId.value = sessionId;
+
+  /// Switches to the selected session. Returns whether it worked.
+  Future<bool> switchToSelected() async {
+    final sessionId = selectedSessionId.value;
+    if (sessionId == null || isSwitching.value) return false;
+    isSwitching.value = true;
+    try {
+      return await attempt(() async {
+            await _context.switchSession(sessionId);
+            return true;
+          }) ??
+          false;
+    } finally {
+      isSwitching.value = false;
     }
-  }
-
-  Future<void> setSessionName() async {
-    sessionName.value = await Get.find<ContextService>().sessionName;
-  }
-
-  Future<void> setSeasonName() async {
-    seasonName.value = await Get.find<ContextService>().seasonName;
   }
 }

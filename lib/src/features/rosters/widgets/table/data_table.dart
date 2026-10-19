@@ -1,147 +1,104 @@
-import 'package:bessie/src/shared/styles/text_styles.dart';
-import 'package:bessie/src/shared/utils/helpers/helper_functions.dart';
-import 'package:bessie/src/shared/widgets/containers/rounded_container.dart';
-import 'package:bessie/src/features/rosters/widgets/table/table_header.dart';
-import 'package:bessie/src/features/rosters/widgets/table/table_row.dart';
-import 'package:bessie/src/ember_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/constants/colors.dart';
-import '../../controllers/rosters_controller.dart';
+import '../../../../shared/styles/text_styles.dart';
+import '../../../../shared/utils/helpers/helper_functions.dart';
+import '../../../../shared/widgets/containers/rounded_container.dart';
+import '../../../../models/camper.dart';
+import '../../models/roster_column.dart';
+import '../../models/roster_table_style.dart';
+import '../../models/roster_view.dart';
+import '../../models/table_layout.dart';
+import 'table_header.dart';
+import 'table_row.dart';
 
+/// A table of campers (the whole roster, or one group of it) with a header bar.
 class BessDataTable extends StatelessWidget {
   const BessDataTable({
     super.key,
     required this.group,
-    required this.fields,
-    required this.selectedItems,
-    required this.getRowDataFromItem,
-    required this.onToggleRowSelection,
+    required this.columns,
+    required this.layout,
+    required this.view,
+    required this.style,
+    required this.heading,
+    required this.selectedIds,
+    required this.selectionState,
+    required this.onToggleRow,
     required this.onToggleGroupSelection,
-    required this.calculateTableWidths,
-    required this.constraintsMaxWidth,
     required this.onToggleGroupExpanded,
-    required this.isExpanded,
-    required this.headerTitle,
-    required this.controller,
+    this.cellTint,
     this.isGrouped = false,
-    this.alternateRowColors = true,
-    this.highContrast = false,
-    this.rowSeparators = false,
-    this.columnSeparators = false,
-    this.compact = true,
+    this.isExpanded = true,
   });
 
-  // Data
   final RosterGroup group;
-  final List<RosterField> fields;
-  final Set<Rosterable> selectedItems;
-  final List<String> Function(Rosterable) getRowDataFromItem;
-  final Function(double, double) calculateTableWidths;
-  final double constraintsMaxWidth;
-  final String headerTitle;
+  final List<RosterColumn> columns;
+  final TableLayout layout;
+  final RosterView view;
+  final RosterTableStyle style;
+  final String heading;
 
-  // Configuration
+  final Set<String> selectedIds;
+
+  /// True when the whole group is selected, null when part of it is.
+  final bool? selectionState;
+
+  /// Background of one cell, for views such as repetition colors.
+  final Color? Function(Camper camper, RosterColumn column)? cellTint;
+
   final bool isGrouped;
   final bool isExpanded;
-  final bool alternateRowColors;
-  final bool highContrast;
-  final bool rowSeparators;
-  final bool columnSeparators;
-  final bool compact;
 
-  // Callbacks & State
-  final RostersController controller;
-  final void Function(Rosterable) onToggleRowSelection;
-  final void Function(RosterGroup) onToggleGroupSelection;
-  final void Function(RosterGroup) onToggleGroupExpanded;
+  final void Function(Camper) onToggleRow;
+  final VoidCallback onToggleGroupSelection;
+  final VoidCallback onToggleGroupExpanded;
 
   @override
   Widget build(BuildContext context) {
-    if (fields.isEmpty) {
-      return const Center(child: Text('Add some columns!'));
-    }
+    if (columns.isEmpty) return const Center(child: Text('Add some columns!'));
 
-    final outlineColor = highContrast ? BessColors.element3 : BessColors.borderPrimary;
+    final outlineColor = style.highContrast ? BessColors.element3 : BessColors.borderPrimary;
 
-    final tableWidths = calculateTableWidths(constraintsMaxWidth, 0); // TODO: The 0 is for zero indent, fix this!
-
-    final row = (int index) {
-      final Rosterable rosterItem = group.items[index];
-      final Color highContrastDark = highContrast ? BessColors.crust : BessColors.background;
-      final Color baseColor = alternateRowColors == true
-          ? index % 2 == 0
-              ? BessColors.core
-              : highContrastDark
-          : BessColors.core;
-      final rowColor =
-          selectedItems.contains(rosterItem) ? BessHelperFunctions.blendColors(baseColor, BessColors.primary, 30) : baseColor;
-      final backgroundColors = controller.getRepetitionColors(rosterItem);
-      return BessTableRow(
-        height: compact ? 40 : 80,
-        data: getRowDataFromItem(rosterItem),
-        widths: tableWidths.adjustedDataWidths,
-        color: rowColor,
-        maxLines: compact ? 1 : 3,
-        textOverflow: TextOverflow.ellipsis,
-        isSelected: selectedItems.contains(rosterItem),
-        onToggle: () => onToggleRowSelection(rosterItem),
-        textStyle: BessTextStyles.standard,
-        showHorizontalSeparator: rowSeparators,
-        showVerticalSeparators: columnSeparators,
-        separatorsColor: outlineColor,
-        backgroundColors: backgroundColors,
-      );
-    };
-
-    final fieldRow = BessTableRow(
+    final columnTitles = BessTableRow(
       height: 34,
-      data: fields.map((field) => field.displayTitle).toList(),
-      widths: tableWidths.adjustedDataWidths,
-      color: highContrast ? BessColors.crust : BessColors.background,
+      cells: [for (final column in columns) RosterCell(column.displayTitle)],
+      widths: layout.columnWidths,
+      color: style.highContrast ? BessColors.crust : BessColors.background,
       maxLines: 1,
       textOverflow: TextOverflow.clip,
       textStyle: BessTextStyles.columnHeader,
-      showHorizontalSeparator: rowSeparators,
-      showVerticalSeparators: columnSeparators,
+      showHorizontalSeparator: style.rowSeparators,
+      showVerticalSeparators: style.columnSeparators,
       separatorsColor: outlineColor,
       toggleableRow: false,
-      indentWidth: 0,
       showCheckbox: false,
     );
 
-    final tableHeader = BessTableHeader(
-      headerTitle: headerTitle,
-      group: group,
-      onToggle: () => onToggleGroupSelection(group),
-      isSelected: group.items.every(selectedItems.contains) ? true : (group.items.any(selectedItems.contains) ? null : false),
-      isSingle: isGrouped == false,
-      separatorsColor: outlineColor,
-      onToggleGroupExpanded: () => onToggleGroupExpanded(group),
+    final header = BessTableHeader(
+      heading: heading,
+      count: group.campers.length,
+      isSelected: selectionState,
+      isSingle: !isGrouped,
       isExpanded: isExpanded,
+      onToggle: onToggleGroupSelection,
+      onToggleExpanded: onToggleGroupExpanded,
     );
 
     final tableContents = SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: SizedBox(
-        width: tableWidths.actualTableWidth,
+        width: layout.tableWidth,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            fieldRow,
-            if (isGrouped)
-              if (isExpanded)
-                ...List.generate(
-                  group.items.length,
-                  (index) => row(index),
-                ),
+            columnTitles,
+            if (isGrouped && isExpanded) ...[for (var i = 0; i < group.campers.length; i++) _row(i, outlineColor)],
             if (!isGrouped)
               Expanded(
                 child: ListView.builder(
-                  itemCount: group.items.length,
-                  itemBuilder: (context, index) {
-                    return row(index);
-                  },
+                  itemCount: group.campers.length,
+                  itemBuilder: (context, index) => _row(index, outlineColor),
                 ),
               ),
           ],
@@ -159,13 +116,36 @@ class BessDataTable extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          tableHeader,
-          if (isExpanded)
-            Divider(thickness: 3, height: 0, color: outlineColor),
-          if (isExpanded)
-            if (isGrouped) tableContents else Expanded(child: tableContents),
+          header,
+          if (isExpanded) Divider(thickness: 3, height: 0, color: outlineColor),
+          if (isExpanded) isGrouped ? tableContents : Expanded(child: tableContents),
         ],
       ),
+    );
+  }
+
+  Widget _row(int index, Color outlineColor) {
+    final camper = group.campers[index];
+    final selected = selectedIds.contains(camper.id);
+    final alternateColor = style.highContrast ? BessColors.crust : BessColors.background;
+    final baseColor = style.alternateRowColors && index.isOdd ? alternateColor : BessColors.core;
+    final rowColor = selected ? BessHelperFunctions.blendColors(baseColor, BessColors.primary, 30) : baseColor;
+
+    return BessTableRow(
+      key: ValueKey(camper.id),
+      height: style.compact ? 40 : 80,
+      cells: [for (final column in columns) view.cell(camper, column)],
+      widths: layout.columnWidths,
+      color: rowColor,
+      maxLines: style.compact ? 1 : 3,
+      textOverflow: TextOverflow.ellipsis,
+      isSelected: selected,
+      onToggle: () => onToggleRow(camper),
+      textStyle: BessTextStyles.standard,
+      showHorizontalSeparator: style.rowSeparators,
+      showVerticalSeparators: style.columnSeparators,
+      separatorsColor: outlineColor,
+      cellColors: cellTint == null ? null : [for (final column in columns) cellTint!(camper, column)],
     );
   }
 }

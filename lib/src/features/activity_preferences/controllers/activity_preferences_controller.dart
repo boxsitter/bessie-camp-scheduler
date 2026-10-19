@@ -254,6 +254,7 @@ class ActivityPreferencesController extends GetxController with RouteAwareContro
       if (generation != _generation) return;
       unawaited(_campersSubscription?.cancel());
       _campersSubscription = null;
+      _clearData();
       loadError = AppException.from(e, st).message;
       isLoading = false;
       Toast.failure(e, st);

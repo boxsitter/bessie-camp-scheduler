@@ -1,26 +1,26 @@
-import 'package:bessie/src/shared/constants/colors.dart';
-import 'package:bessie/src/shared/widgets/buttons/checkbox.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../shared/constants/colors.dart';
 import '../../../../shared/constants/sizes.dart';
+import '../../../../shared/widgets/buttons/checkbox.dart';
 
 class BessTableCell extends StatelessWidget {
-  final double? width;
-  final Widget? child;
-  final bool? showVerticalSeparator;
-  final Color? separatorColor;
-  final EdgeInsetsGeometry? padding;
-  final Color? backgroundColor;
-
   const BessTableCell({
     super.key,
     this.width,
     this.child,
-    this.showVerticalSeparator,
+    this.showVerticalSeparator = false,
     this.separatorColor,
     this.padding,
     this.backgroundColor,
   });
+
+  final double? width;
+  final Widget? child;
+  final bool showVerticalSeparator;
+  final Color? separatorColor;
+  final EdgeInsetsGeometry? padding;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -29,28 +29,17 @@ class BessTableCell extends StatelessWidget {
       padding: padding ?? const EdgeInsets.symmetric(horizontal: BessSizes.md, vertical: BessSizes.sm),
       decoration: BoxDecoration(
         color: backgroundColor,
-        border: showVerticalSeparator == true
-            ? BorderDirectional(end: BorderSide(color: separatorColor ?? BessColors.borderPrimary, width: 1))
-          : null,
+        border: showVerticalSeparator ? BorderDirectional(end: BorderSide(color: separatorColor ?? BessColors.borderPrimary)) : null,
       ),
-      child: SizedBox(
-        child: child,
-      ),
+      child: child,
     );
   }
 }
 
 class StringCellContent extends StatelessWidget {
-  const StringCellContent({
-    super.key,
-    this.content,
-    this.textStyle,
-    this.maxLines,
-    this.textOverflow,
-    this.textColor,
-  });
+  const StringCellContent({super.key, required this.content, this.textStyle, this.maxLines, this.textOverflow, this.textColor});
 
-  final String? content;
+  final String content;
   final TextStyle? textStyle;
   final int? maxLines;
   final TextOverflow? textOverflow;
@@ -61,7 +50,7 @@ class StringCellContent extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
-        content!,
+        content,
         style: textColor != null ? textStyle?.copyWith(color: textColor) : textStyle,
         maxLines: maxLines,
         overflow: textOverflow,
@@ -71,26 +60,16 @@ class StringCellContent extends StatelessWidget {
 }
 
 class CheckboxCellContent extends StatelessWidget {
+  const CheckboxCellContent({super.key, this.value, this.onChanged});
+
   final bool? value;
   final VoidCallback? onChanged;
-  final bool enabled;
-
-  const CheckboxCellContent({
-    super.key,
-    this.value,
-    this.onChanged,
-    this.enabled = true,
-  });
 
   @override
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.center,
-      child: BessCheckbox(
-        onPressed: onChanged,
-        tristate: true,
-        value: value,
-      ),
+      child: BessCheckbox(onPressed: onChanged, tristate: true, value: value),
     );
   }
 }

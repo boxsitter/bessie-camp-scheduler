@@ -127,7 +127,8 @@ void main() {
     });
 
     test('copies its inputs, so later mutation by the caller changes nothing', () {
-      final periods = [AlgoPeriod(id: 'p', dayId: 'd', start: DateTime(2025, 7, 14, 9))];
+      final period = AlgoPeriod(id: 'p', dayId: 'd', start: DateTime(2025, 7, 14, 9));
+      final periods = [period];
       final existing = <String, Set<String>>{
         'a': {'s'},
       };
@@ -149,7 +150,7 @@ void main() {
 
       expect(context.periods, hasLength(1));
       expect(context.existingAssignments['a'], {'s'});
-      expect(() => context.periods.add(periods.first), throwsUnsupportedError);
+      expect(() => context.periods.add(period), throwsUnsupportedError);
     });
 
     test('looks up the scheduled instance of an activity in a period', () {

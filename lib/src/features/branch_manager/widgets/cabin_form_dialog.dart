@@ -89,6 +89,7 @@ class _CabinFormDialogState extends State<CabinFormDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(height: BessSizes.sm),
           LabeledField(
             label: 'Name',
             error: _errors.name,

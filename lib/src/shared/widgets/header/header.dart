@@ -1,13 +1,17 @@
-import 'package:bessie/src/shared/constants/colors.dart';
-import 'package:bessie/src/shared/widgets/header/menu_bar.dart';
 import 'package:flutter/material.dart';
 
+import '../../constants/colors.dart';
+import '../layouts/sidebars/sidebar.dart';
+import 'menu_bar.dart';
+import 'user_menu.dart';
 
-class BessHeader extends StatelessWidget implements PreferredSizeWidget {
-  const BessHeader(
-      {super.key, required this.menuBar, this.scaffoldKey, this.centerActions = const [], this.trailingWidgets = const []});
+/// The bar across the top: the page's menu bar on the left (as wide as the
+/// sidebar), the page's own actions, and the user menu on the right.
+class BessHeader extends StatelessWidget {
+  const BessHeader({super.key, required this.menuBar, this.centerActions = const [], this.trailingWidgets = const []});
 
-  final GlobalKey<ScaffoldState>? scaffoldKey;
+  static const double height = 55;
+
   final BessMenuBar menuBar;
   final List<Widget> centerActions;
   final List<Widget> trailingWidgets;
@@ -15,57 +19,30 @@ class BessHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 55,
+      height: height,
       decoration: BoxDecoration(
         color: BessColors.core,
-        border: Border(bottom: BorderSide(color: BessColors.semiLow, width: 1)),
+        border: Border(bottom: BorderSide(color: BessColors.semiLow)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left: Menu Bar
           Container(
-            width: 265,
+            width: BessSidebar.width,
             decoration: BoxDecoration(
-              border: Border(right: BorderSide(color: BessColors.semiLow, width: 1)),
+              border: Border(right: BorderSide(color: BessColors.semiLow)),
             ),
             child: menuBar,
           ),
-
           Expanded(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: Row(
-                children: [
-                  // GetBuilder<SaveController>(builder: (controller) {
-                  //   return BessTextIconButton(
-                  //     content: controller.isSaving
-                  //         ? 'Saving...'
-                  //         : controller.isAutoSaving
-                  //             ? 'Auto Saving...'
-                  //             : 'Save',
-                  //     onPressed: controller.save,
-                  //     enabled: controller.isSaving == false && controller.isAutoSaving == false && !controller.queueIsEmpty,
-                  //     radius: 8,
-                  //     backgroundColor: BessColors.crust,
-                  //   );
-                  // }),
-                  // SizedBox(
-                  //   width: 16,
-                  // ),
-                  ...centerActions,
-                  Spacer(),
-                  ...trailingWidgets,
-                ],
+                children: [...centerActions, const Spacer(), ...trailingWidgets, const SizedBox(width: 8), const UserMenu()],
               ),
             ),
-          )
+          ),
         ],
       ),
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(40);
 }

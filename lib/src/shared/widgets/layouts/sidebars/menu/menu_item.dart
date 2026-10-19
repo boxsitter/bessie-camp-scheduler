@@ -1,61 +1,51 @@
-import 'package:bessie/src/shared/widgets/layouts/sidebars/sidebar_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../constants/colors.dart';
 import '../../../../constants/sizes.dart';
+import '../sidebar_controller.dart';
+import '../sidebar_item.dart';
 
 class BessMenuItem extends StatelessWidget {
-  const BessMenuItem({
-    super.key,
-    required this.route,
-    required this.icon,
-    required this.itemName,
-  });
+  const BessMenuItem({super.key, required this.item});
 
-  final String route;
-  final IconData icon;
-  final String itemName;
+  final SidebarItem item;
 
   @override
   Widget build(BuildContext context) {
-    final menuController = Get.find<SidebarController>();
+    final sidebar = Get.find<SidebarController>();
+    final route = item.route;
 
     return InkWell(
-      onTap: () => menuController.menuonPressed(route),
-      onHover: (hovering) => hovering ? menuController.changeHoverItem(route) : menuController.changeHoverItem(''),
-      child: Obx(
-        () => Padding(
+      onTap: () => sidebar.open(route),
+      onHover: (hovering) => sidebar.changeHoverItem(hovering ? route : ''),
+      child: Obx(() {
+        final active = sidebar.isActive(route);
+        final highlighted = active || sidebar.isHovering(route);
+        return Padding(
           padding: const EdgeInsets.symmetric(vertical: BessSizes.spaceBtwMenuItems),
-          child: Container(
-              decoration: BoxDecoration(
-                color:
-                    menuController.isHovering(route) || menuController.isActive(route) ? BessColors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(BessSizes.cardRadiusMd),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  //Icon
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(left: BessSizes.lg, top: BessSizes.md, bottom: BessSizes.md, right: BessSizes.md),
-                    child: menuController.isActive(route)
-                        ? Icon(icon, size: 22, color: BessColors.low)
-                        : Icon(icon,
-                            size: 22, color: menuController.isHovering(route) ? BessColors.textInverted : BessColors.textPrimary),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: highlighted ? BessColors.primary : Colors.transparent,
+              borderRadius: BorderRadius.circular(BessSizes.cardRadiusMd),
+            ),
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: BessSizes.lg, top: BessSizes.md, bottom: BessSizes.md, right: BessSizes.md),
+                  child: Icon(item.icon, size: 22, color: active ? BessColors.low : (highlighted ? BessColors.textInverted : BessColors.textPrimary)),
+                ),
+                Flexible(
+                  child: Text(
+                    item.title,
+                    style: Theme.of(context).textTheme.bodyMedium!.apply(color: highlighted ? BessColors.low : BessColors.semiHigh),
                   ),
-
-                  // Text
-                  if (menuController.isHovering(route) || menuController.isActive(route))
-                    Flexible(child: Text(itemName, style: Theme.of(context).textTheme.bodyMedium!.apply(color: BessColors.low)))
-                  else
-                    Flexible(
-                        child: Text(itemName, style: Theme.of(context).textTheme.bodyMedium!.apply(color: BessColors.semiHigh))),
-                ],
-              )),
-        ),
-      ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
     );
   }
 }

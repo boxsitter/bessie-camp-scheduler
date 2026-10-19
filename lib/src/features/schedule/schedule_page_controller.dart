@@ -160,6 +160,9 @@ class SchedulePageController extends GetxController with RouteAwareControllerMix
       if (generation != _generation) return;
       unawaited(_campersSubscription?.cancel());
       _campersSubscription = null;
+      _schedule = null;
+      _campers = const [];
+      grid = null;
       loadError = AppException.from(e, st).message;
       isLoading = false;
       Toast.failure(e, st);

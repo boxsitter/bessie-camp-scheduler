@@ -1,52 +1,21 @@
-import 'package:bessie/src/shared/widgets/layouts/templates/center_box.dart';
-import 'package:bessie/src/features/authentication/view/reset_password/widgets/reset_password_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
-import '../../../../shared/constants//sizes.dart';
-import '../../../../shared/widgets/header/menu_bar.dart';
-import '../../../../shared/widgets/layouts/templates/site_layout.dart';
+import '../../../../services/auth_service.dart';
+import '../widgets/auth_scaffold.dart';
+import 'widgets/reset_link_invalid.dart';
+import 'widgets/reset_password_form.dart';
 
+/// Where the emailed link brings the user to choose a new password.
 class ResetPasswordScreen extends StatelessWidget {
-  const ResetPasswordScreen({super.key = const ValueKey('HomeScreen')});
+  const ResetPasswordScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const BessSiteTemplate(
-      useLayout: false,
-      desktop: ResetPasswordScreenDesktopTablet(),
-      mobile: ResetPasswordScreenMobile(),
-      menuBar: BessMenuBar(),
-    );
-  }
-}
-
-class ResetPasswordScreenDesktopTablet extends StatelessWidget {
-  const ResetPasswordScreenDesktopTablet({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return const BessCenterBox(
-      child: ResetPasswordWidget(),
-    );
-  }
-}
-
-class ResetPasswordScreenMobile extends StatelessWidget {
-  const ResetPasswordScreenMobile({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(BessSizes.defaultSpace),
-          child: ResetPasswordWidget(),
-        ),
-      ),
+    final auth = Get.find<AuthService>();
+    return AuthScaffold(
+      // Following the emailed link signs the user in to a recovery session.
+      child: Obx(() => auth.recoveringPassword.value || auth.profile.value != null ? const ResetPasswordForm() : const ResetLinkInvalid()),
     );
   }
 }
