@@ -45,3 +45,14 @@ app.*.map.json
 /android/app/release
 # Widget Preview related
 .widget_preview/
+
+# Node tooling
+node_modules/
+
+# Local secrets and exports. Roster dumps contain children's personal data: never commit them.
+.env
+.env.*
+tools/firestore-migration/dump*.json
+tools/firestore-migration/plan*.json
+tools/firestore-migration/*key*.json
+tools/firestore-migration/*service-account*.json

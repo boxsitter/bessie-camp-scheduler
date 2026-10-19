@@ -1,45 +1,7 @@
 {
-  "flutter": {
-    "platforms": {
-      "android": {
-        "default": {
-          "projectId": "bessie-camp-app",
-          "appId": "1:989427213735:android:116655d38955ad61924282",
-          "fileOutput": "android/app/google-services.json"
-        }
-      },
-      "dart": {
-        "lib/firebase_options.dart": {
-          "projectId": "bessie-camp-app",
-          "configurations": {
-            "android": "1:989427213735:android:116655d38955ad61924282",
-            "ios": "1:989427213735:ios:8053801d7f80281b924282",
-            "web": "1:989427213735:web:01bffe7089d68425924282",
-            "windows": "1:989427213735:web:fb5c900f8388a4be924282"
-          }
-        }
-      }
-    }
-  },
   "hosting": {
     "public": "public",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ]
-  },
-  "emulators": {
-    "firestore": {
-      "port": 6200
-    },
-    "hosting": {
-      "port": 5000
-    },
-    "ui": {
-      "enabled": true,
-      "port": 4000
-    },
-    "singleProjectMode": true
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
   }
 }

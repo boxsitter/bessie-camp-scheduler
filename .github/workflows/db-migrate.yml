@@ -1,0 +1,35 @@
+name: Apply database migrations
+
+# Manually applies the migrations in supabase/migrations to the hosted
+# Supabase project. Run it before releasing an app version that needs them.
+#
+# Required secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD
+# Required variable: SUPABASE_PROJECT_REF
+# Consider protecting the `production` environment with required reviewers.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only show what would be applied
+        type: boolean
+        default: true
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
+      - name: Show pending migrations
+        run: supabase db push --dry-run
+      - name: Apply migrations
+        if: ${{ !inputs.dry_run }}
+        run: supabase db push

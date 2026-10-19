@@ -136,6 +136,11 @@ create trigger touch_updated_at before update on public.profiles for each row ex
 -- Staff are provisioned by an administrator through the Auth admin API (sign-up
 -- is disabled). The profile is derived from `app_metadata` (writable only with
 -- the service key) and `user_metadata` (names only).
+--
+-- GoTrue's admin API inserts the user first and only then writes the metadata,
+-- so this runs on updates as well and creates the profile once the
+-- organization shows up. An existing profile is never overwritten: after
+-- provisioning, a director manages roles through `profiles`.
 create function app.handle_new_user() returns trigger
 language plpgsql
 security definer
@@ -146,7 +151,7 @@ declare
 begin
   v_org := nullif(new.raw_app_meta_data ->> 'organization_id', '')::uuid;
   if v_org is null then
-    return new; -- not a staff account; it simply has no access
+    return new; -- not (yet) a staff account; it simply has no access
   end if;
 
   insert into public.profiles (id, organization_id, first_name, last_name, preferred_name, role)
@@ -157,11 +162,12 @@ begin
     coalesce(nullif(btrim(new.raw_user_meta_data ->> 'last_name'), ''), 'User'),
     nullif(btrim(new.raw_user_meta_data ->> 'preferred_name'), ''),
     coalesce(nullif(new.raw_app_meta_data ->> 'role', '')::public.staff_role, 'counselor')
-  );
+  )
+  on conflict (id) do nothing;
   return new;
 end
 $$;
 
 create trigger on_auth_user_created
-  after insert on auth.users
+  after insert or update of raw_app_meta_data, raw_user_meta_data on auth.users
   for each row execute function app.handle_new_user();

@@ -1,69 +1,73 @@
-name: 🕸 Build & Deploy Web
+name: Build & deploy web
+
+# Pushing to `release/web` builds the web app against the production Supabase
+# project and publishes it to Firebase Hosting. Firebase is used only to serve
+# the static files; swap the last step for any other static host if you prefer.
+#
+# Required repository configuration
+#   Variables: SUPABASE_URL
+#   Secrets:   SUPABASE_ANON_KEY (the publishable key),
+#              FIREBASE_SERVICE_ACCOUNT_BESSIE_CAMP_APP
+#   Optional:  secret SENTRY_DSN, plus SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT
+#              to upload source maps.
+# Database migrations are NOT run here; see db-migrate.yml.
 
 on:
   push:
     branches:
       - release/web
 
-env:
-  PROJECT_DIR: . # App now lives at the repository root
-  PUB_CACHE: ~/.pub-cache
-  SENTRY_RELEASE_VERSION: bessie-web-${{ github.sha }}
-
 concurrency:
-  group: build-and-deploy-${{ github.ref }} # Using GitHub.ref to make it per-branch
+  group: build-and-deploy-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  RELEASE_VERSION: bessie-web-${{ github.sha }}
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ${{ env.PROJECT_DIR }}
-
+    env:
+      # `secrets` can't be used in a step's `if`, so expose a flag instead.
+      UPLOAD_SOURCEMAPS: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
     steps:
-      - name: Checkout Monorepo
-        uses: actions/checkout@v3 # You can update to @v4 if you prefer
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Sentry needs a full history
+          fetch-depth: 0 # Sentry needs the full history
 
-      - name: Cache Pub dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ env.PUB_CACHE }}
-            ${{ github.workspace }}/${{ env.PROJECT_DIR }}/.dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles(format('{0}/pubspec.lock', env.PROJECT_DIR)) }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
-      - name: Flutter pub get
-        run: flutter pub get
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test --exclude-tags integration
 
-      - name: Flutter build web
-        run: flutter build web --release --dart-define=SENTRY_RELEASE_VERSION=${{ env.SENTRY_RELEASE_VERSION }}
+      - name: Build web
+        run: >
+          flutter build web --release
+          --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
+          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          --dart-define=SENTRY_ENVIRONMENT=production
+          --dart-define=RELEASE_VERSION=${{ env.RELEASE_VERSION }}
 
       - name: Prepare public folder
         run: |
           rm -rf public
           mv build/web public
 
-      # SENTRY INTEGRATION: Create Release and Upload Source Maps
-      - name: Create Sentry Release and Upload Source Maps
+      - name: Upload source maps to Sentry
+        if: env.UPLOAD_SOURCEMAPS == 'true'
         uses: getsentry/action-release@v3
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
         with:
-          sourcemaps: ${{ env.PROJECT_DIR }}/public
-          release: ${{ env.SENTRY_RELEASE_VERSION }} # Uses the corrected version from env
+          sourcemaps: public
+          release: ${{ env.RELEASE_VERSION }}
           environment: production
           finalize: true
 
@@ -74,4 +78,3 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BESSIE_CAMP_APP }}
           projectId: bessie-camp-app
           channelId: live
-          entryPoint: ${{ env.PROJECT_DIR }}

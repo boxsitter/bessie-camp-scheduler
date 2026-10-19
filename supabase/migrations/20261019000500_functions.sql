@@ -105,7 +105,7 @@ declare
   v_changed integer;
   v_inserted integer := 0;
   v_duplicates integer := 0;
-  v_unknown_cabins text[] := '{}';
+  v_unknown_cabins text[] := array[]::text[];
 begin
   for r in select * from jsonb_array_elements(p_rows) loop
     v_cabin := null;

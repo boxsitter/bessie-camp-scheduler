@@ -1,7 +1,7 @@
 -- Who can see and change what.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(22);
 
 create function pg_temp.act_as(p_email text) returns void language plpgsql as $$
 begin
@@ -40,6 +40,25 @@ end $$;
 
 select is((select role::text from public.profiles where id = (select id from auth.users where email = 'rival@example.test')),
   'director', 'new auth users get a profile from their app_metadata');
+
+-- GoTrue's admin API inserts the user and writes app_metadata afterwards.
+insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+                        raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+                        confirmation_token, email_change, email_change_token_new, recovery_token)
+values ('00000000-0000-0000-0000-000000000000', '00000000-0000-4000-8000-0000000000b1', 'authenticated', 'authenticated',
+        'two-step@example.test', 'x', now(), '{"provider":"email"}', '{"first_name":"Two","last_name":"Step"}',
+        now(), now(), '', '', '', '');
+select is((select count(*)::int from public.profiles where id = '00000000-0000-4000-8000-0000000000b1'), 0,
+  'a user without an organization has no profile (and so no access)');
+update auth.users
+   set raw_app_meta_data = raw_app_meta_data || jsonb_build_object('organization_id', (select id from public.organizations where name = 'Camp Bessie'), 'role', 'admin')
+ where id = '00000000-0000-4000-8000-0000000000b1';
+select is((select role::text || ' ' || first_name from public.profiles where id = '00000000-0000-4000-8000-0000000000b1'), 'admin Two',
+  'the profile appears once the admin API writes app_metadata');
+update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"director"}'
+ where id = '00000000-0000-4000-8000-0000000000b1';
+select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-0000000000b1'), 'admin',
+  'later metadata edits never overwrite an existing profile');
 
 -- Anonymous visitors ---------------------------------------------------------
 select pg_temp.act_as_anon();

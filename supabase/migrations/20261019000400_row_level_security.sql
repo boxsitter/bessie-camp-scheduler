@@ -105,31 +105,35 @@ create policy "directors rename their organization" on public.organizations
   using (id = (select app.current_org_id()) and (select app.is_director()))
   with check (id = (select app.current_org_id()));
 
+-- These policies test the row's own parent key instead of looking the row up
+-- again (e.g. `id in visible_session_ids()`): INSERT ... RETURNING evaluates
+-- the SELECT policy against the new row, which a subquery can't see yet.
+
 create policy "members read branches" on public.branches
   for select to authenticated
-  using (id in (select app.visible_branch_ids()));
+  using (organization_id = (select app.current_org_id()));
 
 create policy "directors manage branches" on public.branches
   for all to authenticated
-  using (id in (select app.visible_branch_ids()) and (select app.is_director()))
+  using (organization_id = (select app.current_org_id()) and (select app.is_director()))
   with check (organization_id = (select app.current_org_id()) and (select app.is_director()));
 
 create policy "members read seasons" on public.seasons
   for select to authenticated
-  using (id in (select app.visible_season_ids()));
+  using (branch_id in (select app.visible_branch_ids()));
 
 create policy "directors manage seasons" on public.seasons
   for all to authenticated
-  using (id in (select app.visible_season_ids()) and (select app.is_director()))
+  using (branch_id in (select app.visible_branch_ids()) and (select app.is_director()))
   with check (branch_id in (select app.visible_branch_ids()) and (select app.is_director()));
 
 create policy "members read sessions" on public.sessions
   for select to authenticated
-  using (id in (select app.visible_session_ids()));
+  using (season_id in (select app.visible_season_ids()));
 
 create policy "writers manage sessions" on public.sessions
   for all to authenticated
-  using (id in (select app.visible_session_ids()) and (select app.is_writer()))
+  using (season_id in (select app.visible_season_ids()) and (select app.is_writer()))
   with check (season_id in (select app.visible_season_ids()) and (select app.is_writer()));
 
 -- Branch catalog -------------------------------------------------------------

@@ -1,7 +1,7 @@
 -- Behavior of the RPCs the app relies on.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(23);
 
 create temp table fx (key text primary key, id uuid not null);
 grant all on fx to public;
@@ -118,6 +118,15 @@ select throws_ok(
   format($q$select public.set_camper_preferences(%L, array[%L]::uuid[], '{}')$q$, pg_temp.fx('c1'), pg_temp.fx('hidden')),
   'BS003', null, 'hidden activities cannot be ranked');
 
+select pg_temp.act_as_postgres();
+
+-- create_session as a signed-in admin (RETURNING must pass the SELECT policy) --
+select pg_temp.act_as('admin@bessie.test');
+select lives_ok(
+  $q$select public.create_session((select id from public.seasons limit 1), 'Created By Admin', date '2030-05-06')$q$,
+  'admins can create sessions through the RPC');
+select is((select count(*)::int from public.blocks b join public.sessions s on s.id = b.session_id where s.name = 'Created By Admin'), 10,
+  '...and see the blocks it created');
 select pg_temp.act_as_postgres();
 
 -- import_campers -----------------------------------------------------------
