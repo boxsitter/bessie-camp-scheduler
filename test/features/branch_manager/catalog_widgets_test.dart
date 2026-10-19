@@ -30,8 +30,11 @@ void main() {
     testWidgets('shows what is wrong and does not submit an invalid form', (tester) async {
       var submitted = 0;
       await pumpApp(tester, const SizedBox());
-      final dialog = await openDialog<bool>(tester, ActivityFormDialog(otherActivityNames: const ['Soccer'], onSubmit: (_) async => submitted++));
-      
+      final dialog = await openDialog<bool>(
+        tester,
+        ActivityFormDialog(otherActivityNames: const ['Soccer'], onSubmit: (_) async => submitted++),
+      );
+
       await tester.enterText(input(0), ' soccer ');
       await tester.enterText(input(2), '');
       await tapButton(tester, 'Create activity');
@@ -55,12 +58,9 @@ void main() {
       await pumpApp(tester, const SizedBox());
       final dialog = await openDialog<bool>(
         tester,
-        ActivityFormDialog(
-          otherActivityNames: const [],
-          onSubmit: (input) async => received = input,
-        ),
+        ActivityFormDialog(otherActivityNames: const [], onSubmit: (input) async => received = input),
       );
-      
+
       await tester.enterText(input(0), 'Archery');
       await tester.enterText(input(2), '12');
       await tester.enterText(input(3), '2');
@@ -83,13 +83,17 @@ void main() {
         tester,
         ActivityFormDialog(otherActivityNames: const [], onSubmit: (_) async => throw AppException('That already exists.')),
       );
-      
+
       await tester.enterText(input(0), 'Archery');
       await tapButton(tester, 'Create activity');
 
       expect(find.text('That already exists.'), findsOneWidget);
       expect(find.byType(ActivityFormDialog), findsOneWidget);
-      expect(tester.widget<ShadButton>(find.widgetWithText(ShadButton, 'Create activity')).onPressed, isNotNull, reason: 'the user can try again');
+      expect(
+        tester.widget<ShadButton>(find.widgetWithText(ShadButton, 'Create activity')).onPressed,
+        isNotNull,
+        reason: 'the user can try again',
+      );
 
       await tester.tap(find.widgetWithText(ShadButton, 'Cancel'));
       await tester.pumpAndSettle();
@@ -127,7 +131,7 @@ void main() {
       CabinFormInput? received;
       await pumpApp(tester, const SizedBox());
       final dialog = await openDialog<bool>(tester, CabinFormDialog(existingCabins: existing, onSubmit: (input) async => received = input));
-      
+
       await tester.enterText(input(0), 'oak');
       await tapButton(tester, 'Create cabin');
       expect(find.text('There is already a cabin called "oak".'), findsOneWidget);
@@ -149,7 +153,7 @@ void main() {
         tester,
         CabinFormDialog(existingCabins: existing, onSubmit: (_) async => throw AppException('You don\'t have permission to do that.')),
       );
-      
+
       await tester.enterText(input(0), 'Birch');
       await tapButton(tester, 'Create cabin');
 
@@ -167,7 +171,12 @@ void main() {
       activity('swim-test', name: 'Swim Test', capacity: 6, hidden: true),
     ];
 
-    Widget section({required bool canEdit, List<Activity>? activities, void Function(Activity)? onEdit, void Function(Activity)? onDelete}) {
+    Widget section({
+      required bool canEdit,
+      List<Activity>? activities,
+      void Function(Activity)? onEdit,
+      void Function(Activity)? onDelete,
+    }) {
       return ActivitiesSection(
         activities: activities ?? catalog,
         canEdit: canEdit,
@@ -216,7 +225,10 @@ void main() {
   });
 
   group('CabinsCatalogSection', () {
-    final cabins = [cabin('Oak', village: 'Pines', position: 1), cabin('Squirt', village: 'Meadow', position: 2, displayName: 'Ernie', capacity: 8)];
+    final cabins = [
+      cabin('Oak', village: 'Pines', position: 1),
+      cabin('Squirt', village: 'Meadow', position: 2, displayName: 'Ernie', capacity: 8),
+    ];
 
     Widget section({required bool canEdit, void Function(Cabin)? onDelete}) =>
         CabinsCatalogSection(cabins: cabins, canEdit: canEdit, onCreate: () {}, onDelete: onDelete ?? (_) {});

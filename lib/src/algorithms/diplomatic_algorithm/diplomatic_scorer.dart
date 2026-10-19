@@ -41,38 +41,28 @@ class DiplomaticScorer implements AssignmentScorer {
   static const double youngerParticipantMaxBonus = 0.0;
 
   /// The age at which the bonus starts to apply.
-  static const int youngerParticipantMinAge =
-      ScoringTerms.youngerParticipantMinAge;
+  static const int youngerParticipantMinAge = ScoringTerms.youngerParticipantMinAge;
 
   /// The age at which the bonus becomes zero.
-  static const int youngerParticipantMaxAge =
-      ScoringTerms.youngerParticipantMaxAge;
+  static const int youngerParticipantMaxAge = ScoringTerms.youngerParticipantMaxAge;
 
   // --- REPETITION PENALTY ---
   /// The base penalty for repeating an activity on the same day.
-  static const double baseRepetitionPenalty =
-      ScoringTerms.baseRepetitionPenalty;
+  static const double baseRepetitionPenalty = ScoringTerms.baseRepetitionPenalty;
 
   /// How quickly the repetition penalty fades with each period of separation.
-  static const double repetitionPenaltyDecayFactor =
-      ScoringTerms.repetitionPenaltyDecayFactor;
+  static const double repetitionPenaltyDecayFactor = ScoringTerms.repetitionPenaltyDecayFactor;
 
   @override
   String get name => 'diplomatic';
 
   @override
-  double score(
-    PotentialAssignment candidate,
-    AssignmentContext context,
-    AssignmentLedger ledger,
-  ) {
+  double score(PotentialAssignment candidate, AssignmentContext context, AssignmentLedger ledger) {
     final participantId = candidate.participant.id;
     final activityId = candidate.activity.id;
 
     final alreadyHolds = ledger.holds(participantId, activityId);
-    final isRequest =
-        context.preferenceOf(participantId, activityId) ==
-        PreferenceType.request;
+    final isRequest = context.preferenceOf(participantId, activityId) == PreferenceType.request;
 
     final double baseScore;
     if (!alreadyHolds && isRequest) {
@@ -83,15 +73,8 @@ class DiplomaticScorer implements AssignmentScorer {
       baseScore = repeatedActivityScore; // Tier 3
     }
 
-    final ageBonus = ScoringTerms.ageBonus(
-      context.ageOf(participantId),
-      maxBonus: youngerParticipantMaxBonus,
-    );
-    final repetitionPenalty = ScoringTerms.sameDayRepetitionPenalty(
-      candidate,
-      context,
-      ledger,
-    );
+    final ageBonus = ScoringTerms.ageBonus(context.ageOf(participantId), maxBonus: youngerParticipantMaxBonus);
+    final repetitionPenalty = ScoringTerms.sameDayRepetitionPenalty(candidate, context, ledger);
 
     return baseScore + ageBonus + repetitionPenalty;
   }

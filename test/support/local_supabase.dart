@@ -7,8 +7,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// `supabase db reset`). They are skipped when it isn't running.
 Future<bool> localSupabaseAvailable() async {
   try {
-    final socket = await Socket.connect(Uri.parse(AppConfig.supabaseUrl).host, Uri.parse(AppConfig.supabaseUrl).port,
-        timeout: const Duration(seconds: 2));
+    final socket = await Socket.connect(
+      Uri.parse(AppConfig.supabaseUrl).host,
+      Uri.parse(AppConfig.supabaseUrl).port,
+      timeout: const Duration(seconds: 2),
+    );
     socket.destroy();
     return true;
   } catch (_) {

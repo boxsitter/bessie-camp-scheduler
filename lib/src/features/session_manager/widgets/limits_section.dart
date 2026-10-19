@@ -114,10 +114,7 @@ class _LimitRow extends StatelessWidget {
     return CatalogRow(
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: BessTextStyles.standardBold),
-          Text(hint, style: BessTextStyles.standardSecondary),
-        ],
+        children: [Text(label, style: BessTextStyles.standardBold), Text(hint, style: BessTextStyles.standardSecondary)],
       ),
       actions: [NumberStepper(value: value, max: LimitsDraft.highest, onChanged: onChanged)],
     );

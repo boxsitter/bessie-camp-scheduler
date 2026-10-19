@@ -47,46 +47,49 @@ class ActivityLibrary extends StatelessWidget {
         Expanded(
           child: DragTarget<Activity>(
             onAcceptWithDetails: (details) => onDrop(details.data),
-            builder: (context, candidates, rejected) => TitledContainer(
-              title: 'Activity Library (I\'d Be Open To Trying It)',
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!skillsMode && categories.length > 1) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        child: TabSwitcher<ActivityCategory>(
-                          items: categories,
-                          selectedItem: selectedCategory,
-                          onItemSelected: onCategorySelected,
+            builder:
+                (context, candidates, rejected) => TitledContainer(
+                  title: 'Activity Library (I\'d Be Open To Trying It)',
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (!skillsMode && categories.length > 1) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: TabSwitcher<ActivityCategory>(
+                              items: categories,
+                              selectedItem: selectedCategory,
+                              onItemSelected: onCategorySelected,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                        ],
+                        Expanded(
+                          child: SizedBox(
+                            width: double.infinity,
+                            child:
+                                activities.isEmpty
+                                    ? Center(child: Text('Nothing left to pick here.', style: BessTextStyles.largerLabel))
+                                    : WidgetGrid<Activity>(
+                                      items: activities,
+                                      runSpacing: 4,
+                                      spacing: 2,
+                                      itemBuilder:
+                                          (context, activity) => DraggableActivity(
+                                            activity: activity,
+                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                            onDragStarted: () => onDragStarted(activity),
+                                            onTap: () => onActivityTap(activity),
+                                          ),
+                                    ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-                    Expanded(
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: activities.isEmpty
-                            ? Center(child: Text('Nothing left to pick here.', style: BessTextStyles.largerLabel))
-                            : WidgetGrid<Activity>(
-                                items: activities,
-                                runSpacing: 4,
-                                spacing: 2,
-                                itemBuilder: (context, activity) => DraggableActivity(
-                                  activity: activity,
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                                  onDragStarted: () => onDragStarted(activity),
-                                  onTap: () => onActivityTap(activity),
-                                ),
-                              ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
           ),
         ),
         if (canSwitchMode) ...[

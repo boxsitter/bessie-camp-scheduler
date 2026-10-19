@@ -25,10 +25,7 @@ class ScoreAssignmentsStep extends AlgorithmStep {
       summary:
           'Scored ${state.potentialAssignments.length} assignments '
           'with the ${scorer.name} scorer.',
-      details: {
-        'count': state.potentialAssignments.length,
-        'scorer': scorer.name,
-      },
+      details: {'count': state.potentialAssignments.length, 'scorer': scorer.name},
     );
   }
 }

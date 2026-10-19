@@ -7,16 +7,11 @@ class NewPlacement {
   final String participantId;
   final String scheduledActivityId;
 
-  const NewPlacement({
-    required this.participantId,
-    required this.scheduledActivityId,
-  });
+  const NewPlacement({required this.participantId, required this.scheduledActivityId});
 
   @override
   bool operator ==(Object other) =>
-      other is NewPlacement &&
-      other.participantId == participantId &&
-      other.scheduledActivityId == scheduledActivityId;
+      other is NewPlacement && other.participantId == participantId && other.scheduledActivityId == scheduledActivityId;
 
   @override
   int get hashCode => Object.hash(participantId, scheduledActivityId);
@@ -33,11 +28,7 @@ class Stalemate {
   /// A human-readable explanation of why every option was ruled out.
   final String reason;
 
-  const Stalemate({
-    required this.participantId,
-    required this.periodId,
-    required this.reason,
-  });
+  const Stalemate({required this.participantId, required this.periodId, required this.reason});
 
   @override
   String toString() => '$participantId @ $periodId: $reason';
@@ -76,11 +67,8 @@ class AssignmentResult {
        stalemates = List.unmodifiable(stalemates),
        evaluationReports = List.unmodifiable(evaluationReports),
        stepReports = List.unmodifiable(stepReports),
-       _stalematedParticipantIds = {
-         for (final s in stalemates) s.participantId,
-       };
+       _stalematedParticipantIds = {for (final s in stalemates) s.participantId};
 
   /// Whether any of the participant's slots is a stalemate. O(1).
-  bool hasStalemate(String participantId) =>
-      _stalematedParticipantIds.contains(participantId);
+  bool hasStalemate(String participantId) => _stalematedParticipantIds.contains(participantId);
 }

@@ -8,12 +8,7 @@ class StepReport {
   final Duration duration;
   final Map<String, dynamic> details;
 
-  const StepReport({
-    required this.stepName,
-    required this.summary,
-    required this.duration,
-    this.details = const {},
-  });
+  const StepReport({required this.stepName, required this.summary, required this.duration, this.details = const {}});
 
   @override
   String toString() {

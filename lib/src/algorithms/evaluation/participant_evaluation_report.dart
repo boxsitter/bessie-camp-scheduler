@@ -10,19 +10,11 @@ class ParticipantEvaluationReport {
   /// assignments at all.
   final double? noveltyScore;
 
-  const ParticipantEvaluationReport({
-    required this.participantId,
-    required this.preferencesSatisfied,
-    required this.noveltyScore,
-  });
+  const ParticipantEvaluationReport({required this.participantId, required this.preferencesSatisfied, required this.noveltyScore});
 
   /// Converts the report into a list of strings for a CSV row.
   List<String> toCsvRow() {
-    return [
-      participantId,
-      preferencesSatisfied.toString(),
-      noveltyScore?.toStringAsFixed(3) ?? 'N/A',
-    ];
+    return [participantId, preferencesSatisfied.toString(), noveltyScore?.toStringAsFixed(3) ?? 'N/A'];
   }
 
   /// Generates the header row for the CSV file.

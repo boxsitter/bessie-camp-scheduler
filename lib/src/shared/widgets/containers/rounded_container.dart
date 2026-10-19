@@ -80,18 +80,8 @@ class BessRoundedContainer extends StatelessWidget {
             decoration: BoxDecoration(
               color: effectiveBackgroundColor,
               borderRadius: manualBorderRadius ?? BorderRadius.circular(radius ?? BessSizes.cardRadiusLg),
-              border: showBorder
-                  ? Border.all(
-                      strokeAlign: strokeAlign,
-                      color: effectiveBorderColor,
-                      width: borderThickness,
-                    )
-                  : null,
-              boxShadow: showShadow
-                  ? [
-                      BessShadowStyle.defaultBoxShadow,
-                    ]
-                  : null,
+              border: showBorder ? Border.all(strokeAlign: strokeAlign, color: effectiveBorderColor, width: borderThickness) : null,
+              boxShadow: showShadow ? [BessShadowStyle.defaultBoxShadow] : null,
             ),
             child: child,
           );

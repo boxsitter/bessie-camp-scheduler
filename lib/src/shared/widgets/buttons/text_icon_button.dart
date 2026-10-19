@@ -46,16 +46,19 @@ class BessTextIconButton extends StatelessWidget {
         borderColor: BessColors.textPrimary,
         enabled: enabled,
         child: Center(
-          child: Builder(builder: (context) {
-            return Text(
-              content,
-              style: BessTextStyles.textIcon
-                  .copyWith(color: Tint.of(context) != null ? Tint.of(context)?.foregroundColor : BessColors.textPrimary),
-              maxLines: 2,
-              overflow: TextOverflow.clip,
-              textAlign: TextAlign.center,
-            );
-          }),
+          child: Builder(
+            builder: (context) {
+              return Text(
+                content,
+                style: BessTextStyles.textIcon.copyWith(
+                  color: Tint.of(context) != null ? Tint.of(context)?.foregroundColor : BessColors.textPrimary,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.clip,
+                textAlign: TextAlign.center,
+              );
+            },
+          ),
         ),
       ),
     );

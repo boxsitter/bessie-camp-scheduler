@@ -16,13 +16,14 @@ class ActivityPreferences extends StatelessWidget {
     return GetBuilder<ActivityPreferencesController>(
       // `state.controller` is not set yet while initState runs.
       initState: (_) => Get.find<ActivityPreferencesController>().ensureLoaded(),
-      builder: (controller) => BessSiteTemplate(
-        desktop: ActivityPreferencesDesktop(controller: controller),
-        desktopPadding: false,
-        tabletPadding: false,
-        menuBar: buildActivityPreferencesMenuBar(controller: controller),
-        centerActions: buildActivityPreferencesCenterActions(controller: controller),
-      ),
+      builder:
+          (controller) => BessSiteTemplate(
+            desktop: ActivityPreferencesDesktop(controller: controller),
+            desktopPadding: false,
+            tabletPadding: false,
+            menuBar: buildActivityPreferencesMenuBar(controller: controller),
+            centerActions: buildActivityPreferencesCenterActions(controller: controller),
+          ),
     );
   }
 }

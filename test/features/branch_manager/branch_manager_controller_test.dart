@@ -82,10 +82,7 @@ void main() {
       expect(created.isHidden, isTrue);
       expect(created.preferenceRequired, isFalse);
 
-      await controller.saveActivity(
-        ActivityFormInput.fromActivity(created).copyWithCapacity('9', maxAssignments: ''),
-        editing: created,
-      );
+      await controller.saveActivity(ActivityFormInput.fromActivity(created).copyWithCapacity('9', maxAssignments: ''), editing: created);
 
       expect(controller.activities, hasLength(before + 1));
       final edited = named(name);
@@ -173,7 +170,9 @@ void main() {
       final session = await env!.createTestSession();
       final everyCabin = [...(await env!.sessions.listSessionCabins(session.id)).map((c) => c.id), created.id];
       await env!.sessions.setSessionCabins(session.id, everyCabin);
-      await env!.roster.importCampers(session.id, [CamperImportRow(firstName: 'Zed', lastName: 'Test', birthdate: DateTime(2016, 1, 2), cabinName: name)]);
+      await env!.roster.importCampers(session.id, [
+        CamperImportRow(firstName: 'Zed', lastName: 'Test', birthdate: DateTime(2016, 1, 2), cabinName: name),
+      ]);
 
       env!.popups.answer = false;
       await controller.deleteCabin(created);

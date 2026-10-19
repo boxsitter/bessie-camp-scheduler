@@ -10,13 +10,7 @@ class BessCheckbox extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool enabled;
 
-  const BessCheckbox({
-    super.key,
-    this.value,
-    this.tristate = false,
-    this.onPressed,
-    this.enabled = true,
-  });
+  const BessCheckbox({super.key, this.value, this.tristate = false, this.onPressed, this.enabled = true});
 
   @override
   Widget build(BuildContext context) {
@@ -44,21 +38,19 @@ class BessCheckbox extends StatelessWidget {
       child: Center(
         child: TweenAnimationBuilder<double>(
           key: ValueKey(value),
-          tween: Tween<double>(
-            begin: 0.0,
-            end: value == true || value == null && tristate == true ? 1.0 : 0.0,
-          ),
+          tween: Tween<double>(begin: 0.0, end: value == true || value == null && tristate == true ? 1.0 : 0.0),
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeInOutQuart,
           builder: (context, progress, child) {
             // Define the icon widget, ensuring it's always rendered if needed
-            final iconWidget = icon != null
-                ? Icon(
-                    icon,
-                    color: tinted ? BessColors.primary : BessColors.textPrimary,
-                    size: 16, // Use the actual icon size
-                  )
-                : const SizedBox.shrink();
+            final iconWidget =
+                icon != null
+                    ? Icon(
+                      icon,
+                      color: tinted ? BessColors.primary : BessColors.textPrimary,
+                      size: 16, // Use the actual icon size
+                    )
+                    : const SizedBox.shrink();
 
             // Create a fixed-size container for the icon to ensure it stays centered
             // and the clip operates consistently over its area.

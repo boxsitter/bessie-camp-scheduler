@@ -38,11 +38,7 @@ double scoreOf(
   String activity,
   String period,
 ) {
-  return scorer.score(
-    candidateOf(context, participant, activity, period),
-    context,
-    ledger,
-  );
+  return scorer.score(candidateOf(context, participant, activity, period), context, ledger);
 }
 
 void main() {
@@ -51,15 +47,9 @@ void main() {
       final context = scenario();
       final ledger = AssignmentLedger(context);
 
-      expect(
-        scoreOf(diplomatic, context, ledger, 'amy', 'swim', 'mon1'),
-        1000.0,
-      );
+      expect(scoreOf(diplomatic, context, ledger, 'amy', 'swim', 'mon1'), 1000.0);
       expect(scoreOf(diplomatic, context, ledger, 'amy', 'art', 'mon1'), 500.0);
-      expect(
-        scoreOf(diplomatic, context, ledger, 'bob', 'swim', 'mon1'),
-        500.0,
-      );
+      expect(scoreOf(diplomatic, context, ledger, 'bob', 'swim', 'mon1'), 500.0);
     });
 
     test('a repeat is worth 10 (plus penalties) once the activity is held', () {
@@ -91,28 +81,17 @@ void main() {
       expect(scoreOf(diplomatic, context, ledger, 'amy', 'art', 'tue1'), 500.0);
     });
 
-    test(
-      'every period of the same (participant, activity) gets the same tier',
-      () {
-        // The original scorer marked state while scoring, so only the first
-        // candidate got the request tier and the others were scored as repeats.
-        final context = scenario();
-        final ledger = AssignmentLedger(context);
+    test('every period of the same (participant, activity) gets the same tier', () {
+      // The original scorer marked state while scoring, so only the first
+      // candidate got the request tier and the others were scored as repeats.
+      final context = scenario();
+      final ledger = AssignmentLedger(context);
 
-        for (final period in ['mon1', 'mon2', 'mon3', 'tue1', 'tue2']) {
-          expect(
-            scoreOf(diplomatic, context, ledger, 'amy', 'swim', period),
-            1000.0,
-            reason: 'swim in $period',
-          );
-          expect(
-            scoreOf(diplomatic, context, ledger, 'amy', 'art', period),
-            500.0,
-            reason: 'art in $period',
-          );
-        }
-      },
-    );
+      for (final period in ['mon1', 'mon2', 'mon3', 'tue1', 'tue2']) {
+        expect(scoreOf(diplomatic, context, ledger, 'amy', 'swim', period), 1000.0, reason: 'swim in $period');
+        expect(scoreOf(diplomatic, context, ledger, 'amy', 'art', period), 500.0, reason: 'art in $period');
+      }
+    });
 
     test('keeps its constants, with the age bonus effectively disabled', () {
       expect(DiplomaticScorer.unfulfilledRequestScore, 1000.0);
@@ -124,65 +103,30 @@ void main() {
 
       for (final age in [5, 8, 10, 12, 13, 17]) {
         final context =
-            ScenarioBuilder()
-                .day('mon', periods: 1)
-                .activity('art')
-                .offerEverywhere('art')
-                .participant('kid', age: age)
-                .build();
-        expect(
-          scoreOf(
-            diplomatic,
-            context,
-            AssignmentLedger(context),
-            'kid',
-            'art',
-            'mon1',
-          ),
-          500.0,
-          reason: 'age $age',
-        );
+            ScenarioBuilder().day('mon', periods: 1).activity('art').offerEverywhere('art').participant('kid', age: age).build();
+        expect(scoreOf(diplomatic, context, AssignmentLedger(context), 'kid', 'art', 'mon1'), 500.0, reason: 'age $age');
       }
     });
   });
 
   group('scoring is pure', () {
-    test(
-      'scoring never changes the ledger, whatever the order or repetition',
-      () {
-        final context = RandomScenario.generate(7);
-        final state = stateFor(context);
-        GeneratePotentialAssignmentsStep().execute(state);
-        final candidates = state.potentialAssignments;
-        expect(candidates, isNotEmpty);
+    test('scoring never changes the ledger, whatever the order or repetition', () {
+      final context = RandomScenario.generate(7);
+      final state = stateFor(context);
+      GeneratePotentialAssignmentsStep().execute(state);
+      final candidates = state.potentialAssignments;
+      expect(candidates, isNotEmpty);
 
-        for (final scorer in [diplomatic, greedy]) {
-          final forward = [
-            for (final c in candidates) scorer.score(c, context, state.ledger),
-          ];
-          final backward =
-              [
-                for (final c in candidates.reversed)
-                  scorer.score(c, context, state.ledger),
-              ].reversed.toList();
-          final again = [
-            for (final c in candidates) scorer.score(c, context, state.ledger),
-          ];
+      for (final scorer in [diplomatic, greedy]) {
+        final forward = [for (final c in candidates) scorer.score(c, context, state.ledger)];
+        final backward = [for (final c in candidates.reversed) scorer.score(c, context, state.ledger)].reversed.toList();
+        final again = [for (final c in candidates) scorer.score(c, context, state.ledger)];
 
-          expect(
-            backward,
-            forward,
-            reason: '${scorer.name}: order must not matter',
-          );
-          expect(
-            again,
-            forward,
-            reason: '${scorer.name}: repeating must not matter',
-          );
-        }
-        expect(state.ledger.newPlacements, isEmpty);
-      },
-    );
+        expect(backward, forward, reason: '${scorer.name}: order must not matter');
+        expect(again, forward, reason: '${scorer.name}: repeating must not matter');
+      }
+      expect(state.ledger.newPlacements, isEmpty);
+    });
   });
 
   group('same-day repetition penalty', () {
@@ -197,62 +141,29 @@ void main() {
             .participant('amy')
             .build();
 
-    double penalty(
-      AssignmentContext context,
-      AssignmentLedger ledger,
-      String period, {
-      String activity = 'swim',
-      String? linked,
-    }) {
-      return ScoringTerms.sameDayRepetitionPenalty(
-        candidateOf(context, 'amy', activity, period, linkedPeriodId: linked),
-        context,
-        ledger,
-      );
+    double penalty(AssignmentContext context, AssignmentLedger ledger, String period, {String activity = 'swim', String? linked}) {
+      return ScoringTerms.sameDayRepetitionPenalty(candidateOf(context, 'amy', activity, period, linkedPeriodId: linked), context, ledger);
     }
 
     test('is -50 * 0.6^distance, distance = periods strictly between', () {
       final context = fiveInARow();
-      final ledger = AssignmentLedger(context)
-        ..place(candidateOf(context, 'amy', 'swim', 'mon1'));
+      final ledger = AssignmentLedger(context)..place(candidateOf(context, 'amy', 'swim', 'mon1'));
 
-      expect(
-        penalty(context, ledger, 'mon2'),
-        closeTo(-50.0, 1e-9),
-      ); // distance 0
-      expect(
-        penalty(context, ledger, 'mon3'),
-        closeTo(-30.0, 1e-9),
-      ); // distance 1
-      expect(
-        penalty(context, ledger, 'mon4'),
-        closeTo(-18.0, 1e-9),
-      ); // distance 2
-      expect(
-        penalty(context, ledger, 'mon5'),
-        closeTo(-10.8, 1e-9),
-      ); // distance 3
+      expect(penalty(context, ledger, 'mon2'), closeTo(-50.0, 1e-9)); // distance 0
+      expect(penalty(context, ledger, 'mon3'), closeTo(-30.0, 1e-9)); // distance 1
+      expect(penalty(context, ledger, 'mon4'), closeTo(-18.0, 1e-9)); // distance 2
+      expect(penalty(context, ledger, 'mon5'), closeTo(-10.8, 1e-9)); // distance 3
     });
 
-    test(
-      'does not apply on another day, to another activity, or without holdings',
-      () {
-        final context = fiveInARow();
-        final empty = AssignmentLedger(context);
-        expect(penalty(context, empty, 'mon3'), 0.0);
+    test('does not apply on another day, to another activity, or without holdings', () {
+      final context = fiveInARow();
+      final empty = AssignmentLedger(context);
+      expect(penalty(context, empty, 'mon3'), 0.0);
 
-        final ledger = AssignmentLedger(context)
-          ..place(candidateOf(context, 'amy', 'swim', 'mon5'));
-        expect(
-          penalty(context, ledger, 'tue1'),
-          0.0,
-        ); // adjacent in time, other day
-        expect(
-          penalty(context, ledger, 'mon4', activity: 'canoe', linked: 'mon5'),
-          0.0,
-        );
-      },
-    );
+      final ledger = AssignmentLedger(context)..place(candidateOf(context, 'amy', 'swim', 'mon5'));
+      expect(penalty(context, ledger, 'tue1'), 0.0); // adjacent in time, other day
+      expect(penalty(context, ledger, 'mon4', activity: 'canoe', linked: 'mon5'), 0.0);
+    });
 
     test('adds up one term per other assignment of the activity that day', () {
       final context = fiveInARow();
@@ -266,24 +177,15 @@ void main() {
 
     test('counts existing assignments too', () {
       final context =
-          ScenarioBuilder()
-              .day('mon', periods: 3)
-              .activity('swim')
-              .offerEverywhere('swim')
-              .participant('amy')
-              .existing('amy', ['swim@mon1'])
-              .build();
-      expect(
-        penalty(context, AssignmentLedger(context), 'mon3'),
-        closeTo(-30.0, 1e-9),
-      );
+          ScenarioBuilder().day('mon', periods: 3).activity('swim').offerEverywhere('swim').participant('amy').existing('amy', [
+            'swim@mon1',
+          ]).build();
+      expect(penalty(context, AssignmentLedger(context), 'mon3'), closeTo(-30.0, 1e-9));
     });
 
     test('measures a double block from its nearest period', () {
       final context = fiveInARow();
-      final ledger = AssignmentLedger(context)..place(
-        candidateOf(context, 'amy', 'canoe', 'mon1', linkedPeriodId: 'mon2'),
-      );
+      final ledger = AssignmentLedger(context)..place(candidateOf(context, 'amy', 'canoe', 'mon1', linkedPeriodId: 'mon2'));
 
       // Held: mon1+mon2. A block at mon4+mon5 is nearest to mon2 (distance 1).
       expect(
@@ -291,67 +193,42 @@ void main() {
         closeTo(-50 * 0.6 - 50 * 0.6 * 0.6, 1e-9),
       ); // vs mon2: -30, vs mon1: -18
       // A block at mon3+mon4 touches mon2 (distance 0) and is 1 from mon1.
-      expect(
-        penalty(context, ledger, 'mon3', activity: 'canoe', linked: 'mon4'),
-        closeTo(-50.0 - 30.0, 1e-9),
-      );
+      expect(penalty(context, ledger, 'mon3', activity: 'canoe', linked: 'mon4'), closeTo(-50.0 - 30.0, 1e-9));
     });
 
-    test(
-      'measures a double block from its nearest period when the held periods come after it',
-      () {
-        // Held: mon4+mon5. Here the block's SECOND period is the nearer one, so
-        // measuring from the first period only would give a smaller penalty.
-        final context = fiveInARow();
-        final ledger = AssignmentLedger(context)..place(
-          candidateOf(context, 'amy', 'canoe', 'mon4', linkedPeriodId: 'mon5'),
-        );
+    test('measures a double block from its nearest period when the held periods come after it', () {
+      // Held: mon4+mon5. Here the block's SECOND period is the nearer one, so
+      // measuring from the first period only would give a smaller penalty.
+      final context = fiveInARow();
+      final ledger = AssignmentLedger(context)..place(candidateOf(context, 'amy', 'canoe', 'mon4', linkedPeriodId: 'mon5'));
 
-        // Block mon1+mon2: vs mon4 the nearest is mon2 (distance 1, -30); vs mon5
-        // it is mon2 too (distance 2, -18).
-        expect(
-          penalty(context, ledger, 'mon1', activity: 'canoe', linked: 'mon2'),
-          closeTo(-30.0 - 18.0, 1e-9),
-        );
-        // Block mon2+mon3 touches mon4 (distance 0, -50); vs mon5 distance 1 (-30).
-        expect(
-          penalty(context, ledger, 'mon2', activity: 'canoe', linked: 'mon3'),
-          closeTo(-50.0 - 30.0, 1e-9),
-        );
-      },
-    );
+      // Block mon1+mon2: vs mon4 the nearest is mon2 (distance 1, -30); vs mon5
+      // it is mon2 too (distance 2, -18).
+      expect(penalty(context, ledger, 'mon1', activity: 'canoe', linked: 'mon2'), closeTo(-30.0 - 18.0, 1e-9));
+      // Block mon2+mon3 touches mon4 (distance 0, -50); vs mon5 distance 1 (-30).
+      expect(penalty(context, ledger, 'mon2', activity: 'canoe', linked: 'mon3'), closeTo(-50.0 - 30.0, 1e-9));
+    });
   });
 
   group('GreedyScorer', () {
-    test(
-      'uses the preference tiers: request +100, neutral +10, veto -1000',
-      () {
-        final context =
-            ScenarioBuilder()
-                .day('mon', periods: 1)
-                .activity('swim')
-                .activity('art')
-                .activity('chess')
-                .offerEverywhere('swim')
-                .offerEverywhere('art')
-                .offerEverywhere('chess')
-                .participant(
-                  'amy',
-                  age: 14,
-                  requests: ['swim'],
-                  vetoes: ['chess'],
-                )
-                .build();
-        final ledger = AssignmentLedger(context);
+    test('uses the preference tiers: request +100, neutral +10, veto -1000', () {
+      final context =
+          ScenarioBuilder()
+              .day('mon', periods: 1)
+              .activity('swim')
+              .activity('art')
+              .activity('chess')
+              .offerEverywhere('swim')
+              .offerEverywhere('art')
+              .offerEverywhere('chess')
+              .participant('amy', age: 14, requests: ['swim'], vetoes: ['chess'])
+              .build();
+      final ledger = AssignmentLedger(context);
 
-        expect(scoreOf(greedy, context, ledger, 'amy', 'swim', 'mon1'), 100.0);
-        expect(scoreOf(greedy, context, ledger, 'amy', 'art', 'mon1'), 10.0);
-        expect(
-          scoreOf(greedy, context, ledger, 'amy', 'chess', 'mon1'),
-          -1000.0,
-        );
-      },
-    );
+      expect(scoreOf(greedy, context, ledger, 'amy', 'swim', 'mon1'), 100.0);
+      expect(scoreOf(greedy, context, ledger, 'amy', 'art', 'mon1'), 10.0);
+      expect(scoreOf(greedy, context, ledger, 'amy', 'chess', 'mon1'), -1000.0);
+    });
 
     test('maps every numeric preference to its documented tier', () {
       final expected = {
@@ -369,42 +246,17 @@ void main() {
         0.0: -1000.0,
       };
       expected.forEach((preference, bonus) {
-        expect(
-          GreedyScorer.preferenceBonus(preference),
-          bonus,
-          reason: 'preference $preference',
-        );
+        expect(GreedyScorer.preferenceBonus(preference), bonus, reason: 'preference $preference');
       });
     });
 
     test('adds an age bonus: 20 up to age 8, falling linearly to 0 at 13', () {
-      final bonus = {
-        6: 20.0,
-        8: 20.0,
-        9: 16.0,
-        10: 12.0,
-        11: 8.0,
-        12: 4.0,
-        13: 0.0,
-        17: 0.0,
-      };
+      final bonus = {6: 20.0, 8: 20.0, 9: 16.0, 10: 12.0, 11: 8.0, 12: 4.0, 13: 0.0, 17: 0.0};
       bonus.forEach((age, expectedBonus) {
         final context =
-            ScenarioBuilder()
-                .day('mon', periods: 1)
-                .activity('art')
-                .offerEverywhere('art')
-                .participant('kid', age: age)
-                .build();
+            ScenarioBuilder().day('mon', periods: 1).activity('art').offerEverywhere('art').participant('kid', age: age).build();
         expect(
-          scoreOf(
-            greedy,
-            context,
-            AssignmentLedger(context),
-            'kid',
-            'art',
-            'mon1',
-          ),
+          scoreOf(greedy, context, AssignmentLedger(context), 'kid', 'art', 'mon1'),
           closeTo(10.0 + expectedBonus, 1e-9),
           reason: 'age $age',
         );
@@ -419,14 +271,10 @@ void main() {
               .offerEverywhere('swim')
               .participant('amy', age: 14, requests: ['swim'])
               .build();
-      final ledger = AssignmentLedger(context)
-        ..place(candidateOf(context, 'amy', 'swim', 'mon1'));
+      final ledger = AssignmentLedger(context)..place(candidateOf(context, 'amy', 'swim', 'mon1'));
 
       // No novelty tier: the request is still worth +100, minus 50 * 0.6.
-      expect(
-        scoreOf(greedy, context, ledger, 'amy', 'swim', 'mon3'),
-        closeTo(70.0, 1e-9),
-      );
+      expect(scoreOf(greedy, context, ledger, 'amy', 'swim', 'mon3'), closeTo(70.0, 1e-9));
     });
   });
 
@@ -452,9 +300,7 @@ void main() {
           GeneratePotentialAssignmentsStep().execute(state);
           final candidates = state.potentialAssignments;
           final rnd = Random(seed);
-          final previous = [
-            for (final c in candidates) scorer.score(c, context, state.ledger),
-          ];
+          final previous = [for (final c in candidates) scorer.score(c, context, state.ledger)];
 
           for (var round = 0; round < 25; round++) {
             final free = [
@@ -466,11 +312,7 @@ void main() {
 
             for (var i = 0; i < candidates.length; i++) {
               final fresh = scorer.score(candidates[i], context, state.ledger);
-              expect(
-                fresh,
-                lessThanOrEqualTo(previous[i] + 1e-9),
-                reason: 'seed $seed round $round: ${candidates[i]}',
-              );
+              expect(fresh, lessThanOrEqualTo(previous[i] + 1e-9), reason: 'seed $seed round $round: ${candidates[i]}');
               previous[i] = fresh;
             }
           }

@@ -30,26 +30,32 @@ class SessionRepository {
     int maxSkillsVetoes = 1,
     bool registerAllCabins = true,
   }) => guarded(() async {
-    final row = await _client.rpc('create_session', params: {
-      'p_season_id': seasonId,
-      'p_name': name,
-      'p_starts_on': formatDbDate(startsOn),
-      'p_max_requests': maxRequests,
-      'p_max_vetoes': maxVetoes,
-      'p_max_skills_requests': maxSkillsRequests,
-      'p_max_skills_vetoes': maxSkillsVetoes,
-      'p_register_all_cabins': registerAllCabins,
-    });
+    final row = await _client.rpc(
+      'create_session',
+      params: {
+        'p_season_id': seasonId,
+        'p_name': name,
+        'p_starts_on': formatDbDate(startsOn),
+        'p_max_requests': maxRequests,
+        'p_max_vetoes': maxVetoes,
+        'p_max_skills_requests': maxSkillsRequests,
+        'p_max_skills_vetoes': maxSkillsVetoes,
+        'p_register_all_cabins': registerAllCabins,
+      },
+    );
     return CampSession.fromRow(row as Map<String, dynamic>);
   });
 
   Future<void> updateLimits(String sessionId, PreferenceLimits limits) => guarded(() async {
-    await _client.from('sessions').update({
-      'max_requests': limits.maxRequests,
-      'max_vetoes': limits.maxVetoes,
-      'max_skills_requests': limits.maxSkillsRequests,
-      'max_skills_vetoes': limits.maxSkillsVetoes,
-    }).eq('id', sessionId);
+    await _client
+        .from('sessions')
+        .update({
+          'max_requests': limits.maxRequests,
+          'max_vetoes': limits.maxVetoes,
+          'max_skills_requests': limits.maxSkillsRequests,
+          'max_skills_vetoes': limits.maxSkillsVetoes,
+        })
+        .eq('id', sessionId);
   });
 
   // Schedule ------------------------------------------------------------------
@@ -84,18 +90,19 @@ class SessionRepository {
     required Duration endTime,
     bool isSkillsRec = false,
   }) => guarded(() async {
-    final row = await _client
-        .from('blocks')
-        .insert({
-          'session_id': sessionId,
-          'day_id': dayId,
-          'title': title,
-          'start_time': formatDbTime(startTime),
-          'end_time': formatDbTime(endTime),
-          'is_skills_rec': isSkillsRec,
-        })
-        .select()
-        .single();
+    final row =
+        await _client
+            .from('blocks')
+            .insert({
+              'session_id': sessionId,
+              'day_id': dayId,
+              'title': title,
+              'start_time': formatDbTime(startTime),
+              'end_time': formatDbTime(endTime),
+              'is_skills_rec': isSkillsRec,
+            })
+            .select()
+            .single();
     final day = await _client.from('schedule_days').select().eq('id', dayId).single();
     return Block.fromRow(row, ScheduleDay.fromRow(day));
   });
@@ -105,17 +112,14 @@ class SessionRepository {
   });
 
   /// Offers [activityIds] during [blockId]; activities already offered are left alone.
-  Future<void> scheduleActivities({
-    required String sessionId,
-    required String blockId,
-    required Iterable<String> activityIds,
-  }) => guarded(() async {
-    final rows = [
-      for (final id in activityIds) {'session_id': sessionId, 'block_id': blockId, 'activity_id': id},
-    ];
-    if (rows.isEmpty) return;
-    await _client.from('scheduled_activities').upsert(rows, onConflict: 'block_id,activity_id', ignoreDuplicates: true);
-  });
+  Future<void> scheduleActivities({required String sessionId, required String blockId, required Iterable<String> activityIds}) =>
+      guarded(() async {
+        final rows = [
+          for (final id in activityIds) {'session_id': sessionId, 'block_id': blockId, 'activity_id': id},
+        ];
+        if (rows.isEmpty) return;
+        await _client.from('scheduled_activities').upsert(rows, onConflict: 'block_id,activity_id', ignoreDuplicates: true);
+      });
 
   /// Stops offering activities. Campers assigned to them lose just that assignment.
   Future<void> unscheduleActivities(Iterable<String> scheduledActivityIds) => guarded(() async {

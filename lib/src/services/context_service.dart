@@ -111,9 +111,7 @@ class ContextService extends GetxService {
   /// else the earliest upcoming one. [seasons] must be newest first.
   static Season pickSeason(List<Season> seasons, DateTime today) {
     final day = DateTime(today.year, today.month, today.day);
-    return seasons.firstWhereOrNull((s) => s.contains(day)) ??
-        seasons.firstWhereOrNull((s) => !s.startsOn.isAfter(day)) ??
-        seasons.last;
+    return seasons.firstWhereOrNull((s) => s.contains(day)) ?? seasons.firstWhereOrNull((s) => !s.startsOn.isAfter(day)) ?? seasons.last;
   }
 
   /// The most recent session that has started, else the soonest upcoming one.

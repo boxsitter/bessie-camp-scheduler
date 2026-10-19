@@ -20,13 +20,7 @@ class AlgoActivity {
   /// proposes it as a new assignment.
   final bool assignable;
 
-  const AlgoActivity({
-    required this.id,
-    required this.capacity,
-    this.maxAssignments,
-    this.doubleSchedule = false,
-    this.assignable = true,
-  });
+  const AlgoActivity({required this.id, required this.capacity, this.maxAssignments, this.doubleSchedule = false, this.assignable = true});
 
   @override
   String toString() => 'AlgoActivity($id)';

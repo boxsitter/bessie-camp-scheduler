@@ -38,10 +38,7 @@ class DayColumnView extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: BessColors.background,
-              border: Border(bottom: BorderSide(color: SheetStyles.line, width: 2)),
-            ),
+            decoration: BoxDecoration(color: BessColors.background, border: Border(bottom: BorderSide(color: SheetStyles.line, width: 2))),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
@@ -112,7 +109,8 @@ class SlotRow extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             slot.enrollmentLabel,
-            style: over ? SheetStyles.bold.copyWith(color: SheetStyles.warning) : SheetStyles.body.copyWith(color: SheetStyles.secondaryInk),
+            style:
+                over ? SheetStyles.bold.copyWith(color: SheetStyles.warning) : SheetStyles.body.copyWith(color: SheetStyles.secondaryInk),
           ),
         ],
       ),

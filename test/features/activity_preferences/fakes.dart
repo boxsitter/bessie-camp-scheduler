@@ -91,5 +91,4 @@ class FakeSessionRepository extends SessionRepository {
 }
 
 /// A client that is never used: the repositories under test are fakes.
-SupabaseClient newClient() =>
-    SupabaseClient('http://127.0.0.1:1', 'anon', authOptions: const AuthClientOptions(autoRefreshToken: false));
+SupabaseClient newClient() => SupabaseClient('http://127.0.0.1:1', 'anon', authOptions: const AuthClientOptions(autoRefreshToken: false));

@@ -63,7 +63,9 @@ void main() {
     await adminSessions.scheduleActivities(
       sessionId: session.id,
       blockId: block.id,
-      activityIds: [for (final n in ['Soccer', 'Kayaking', 'Canoeing', 'Pottery']) activities[n]!.id],
+      activityIds: [
+        for (final n in ['Soccer', 'Kayaking', 'Canoeing', 'Pottery']) activities[n]!.id,
+      ],
     );
     await adminRoster.importCampers(session.id, [
       CamperImportRow(firstName: 'Ada', lastName: 'Lovelace', birthdate: DateTime(2016, 5, 5), cabinName: 'oak'),
@@ -131,11 +133,7 @@ void main() {
 
     // The camper list follows changes made elsewhere (realtime).
     await Future<void>.delayed(const Duration(milliseconds: 500));
-    await adminRoster.setPreferences(
-      camperId: (await storedCamper('Ada')).id,
-      requestedActivityIds: const [],
-      vetoedActivityIds: const [],
-    );
+    await adminRoster.setPreferences(camperId: (await storedCamper('Ada')).id, requestedActivityIds: const [], vetoedActivityIds: const []);
     await until(() => controller.cabinGroups.single.submitted == 2, reason: 'the other camper\'s save to show up');
 
     // Tighten the limit behind the controller's back: the database refuses

@@ -44,9 +44,7 @@ List<VillageGroup> groupCabinsByVillage(Iterable<Cabin> cabins) {
     return byPosition != 0 ? byPosition : compareAsciiLowerCaseNatural(a.title, b.title);
   }
 
-  final groups = [
-    for (final entry in byVillage.entries) VillageGroup(entry.key, entry.value.sorted(compareCabins)),
-  ];
+  final groups = [for (final entry in byVillage.entries) VillageGroup(entry.key, entry.value.sorted(compareCabins))];
   groups.sort((a, b) {
     if (a.village.isEmpty != b.village.isEmpty) return a.village.isEmpty ? 1 : -1;
     final byFirstPosition = a.cabins.first.position.compareTo(b.cabins.first.position);
@@ -56,7 +54,8 @@ List<VillageGroup> groupCabinsByVillage(Iterable<Cabin> cabins) {
 }
 
 /// The position a new cabin should get so that it is listed after the others.
-int nextCabinPosition(Iterable<Cabin> cabins) => cabins.fold(0, (highest, cabin) => cabin.position > highest ? cabin.position : highest) + 1;
+int nextCabinPosition(Iterable<Cabin> cabins) =>
+    cabins.fold(0, (highest, cabin) => cabin.position > highest ? cabin.position : highest) + 1;
 
 class CabinFormInput {
   const CabinFormInput({this.name = '', this.displayName = '', this.village = '', this.capacity = ''});
@@ -88,7 +87,10 @@ const int maxCabinCapacity = 100;
 /// by, so none may repeat (ignoring case) among a branch's cabins.
 CabinFormErrors validateCabinForm(CabinFormInput input, {Iterable<Cabin> existing = const []}) {
   final taken = {
-    for (final cabin in existing) ...[cabin.name.trim().toLowerCase(), if (cabin.displayName != null) cabin.displayName!.trim().toLowerCase()],
+    for (final cabin in existing) ...[
+      cabin.name.trim().toLowerCase(),
+      if (cabin.displayName != null) cabin.displayName!.trim().toLowerCase(),
+    ],
   };
 
   final name = input.name.trim();
@@ -132,7 +134,10 @@ List<ActivityGroup> groupActivitiesByCategory(Iterable<Activity> activities) {
   return [
     for (final category in ActivityCategory.values)
       if (activities.any((a) => a.category == category))
-        ActivityGroup(category, activities.where((a) => a.category == category).sorted((a, b) => compareAsciiLowerCaseNatural(a.name, b.name))),
+        ActivityGroup(
+          category,
+          activities.where((a) => a.category == category).sorted((a, b) => compareAsciiLowerCaseNatural(a.name, b.name)),
+        ),
   ];
 }
 
@@ -223,7 +228,12 @@ ActivityFormErrors validateActivityForm(ActivityFormInput input, {Iterable<Strin
 
   return ActivityFormErrors(
     name: nameError,
-    capacity: _validateWholeNumber(input.capacity, label: 'Capacity', max: maxActivityCapacity, blankMessage: 'Enter how many campers fit.'),
+    capacity: _validateWholeNumber(
+      input.capacity,
+      label: 'Capacity',
+      max: maxActivityCapacity,
+      blankMessage: 'Enter how many campers fit.',
+    ),
     // Optional: blank means no limit.
     maxAssignments: _validateWholeNumber(input.maxAssignments, label: 'The limit', max: maxActivityAssignments),
   );

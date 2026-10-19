@@ -48,8 +48,7 @@ class FakeSessionRepository extends SessionRepository {
   }
 }
 
-SupabaseClient newClient() =>
-    SupabaseClient('http://127.0.0.1:1', 'anon', authOptions: const AuthClientOptions(autoRefreshToken: false));
+SupabaseClient newClient() => SupabaseClient('http://127.0.0.1:1', 'anon', authOptions: const AuthClientOptions(autoRefreshToken: false));
 
 CampSession campSession(String id) => CampSession(
   id: id,

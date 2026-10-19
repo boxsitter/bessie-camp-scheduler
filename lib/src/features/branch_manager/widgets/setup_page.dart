@@ -34,7 +34,10 @@ class SetupPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(title, style: BessTextStyles.tableHeader),
-                      if (subtitle != null) ...[const SizedBox(height: BessSizes.xs), Text(subtitle!, style: BessTextStyles.standardSecondary)],
+                      if (subtitle != null) ...[
+                        const SizedBox(height: BessSizes.xs),
+                        Text(subtitle!, style: BessTextStyles.standardSecondary),
+                      ],
                     ],
                   ),
                 ),

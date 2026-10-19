@@ -12,15 +12,9 @@ class DiplomaticAlgorithm implements AssignmentAlgorithm {
   final StalemateStrategy stalemateStrategy;
   final Random _random;
 
-  DiplomaticAlgorithm({
-    this.stalemateStrategy = StalemateStrategy.leaveUnassigned,
-    Random? random,
-  }) : _random = random ?? Random();
+  DiplomaticAlgorithm({this.stalemateStrategy = StalemateStrategy.leaveUnassigned, Random? random}) : _random = random ?? Random();
 
   @override
-  List<AlgorithmStep> get steps => buildStandardSteps(
-    scorer: const DiplomaticScorer(),
-    stalemateStrategy: stalemateStrategy,
-    random: _random,
-  );
+  List<AlgorithmStep> get steps =>
+      buildStandardSteps(scorer: const DiplomaticScorer(), stalemateStrategy: stalemateStrategy, random: _random);
 }

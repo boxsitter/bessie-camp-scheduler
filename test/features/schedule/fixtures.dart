@@ -66,9 +66,4 @@ Schedule scheduleOf({
   required List<Block> blocks,
   required List<ScheduledActivity> scheduled,
   required List<Activity> activities,
-}) => Schedule(
-  days: days,
-  blocks: blocks,
-  scheduledActivities: scheduled,
-  activitiesById: {for (final a in activities) a.id: a},
-);
+}) => Schedule(days: days, blocks: blocks, scheduledActivities: scheduled, activitiesById: {for (final a in activities) a.id: a});

@@ -12,15 +12,8 @@ class GreedyScoringAlgorithm implements AssignmentAlgorithm {
   final StalemateStrategy stalemateStrategy;
   final Random _random;
 
-  GreedyScoringAlgorithm({
-    this.stalemateStrategy = StalemateStrategy.leaveUnassigned,
-    Random? random,
-  }) : _random = random ?? Random();
+  GreedyScoringAlgorithm({this.stalemateStrategy = StalemateStrategy.leaveUnassigned, Random? random}) : _random = random ?? Random();
 
   @override
-  List<AlgorithmStep> get steps => buildStandardSteps(
-    scorer: const GreedyScorer(),
-    stalemateStrategy: stalemateStrategy,
-    random: _random,
-  );
+  List<AlgorithmStep> get steps => buildStandardSteps(scorer: const GreedyScorer(), stalemateStrategy: stalemateStrategy, random: _random);
 }

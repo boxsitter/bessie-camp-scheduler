@@ -8,13 +8,7 @@ import '../../../shared/widgets/containers/rounded_container.dart';
 /// An activity as a card that can be dragged between the library and the
 /// "Yes please" / "No thanks" lists. Tapping it shows the activity's details.
 class DraggableActivity extends StatelessWidget {
-  const DraggableActivity({
-    super.key,
-    required this.activity,
-    this.onDragStarted,
-    this.onTap,
-    this.padding = const EdgeInsets.all(8),
-  });
+  const DraggableActivity({super.key, required this.activity, this.onDragStarted, this.onTap, this.padding = const EdgeInsets.all(8)});
 
   final Activity activity;
   final VoidCallback? onDragStarted;
@@ -35,10 +29,7 @@ class DraggableActivity extends StatelessWidget {
         cursor: SystemMouseCursors.grab,
         child: Draggable<Activity>(
           data: activity,
-          feedback: Material(
-            color: Colors.transparent,
-            child: _ActivityCard(activity: activity, showShadow: true),
-          ),
+          feedback: Material(color: Colors.transparent, child: _ActivityCard(activity: activity, showShadow: true)),
           // Keeps the space the card took up while it is being dragged.
           childWhenDragging: Opacity(opacity: 0, child: card),
           onDragStarted: onDragStarted,

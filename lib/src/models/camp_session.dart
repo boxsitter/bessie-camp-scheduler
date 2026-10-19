@@ -24,13 +24,7 @@ class PreferenceLimits {
 }
 
 class CampSession {
-  const CampSession({
-    required this.id,
-    required this.seasonId,
-    required this.name,
-    required this.startsOn,
-    required this.limits,
-  });
+  const CampSession({required this.id, required this.seasonId, required this.name, required this.startsOn, required this.limits});
 
   final String id;
   final String seasonId;

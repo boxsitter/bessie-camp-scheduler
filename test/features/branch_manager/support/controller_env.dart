@@ -29,7 +29,17 @@ class FakePopupService extends PopupService {
 /// accounts, the way the app wires them after sign-in, plus clean-up of
 /// everything a test creates (names start with [prefix]).
 class ControllerEnv {
-  ControllerEnv._(this.client, this.auth, this.context, this.catalog, this.sessions, this.roster, this.profiles, this.popups, this._originalPreferences);
+  ControllerEnv._(
+    this.client,
+    this.auth,
+    this.context,
+    this.catalog,
+    this.sessions,
+    this.roster,
+    this.profiles,
+    this.popups,
+    this._originalPreferences,
+  );
 
   static const prefix = 'zz test';
 

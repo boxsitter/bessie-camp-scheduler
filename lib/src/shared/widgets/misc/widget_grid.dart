@@ -5,13 +5,7 @@ import 'package:flutter/material.dart';
 /// It takes a list of items of any type `T` and an `itemBuilder` function
 /// to build a widget for each item. The grid is scrollable.
 class WidgetGrid<T> extends StatelessWidget {
-  const WidgetGrid({
-    super.key,
-    required this.items,
-    required this.itemBuilder,
-    this.spacing = 16.0,
-    this.runSpacing = 16.0,
-  });
+  const WidgetGrid({super.key, required this.items, required this.itemBuilder, this.spacing = 16.0, this.runSpacing = 16.0});
 
   /// The list of data items to display in the grid.
   final List<T> items;
@@ -26,7 +20,6 @@ class WidgetGrid<T> extends StatelessWidget {
   /// The spacing between items on the cross axis (vertically).
   final double runSpacing;
 
-
   @override
   Widget build(BuildContext context) {
     // A SingleChildScrollView makes the Wrap grid scrollable if the content overflows.
@@ -35,10 +28,11 @@ class WidgetGrid<T> extends StatelessWidget {
         spacing: spacing,
         runSpacing: runSpacing,
         // We map the list of data items to a list of widgets.
-        children: items.map((item) {
-          // For each item, we call your itemBuilder to create the widget.
-          return itemBuilder(context, item);
-        }).toList(), // .toList() converts the resulting Iterable into a List.
+        children:
+            items.map((item) {
+              // For each item, we call your itemBuilder to create the widget.
+              return itemBuilder(context, item);
+            }).toList(), // .toList() converts the resulting Iterable into a List.
       ),
     );
   }

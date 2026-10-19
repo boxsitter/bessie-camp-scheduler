@@ -10,22 +10,14 @@ import '../../data_models/potential_assignment.dart';
 /// are counted once (the ledger is the only record). O(1).
 class ReassignmentConstraint implements Constraint {
   @override
-  String get violationMessage =>
-      'Participant has reached the maximum number of assignments for this activity.';
+  String get violationMessage => 'Participant has reached the maximum number of assignments for this activity.';
 
   @override
-  bool isViolated(
-    PotentialAssignment assignment,
-    AssignmentContext context,
-    AssignmentLedger ledger,
-  ) {
+  bool isViolated(PotentialAssignment assignment, AssignmentContext context, AssignmentLedger ledger) {
     final maxAssignments = assignment.activity.maxAssignments;
     if (maxAssignments == null) return false; // Null means unlimited.
 
-    final count = ledger.occurrences(
-      assignment.participant.id,
-      assignment.activity.id,
-    );
+    final count = ledger.occurrences(assignment.participant.id, assignment.activity.id);
     // The candidate has not been placed yet, so it violates the cap exactly
     // when the participant is already at it.
     return count >= maxAssignments;

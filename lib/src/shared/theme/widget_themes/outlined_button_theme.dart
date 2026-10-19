@@ -13,15 +13,9 @@ class BessieOutlinedButtonTheme {
       elevation: 0,
       foregroundColor: BessColors.high,
       side: BorderSide(color: BessColors.borderPrimary),
-      padding: const EdgeInsets.symmetric(
-          vertical: BessSizes.buttonHeight, horizontal: 20),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(BessSizes.buttonRadius)),
-      textStyle: TextStyle(
-          fontSize: 16,
-          color: BessColors.textPrimary,
-          fontWeight: FontWeight.w600,
-          fontFamily: 'Inter'),
+      padding: const EdgeInsets.symmetric(vertical: BessSizes.buttonHeight, horizontal: 20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(BessSizes.buttonRadius)),
+      textStyle: TextStyle(fontSize: 16, color: BessColors.textPrimary, fontWeight: FontWeight.w600, fontFamily: 'Inter'),
     ),
   );
 }

@@ -51,15 +51,8 @@ Camper camper(
   preferences: preferences,
 );
 
-Cabin cabin(String id, {String? name, String? displayName, int position = 0}) => Cabin(
-  id: id,
-  branchId: 'branch',
-  name: name ?? id,
-  displayName: displayName,
-  village: '',
-  capacity: 10,
-  position: position,
-);
+Cabin cabin(String id, {String? name, String? displayName, int position = 0}) =>
+    Cabin(id: id, branchId: 'branch', name: name ?? id, displayName: displayName, village: '', capacity: 10, position: position);
 
 const limits = PreferenceLimits(maxRequests: 3, maxVetoes: 2, maxSkillsRequests: 2, maxSkillsVetoes: 1);
 

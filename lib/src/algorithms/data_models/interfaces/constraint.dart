@@ -19,9 +19,5 @@ abstract class Constraint {
 
   /// Returns `true` if placing [assignment] on top of the current [ledger]
   /// would violate this constraint.
-  bool isViolated(
-    PotentialAssignment assignment,
-    AssignmentContext context,
-    AssignmentLedger ledger,
-  );
+  bool isViolated(PotentialAssignment assignment, AssignmentContext context, AssignmentLedger ledger);
 }

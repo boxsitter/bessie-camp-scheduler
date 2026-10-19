@@ -11,11 +11,7 @@ class DiplomaticSatisfactionEvaluator {
   ///  2. they hold every requested activity at least once.
   ///
   /// A participant with no preferences at all is trivially satisfied.
-  bool isSatisfied({
-    required String participantId,
-    required AssignmentContext context,
-    required AssignmentLedger ledger,
-  }) {
+  bool isSatisfied({required String participantId, required AssignmentContext context, required AssignmentLedger ledger}) {
     final preferences = context.preferences[participantId];
     if (preferences == null || preferences.isEmpty) return true;
 

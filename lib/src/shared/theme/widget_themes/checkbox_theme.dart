@@ -9,8 +9,7 @@ class BessieCheckboxTheme {
 
   /// Customizable Light Text Theme
   static CheckboxThemeData checkboxTheme = CheckboxThemeData(
-    shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(BessSizes.xs)),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(BessSizes.xs)),
     checkColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.selected)) {
         return BessColors.low;

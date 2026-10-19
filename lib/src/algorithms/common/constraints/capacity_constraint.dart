@@ -14,11 +14,7 @@ class CapacityConstraint implements Constraint {
   String get violationMessage => 'Activity is at full capacity.';
 
   @override
-  bool isViolated(
-    PotentialAssignment assignment,
-    AssignmentContext context,
-    AssignmentLedger ledger,
-  ) {
+  bool isViolated(PotentialAssignment assignment, AssignmentContext context, AssignmentLedger ledger) {
     final capacity = assignment.activity.capacity;
     for (final scheduled in assignment.scheduledActivities) {
       if (ledger.seatsTaken(scheduled.id) >= capacity) return true;

@@ -15,7 +15,4 @@ List<Constraint> standardConstraints() => [
 /// The rules that are still enforced by the `randomize` stalemate fallback:
 /// seats are real and a double block must be well-formed. Everything else
 /// (assignment caps, adjacent repetition) is relaxed.
-List<Constraint> essentialConstraints() => [
-  DoubleScheduleConstraint(),
-  CapacityConstraint(),
-];
+List<Constraint> essentialConstraints() => [DoubleScheduleConstraint(), CapacityConstraint()];

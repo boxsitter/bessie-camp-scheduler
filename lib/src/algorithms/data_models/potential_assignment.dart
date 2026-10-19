@@ -47,27 +47,18 @@ class PotentialAssignment {
     this.linkedScheduledActivity,
     this.linkedPeriod,
     this.sequence = 0,
-  }) : assert(
-         (linkedScheduledActivity == null) == (linkedPeriod == null),
-         'A double block needs both linked fields, or neither.',
-       );
+  }) : assert((linkedScheduledActivity == null) == (linkedPeriod == null), 'A double block needs both linked fields, or neither.');
 
   /// Whether this represents a two-period block.
   bool get isDoubleAssignment => linkedScheduledActivity != null;
 
   /// The scheduled instances this candidate would occupy: one, or two for a
   /// double block (primary first).
-  List<AlgoScheduledActivity> get scheduledActivities => [
-    scheduledActivity,
-    if (linkedScheduledActivity != null) linkedScheduledActivity!,
-  ];
+  List<AlgoScheduledActivity> get scheduledActivities => [scheduledActivity, if (linkedScheduledActivity != null) linkedScheduledActivity!];
 
   /// The periods this candidate would occupy: one, or two for a double block
   /// (primary first).
-  List<AlgoPeriod> get periods => [
-    period,
-    if (linkedPeriod != null) linkedPeriod!,
-  ];
+  List<AlgoPeriod> get periods => [period, if (linkedPeriod != null) linkedPeriod!];
 
   /// The priority order of the greedy selection: higher score first, then the
   /// lower random [tiebreak], then generation [sequence]. A strict total order.

@@ -35,18 +35,18 @@ class BessTextStyles {
   );
 
   static final TextStyle standardLink = TextStyle(
-      fontFamily: 'Inter',
-      fontSize: 14.0,
-      color: BessColors.textLink,
-      fontWeight: FontWeight.w400,
-      decoration: TextDecoration.underline
+    fontFamily: 'Inter',
+    fontSize: 14.0,
+    color: BessColors.textLink,
+    fontWeight: FontWeight.w400,
+    decoration: TextDecoration.underline,
   );
 
   static final TextStyle label = TextStyle(
-      fontFamily: 'Inter',
-      fontSize: 12.0,
-      color: BessColors.textSecondary,
-      fontWeight: FontWeight.w300,
+    fontFamily: 'Inter',
+    fontSize: 12.0,
+    color: BessColors.textSecondary,
+    fontWeight: FontWeight.w300,
   );
 
   static final TextStyle largerLabel = TextStyle(
@@ -56,18 +56,8 @@ class BessTextStyles {
     fontWeight: FontWeight.w300,
   );
 
-  static final TextStyle subtle = TextStyle(
-    fontFamily: 'Inter',
-    fontSize: 12.0,
-    color: BessColors.textSubtle,
-    fontWeight: FontWeight.w300,
-  );
-  static final TextStyle tiny = TextStyle(
-    fontFamily: 'Inter',
-    fontSize: 10.0,
-    color: BessColors.textSubtle,
-    fontWeight: FontWeight.w300,
-  );
+  static final TextStyle subtle = TextStyle(fontFamily: 'Inter', fontSize: 12.0, color: BessColors.textSubtle, fontWeight: FontWeight.w300);
+  static final TextStyle tiny = TextStyle(fontFamily: 'Inter', fontSize: 10.0, color: BessColors.textSubtle, fontWeight: FontWeight.w300);
 
   static final TextStyle secondarySmall = TextStyle(
     fontFamily: 'Inter',

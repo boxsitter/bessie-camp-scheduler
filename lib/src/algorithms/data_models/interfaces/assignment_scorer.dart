@@ -16,9 +16,5 @@ abstract class AssignmentScorer {
 
   /// Scores [candidate] against the *current* state of [ledger]. Higher is
   /// better.
-  double score(
-    PotentialAssignment candidate,
-    AssignmentContext context,
-    AssignmentLedger ledger,
-  );
+  double score(PotentialAssignment candidate, AssignmentContext context, AssignmentLedger ledger);
 }

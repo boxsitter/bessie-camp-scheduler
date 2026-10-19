@@ -39,16 +39,18 @@ class CamperSelector extends StatelessWidget {
             itemCompleted: (camper) => camper.preferencesSubmitted,
             selectedItem: selectedCamper,
             onSelectItem: onSelectCamper,
-            childBuilder: (context, camper) => Center(
-              child: isPending(camper.id)
-                  ? const SizedBox(width: 24, height: 24, child: BessCircularLoader())
-                  : Text(
-                      camper.displayTitle,
-                      style: BessTextStyles.standard.copyWith(color: Tint.of(context)?.foregroundColor),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-            ),
+            childBuilder:
+                (context, camper) => Center(
+                  child:
+                      isPending(camper.id)
+                          ? const SizedBox(width: 24, height: 24, child: BessCircularLoader())
+                          : Text(
+                            camper.displayTitle,
+                            style: BessTextStyles.standard.copyWith(color: Tint.of(context)?.foregroundColor),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                ),
           ),
         ),
       ],

@@ -19,15 +19,8 @@ import 'package:bessie/src/algorithms/data_models/potential_assignment.dart';
 /// It reuses the production generate / score / sort steps so that candidates
 /// and random tiebreak keys are identical; only the selection loop differs.
 /// O(rounds * candidates): for small scenarios only.
-List<NewPlacement> eagerGreedyPlacements(
-  AssignmentContext context,
-  AssignmentScorer scorer,
-  Random random,
-) {
-  final state = PipelineState(
-    context: context,
-    ledger: AssignmentLedger(context),
-  );
+List<NewPlacement> eagerGreedyPlacements(AssignmentContext context, AssignmentScorer scorer, Random random) {
+  final state = PipelineState(context: context, ledger: AssignmentLedger(context));
   GeneratePotentialAssignmentsStep().execute(state);
   ScoreAssignmentsStep(scorer).execute(state);
   SortAssignmentsStep(random: random).execute(state);

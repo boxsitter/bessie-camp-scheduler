@@ -43,11 +43,7 @@ class CustomScrollPhysics extends ScrollPhysics {
     }
 
     return ScrollSpringSimulation(
-      SpringDescription.withDampingRatio(
-        mass: 1.0,
-        stiffness: 70.0,
-        ratio: 1.0,
-      ),
+      SpringDescription.withDampingRatio(mass: 1.0, stiffness: 70.0, ratio: 1.0),
       position.pixels,
       target,
       velocity,

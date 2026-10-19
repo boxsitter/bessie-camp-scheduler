@@ -85,23 +85,13 @@ class BessIconSwitch extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Container for Label 2
-        SizedBox(
-          width: labelSpaceWidth,
-          child: Center(
-            child: Text(labelTwo, style: onStyle, overflow: TextOverflow.clip),
-          ),
-        ),
+        SizedBox(width: labelSpaceWidth, child: Center(child: Text(labelTwo, style: onStyle, overflow: TextOverflow.clip))),
 
         // Icon Knob
         slidingIconKnob,
 
         // Container for Label 1
-        SizedBox(
-          width: labelSpaceWidth,
-          child: Center(
-            child: Text(labelOne, style: offStyle, overflow: TextOverflow.clip),
-          ),
-        ),
+        SizedBox(width: labelSpaceWidth, child: Center(child: Text(labelOne, style: offStyle, overflow: TextOverflow.clip))),
       ],
     );
 
@@ -115,10 +105,7 @@ class BessIconSwitch extends StatelessWidget {
           curve: BessAnimationCurves.easeOut,
           width: width,
           height: height,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(height / 2),
-            color: value ? colorTwo : colorOne,
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(height / 2), color: value ? colorTwo : colorOne),
           // ClipRRect provides the masking effect for the sliding row
           child: ClipRRect(
             borderRadius: BorderRadius.circular(height / 2),

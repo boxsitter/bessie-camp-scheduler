@@ -35,12 +35,13 @@ Future<void> pumpApp(WidgetTester tester, Widget child, {Size size = const Size(
     ShadApp.custom(
       themeMode: ThemeMode.light,
       theme: BessShadTheme.shadThemeData,
-      appBuilder: (context) => GetMaterialApp(
-        theme: BessieAppTheme.theme,
-        debugShowCheckedModeBanner: false,
-        builder: (context, child) => ShadSonner(child: child!),
-        home: Scaffold(body: Padding(padding: const EdgeInsets.all(24), child: child)),
-      ),
+      appBuilder:
+          (context) => GetMaterialApp(
+            theme: BessieAppTheme.theme,
+            debugShowCheckedModeBanner: false,
+            builder: (context, child) => ShadSonner(child: child!),
+            home: Scaffold(body: Padding(padding: const EdgeInsets.all(24), child: child)),
+          ),
     ),
   );
   await tester.pump();

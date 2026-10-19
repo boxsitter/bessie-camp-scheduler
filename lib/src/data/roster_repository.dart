@@ -107,10 +107,7 @@ class RosterRepository {
   // Campers -------------------------------------------------------------------
 
   Future<CamperImportResult> importCampers(String sessionId, List<CamperImportRow> rows) => guarded(() async {
-    final result = await _client.rpc('import_campers', params: {
-      'p_session_id': sessionId,
-      'p_rows': rows.map((r) => r.toJson()).toList(),
-    });
+    final result = await _client.rpc('import_campers', params: {'p_session_id': sessionId, 'p_rows': rows.map((r) => r.toJson()).toList()});
     return CamperImportResult.fromJson(result as Map<String, dynamic>);
   });
 
@@ -149,11 +146,10 @@ class RosterRepository {
     required Iterable<String> requestedActivityIds,
     required Iterable<String> vetoedActivityIds,
   }) => guarded(() async {
-    await _client.rpc('set_camper_preferences', params: {
-      'p_camper_id': camperId,
-      'p_requests': requestedActivityIds.toList(),
-      'p_vetoes': vetoedActivityIds.toList(),
-    });
+    await _client.rpc(
+      'set_camper_preferences',
+      params: {'p_camper_id': camperId, 'p_requests': requestedActivityIds.toList(), 'p_vetoes': vetoedActivityIds.toList()},
+    );
   });
 
   Future<void> clearPreferences(Iterable<String> camperIds) => guarded(() async {
@@ -170,23 +166,25 @@ class RosterRepository {
     bool replaceExisting = true,
     bool enforceCapacity = false,
   }) => guarded(() async {
-    final changed = await _client.rpc('assign_campers', params: {
-      'p_camper_ids': camperIds.toList(),
-      'p_scheduled_activity_id': scheduledActivityId,
-      'p_replace_existing': replaceExisting,
-      'p_enforce_capacity': enforceCapacity,
-    });
+    final changed = await _client.rpc(
+      'assign_campers',
+      params: {
+        'p_camper_ids': camperIds.toList(),
+        'p_scheduled_activity_id': scheduledActivityId,
+        'p_replace_existing': replaceExisting,
+        'p_enforce_capacity': enforceCapacity,
+      },
+    );
     return changed as int;
   });
 
   /// Removes assignments: from one scheduled activity, from one block, or
   /// (with neither filter) from everything. Returns how many were removed.
   Future<int> unassignCampers(Iterable<String> camperIds, {String? blockId, String? scheduledActivityId}) => guarded(() async {
-    final removed = await _client.rpc('unassign_campers', params: {
-      'p_camper_ids': camperIds.toList(),
-      'p_block_id': blockId,
-      'p_scheduled_activity_id': scheduledActivityId,
-    });
+    final removed = await _client.rpc(
+      'unassign_campers',
+      params: {'p_camper_ids': camperIds.toList(), 'p_block_id': blockId, 'p_scheduled_activity_id': scheduledActivityId},
+    );
     return removed as int;
   });
 
@@ -197,13 +195,16 @@ class RosterRepository {
     required List<NewAssignment> assignments,
     Map<String, double> satisfaction = const {},
   }) => guarded(() async {
-    final inserted = await _client.rpc('apply_assignments', params: {
-      'p_session_id': sessionId,
-      'p_assignments': assignments.map((a) => a.toJson()).toList(),
-      'p_satisfaction': [
-        for (final e in satisfaction.entries) {'camper_id': e.key, 'score': e.value},
-      ],
-    });
+    final inserted = await _client.rpc(
+      'apply_assignments',
+      params: {
+        'p_session_id': sessionId,
+        'p_assignments': assignments.map((a) => a.toJson()).toList(),
+        'p_satisfaction': [
+          for (final e in satisfaction.entries) {'camper_id': e.key, 'score': e.value},
+        ],
+      },
+    );
     return inserted as int;
   });
 

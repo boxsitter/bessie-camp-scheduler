@@ -63,21 +63,13 @@ class BessIconSwitch extends StatelessWidget {
                 duration: BessDurations.animShort,
                 curve: BessAnimationCurves.easeOut,
                 opacity: value ? 0.0 : 1.0,
-                child: Icon(
-                  iconOne,
-                  color: value ? colorTwo : colorOne,
-                  size: iconSize,
-                ),
+                child: Icon(iconOne, color: value ? colorTwo : colorOne, size: iconSize),
               ),
               AnimatedOpacity(
                 duration: BessDurations.animShort,
                 curve: BessAnimationCurves.easeOut,
                 opacity: value ? 1.0 : 0.0,
-                child: Icon(
-                  iconTwo,
-                  color: value ? colorTwo : colorOne,
-                  size: iconSize,
-                ),
+                child: Icon(iconTwo, color: value ? colorTwo : colorOne, size: iconSize),
               ),
             ],
           ),

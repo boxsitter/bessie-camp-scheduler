@@ -14,9 +14,7 @@ class BessDeviceUtils {
   }
 
   static Future<void> setStatusBarColor(Color color) async {
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(statusBarColor: color),
-    );
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(statusBarColor: color));
   }
 
   static bool isLandscapeOrientation(BuildContext context) {
@@ -30,8 +28,7 @@ class BessDeviceUtils {
   }
 
   static void setFullScreen(bool enable) {
-    SystemChrome.setEnabledSystemUIMode(
-        enable ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge);
+    SystemChrome.setEnabledSystemUIMode(enable ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge);
   }
 
   static double getScreenHeight() {
@@ -69,8 +66,7 @@ class BessDeviceUtils {
   }
 
   static Future<bool> isPhysicalDevice() async {
-    return defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS;
+    return defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
   }
 
   static void vibrate(Duration duration) {
@@ -78,8 +74,7 @@ class BessDeviceUtils {
     Future.delayed(duration, () => HapticFeedback.vibrate());
   }
 
-  static Future<void> setPreferredOrientations(
-      List<DeviceOrientation> orientations) async {
+  static Future<void> setPreferredOrientations(List<DeviceOrientation> orientations) async {
     await SystemChrome.setPreferredOrientations(orientations);
   }
 
@@ -88,8 +83,7 @@ class BessDeviceUtils {
   }
 
   static void showStatusBar() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-        overlays: SystemUiOverlay.values);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
   }
 
   static Future<bool> hasInternetConnection() async {
@@ -127,12 +121,10 @@ class BessDeviceUtils {
     if (kIsWeb) {
       final deviceInfo = await DeviceInfoPlugin().webBrowserInfo;
       final userAgent = deviceInfo.userAgent?.toLowerCase() ?? '';
-      return userAgent.contains('mobi') ||
-          userAgent.contains('android') ||
-          userAgent.contains('iphone');
+      return userAgent.contains('mobi') || userAgent.contains('android') || userAgent.contains('iphone');
     } else {
-    // Fallback for non-web platforms
-    return isAndroid() || isIOS();
+      // Fallback for non-web platforms
+      return isAndroid() || isIOS();
+    }
   }
-}
 }

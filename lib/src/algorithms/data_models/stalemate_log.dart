@@ -21,6 +21,5 @@ class StalemateLog {
   }
 
   /// Whether any slot of [participantId] is a stalemate. O(1).
-  bool hasStalemate(String participantId) =>
-      _participantIds.contains(participantId);
+  bool hasStalemate(String participantId) => _participantIds.contains(participantId);
 }

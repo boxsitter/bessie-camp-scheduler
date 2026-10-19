@@ -71,34 +71,36 @@ class CatalogRepository {
     required int capacity,
     int position = 0,
   }) => guarded(() async {
-    final row = await _client
-        .from('cabins')
-        .insert({
-          'branch_id': branchId,
-          'name': name,
-          'display_name': displayName,
-          'village': village,
-          'capacity': capacity,
-          'position': position,
-        })
-        .select()
-        .single();
+    final row =
+        await _client
+            .from('cabins')
+            .insert({
+              'branch_id': branchId,
+              'name': name,
+              'display_name': displayName,
+              'village': village,
+              'capacity': capacity,
+              'position': position,
+            })
+            .select()
+            .single();
     return Cabin.fromRow(row);
   });
 
   Future<Cabin> updateCabin(Cabin cabin) => guarded(() async {
-    final row = await _client
-        .from('cabins')
-        .update({
-          'name': cabin.name,
-          'display_name': cabin.displayName,
-          'village': cabin.village,
-          'capacity': cabin.capacity,
-          'position': cabin.position,
-        })
-        .eq('id', cabin.id)
-        .select()
-        .single();
+    final row =
+        await _client
+            .from('cabins')
+            .update({
+              'name': cabin.name,
+              'display_name': cabin.displayName,
+              'village': cabin.village,
+              'capacity': cabin.capacity,
+              'position': cabin.position,
+            })
+            .eq('id', cabin.id)
+            .select()
+            .single();
     return Cabin.fromRow(row);
   });
 

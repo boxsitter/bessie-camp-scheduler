@@ -41,8 +41,7 @@ class GeneratePotentialAssignmentsStep extends AlgorithmStep {
           final activity = context.activityById(scheduled.activityId)!;
           if (!activity.assignable) continue;
 
-          if (context.preferenceOf(participant.id, activity.id) ==
-              PreferenceType.veto) {
+          if (context.preferenceOf(participant.id, activity.id) == PreferenceType.veto) {
             vetoed++;
             continue;
           }
@@ -61,13 +60,8 @@ class GeneratePotentialAssignmentsStep extends AlgorithmStep {
           }
 
           final next = context.nextPeriod(period.id);
-          final linked =
-              next == null || !context.isSameDay(period, next)
-                  ? null
-                  : context.scheduledActivityOf(activity.id, next.id);
-          if (next == null ||
-              linked == null ||
-              ledger.isBusy(participant.id, context.periodIndex(next.id))) {
+          final linked = next == null || !context.isSameDay(period, next) ? null : context.scheduledActivityOf(activity.id, next.id);
+          if (next == null || linked == null || ledger.isBusy(participant.id, context.periodIndex(next.id))) {
             unfinishableDoubles++;
             continue;
           }
@@ -91,11 +85,7 @@ class GeneratePotentialAssignmentsStep extends AlgorithmStep {
       summary:
           'Generated ${candidates.length} potential assignments '
           '(vetoes and hidden activities excluded, doubles merged).',
-      details: {
-        'count': candidates.length,
-        'skippedVetoed': vetoed,
-        'skippedUnfinishableDoubles': unfinishableDoubles,
-      },
+      details: {'count': candidates.length, 'skippedVetoed': vetoed, 'skippedUnfinishableDoubles': unfinishableDoubles},
     );
   }
 }

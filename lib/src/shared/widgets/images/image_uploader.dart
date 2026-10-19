@@ -71,21 +71,21 @@ class TImageUploader extends StatelessWidget {
         // Display the image in either circular or rounded shape
         circular
             ? BessCircularImage(
-                image: image,
-                width: width,
-                height: height,
-                imageType: imageType,
-                memoryImage: memoryImage,
-                backgroundColor: BessColors.background,
-              )
+              image: image,
+              width: width,
+              height: height,
+              imageType: imageType,
+              memoryImage: memoryImage,
+              backgroundColor: BessColors.background,
+            )
             : BessRoundedImage(
-                image: image,
-                width: width,
-                height: height,
-                imageType: imageType,
-                memoryImage: memoryImage,
-                backgroundColor: BessColors.background,
-              ),
+              image: image,
+              width: width,
+              height: height,
+              imageType: imageType,
+              memoryImage: memoryImage,
+              backgroundColor: BessColors.background,
+            ),
         // Display the edit icon button on top of the image
         Positioned(
           top: top,
@@ -99,7 +99,7 @@ class TImageUploader extends StatelessWidget {
             onPressed: onIconButtonPressed,
             backgroundColor: BessColors.primary.withValues(alpha: 0.9),
           ),
-        )
+        ),
       ],
     );
   }

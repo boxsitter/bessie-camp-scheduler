@@ -16,14 +16,8 @@ List<File> sourceFiles() => [
 
 /// Every `import` / `export` directive of [file]: (directive, uri).
 List<(String, String)> directivesOf(File file) {
-  final pattern = RegExp(
-    r'''^\s*(import|export)\s+['"]([^'"]+)['"]''',
-    multiLine: true,
-  );
-  return [
-    for (final match in pattern.allMatches(file.readAsStringSync()))
-      (match.group(1)!, match.group(2)!),
-  ];
+  final pattern = RegExp(r'''^\s*(import|export)\s+['"]([^'"]+)['"]''', multiLine: true);
+  return [for (final match in pattern.allMatches(file.readAsStringSync())) (match.group(1)!, match.group(2)!)];
 }
 
 /// Whether [path] exists *with exactly this spelling*, even on a
@@ -31,14 +25,10 @@ List<(String, String)> directivesOf(File file) {
 /// for `constraint.dart`): every segment must appear verbatim in the listing of
 /// its parent directory.
 bool existsWithExactCase(String path) {
-  final segments =
-      File(path).absolute.uri.pathSegments.where((s) => s.isNotEmpty).toList();
+  final segments = File(path).absolute.uri.pathSegments.where((s) => s.isNotEmpty).toList();
   var current = Directory(Platform.pathSeparator);
   for (final segment in segments) {
-    final names = {
-      for (final entity in current.listSync())
-        entity.uri.pathSegments.where((s) => s.isNotEmpty).last,
-    };
+    final names = {for (final entity in current.listSync()) entity.uri.pathSegments.where((s) => s.isNotEmpty).last};
     if (!names.contains(segment)) return false;
     current = Directory(current.uri.resolve(segment).toFilePath());
   }
@@ -47,11 +37,7 @@ bool existsWithExactCase(String path) {
 
 void main() {
   test('the algorithms directory is where the tests expect it', () {
-    expect(
-      root.existsSync(),
-      isTrue,
-      reason: 'run `flutter test` from the repository root',
-    );
+    expect(root.existsSync(), isTrue, reason: 'run `flutter test` from the repository root');
     expect(sourceFiles(), isNotEmpty);
   });
 
@@ -61,17 +47,9 @@ void main() {
     for (final entity in root.listSync(recursive: true)) {
       final name = entity.uri.pathSegments.where((s) => s.isNotEmpty).last;
       if (entity is File && entity.path.endsWith('.dart')) {
-        expect(
-          fileName.hasMatch(name),
-          isTrue,
-          reason: '${entity.path} is not snake_case',
-        );
+        expect(fileName.hasMatch(name), isTrue, reason: '${entity.path} is not snake_case');
       } else if (entity is Directory) {
-        expect(
-          dirName.hasMatch(name),
-          isTrue,
-          reason: '${entity.path} is not snake_case',
-        );
+        expect(dirName.hasMatch(name), isTrue, reason: '${entity.path} is not snake_case');
       } else if (entity is File) {
         // The only non-Dart file is the conventional README.
         expect(name, 'README.md', reason: 'unexpected file ${entity.path}');
@@ -79,57 +57,34 @@ void main() {
     }
   });
 
-  test(
-    'every import and export resolves to a file with exactly that spelling',
-    () {
-      for (final file in sourceFiles()) {
-        for (final (_, uri) in directivesOf(file)) {
-          if (uri.startsWith('dart:') || uri.startsWith('package:')) continue;
-          final target = file.parent.uri.resolve(uri).toFilePath();
-          expect(
-            File(target).existsSync(),
-            isTrue,
-            reason: '${file.path} imports missing $uri',
-          );
-          expect(
-            existsWithExactCase(target),
-            isTrue,
-            reason: '${file.path} imports $uri with the wrong letter case',
-          );
-        }
+  test('every import and export resolves to a file with exactly that spelling', () {
+    for (final file in sourceFiles()) {
+      for (final (_, uri) in directivesOf(file)) {
+        if (uri.startsWith('dart:') || uri.startsWith('package:')) continue;
+        final target = file.parent.uri.resolve(uri).toFilePath();
+        expect(File(target).existsSync(), isTrue, reason: '${file.path} imports missing $uri');
+        expect(existsWithExactCase(target), isTrue, reason: '${file.path} imports $uri with the wrong letter case');
       }
-    },
-  );
+    }
+  });
 
-  test(
-    'the engine is pure Dart: only dart:*, package:collection and itself',
-    () {
-      final rootPath = root.absolute.path;
-      for (final file in sourceFiles()) {
-        for (final (_, uri) in directivesOf(file)) {
-          final reason = '${file.path} imports $uri';
-          if (uri.startsWith('dart:')) continue;
-          if (uri.startsWith('package:collection/')) continue;
-          if (uri.startsWith('package:bessie/')) {
-            expect(
-              uri.startsWith('package:bessie/src/algorithms/'),
-              isTrue,
-              reason: reason,
-            );
-            continue;
-          }
-          expect(uri.startsWith('package:'), isFalse, reason: reason);
-          final resolved =
-              File(file.parent.uri.resolve(uri).toFilePath()).absolute.path;
-          expect(
-            resolved.startsWith(rootPath),
-            isTrue,
-            reason: '$reason, which escapes lib/src/algorithms',
-          );
+  test('the engine is pure Dart: only dart:*, package:collection and itself', () {
+    final rootPath = root.absolute.path;
+    for (final file in sourceFiles()) {
+      for (final (_, uri) in directivesOf(file)) {
+        final reason = '${file.path} imports $uri';
+        if (uri.startsWith('dart:')) continue;
+        if (uri.startsWith('package:collection/')) continue;
+        if (uri.startsWith('package:bessie/')) {
+          expect(uri.startsWith('package:bessie/src/algorithms/'), isTrue, reason: reason);
+          continue;
         }
+        expect(uri.startsWith('package:'), isFalse, reason: reason);
+        final resolved = File(file.parent.uri.resolve(uri).toFilePath()).absolute.path;
+        expect(resolved.startsWith(rootPath), isTrue, reason: '$reason, which escapes lib/src/algorithms');
       }
-    },
-  );
+    }
+  });
 
   test('no forbidden dependency or construct appears in the source', () {
     final forbidden = {
@@ -138,67 +93,49 @@ void main() {
       'package:get': 'no GetX in the engine',
       'DateFormat': 'dates are compared by dayId, not formatted',
       'DateTime.now': 'the clock comes from AssignmentContext.now',
-      'Duration.zero':
-          'steps return a StepOutcome; the pipeline measures durations',
+      'Duration.zero': 'steps return a StepOutcome; the pipeline measures durations',
       'print(': 'the engine does not print',
     };
     for (final file in sourceFiles()) {
       final text = file.readAsStringSync();
       forbidden.forEach((token, why) {
-        expect(
-          text.contains(token),
-          isFalse,
-          reason: '${file.path} contains "$token": $why',
-        );
+        expect(text.contains(token), isFalse, reason: '${file.path} contains "$token": $why');
       });
     }
   });
 
-  test(
-    'the abandoned three-pass design and the unused constraints are gone',
-    () {
-      const deletedFiles = [
-        'fill_schedule.dart',
-        'overfill_requests.dart',
-        'request_fulfillment.dart',
-        'same_day_repetition_constraint.dart',
-        'weekly_repetition_constraint.dart',
-      ];
-      final names = sourceFiles().map((f) => f.uri.pathSegments.last).toSet();
-      for (final name in deletedFiles) {
-        expect(
-          names.contains(name),
-          isFalse,
-          reason: '$name should be deleted',
-        );
-      }
+  test('the abandoned three-pass design and the unused constraints are gone', () {
+    const deletedFiles = [
+      'fill_schedule.dart',
+      'overfill_requests.dart',
+      'request_fulfillment.dart',
+      'same_day_repetition_constraint.dart',
+      'weekly_repetition_constraint.dart',
+    ];
+    final names = sourceFiles().map((f) => f.uri.pathSegments.last).toSet();
+    for (final name in deletedFiles) {
+      expect(names.contains(name), isFalse, reason: '$name should be deleted');
+    }
 
-      const deletedSymbols = [
-        'FillSchedule',
-        'OverfillRequests',
-        'RequestFulfillment',
-        'SameDayRepetitionConstraint',
-        'WeeklyRepetitionConstraint',
-        'allScheduledActivityToPeriodMap',
-        'PreferenceType.flexible',
-      ];
-      for (final file in sourceFiles()) {
-        final text = file.readAsStringSync();
-        for (final symbol in deletedSymbols) {
-          expect(
-            text.contains(symbol),
-            isFalse,
-            reason: '${file.path} still mentions $symbol',
-          );
-        }
+    const deletedSymbols = [
+      'FillSchedule',
+      'OverfillRequests',
+      'RequestFulfillment',
+      'SameDayRepetitionConstraint',
+      'WeeklyRepetitionConstraint',
+      'allScheduledActivityToPeriodMap',
+      'PreferenceType.flexible',
+    ];
+    for (final file in sourceFiles()) {
+      final text = file.readAsStringSync();
+      for (final symbol in deletedSymbols) {
+        expect(text.contains(symbol), isFalse, reason: '${file.path} still mentions $symbol');
       }
-    },
-  );
+    }
+  });
 
   test('ProcessAssignmentsStep no longer takes an unused Random', () {
-    final process = File(
-      'lib/src/algorithms/common/steps/process_assignments_step.dart',
-    );
+    final process = File('lib/src/algorithms/common/steps/process_assignments_step.dart');
     expect(process.readAsStringSync().contains('Random'), isFalse);
   });
 
@@ -211,11 +148,7 @@ void main() {
       'greedy_scoring_algorithm/greedy_scoring_algorithm.dart',
       'greedy_scoring_algorithm/greedy_scorer.dart',
     ]) {
-      expect(
-        File('lib/src/algorithms/$path').existsSync(),
-        isTrue,
-        reason: path,
-      );
+      expect(File('lib/src/algorithms/$path').existsSync(), isTrue, reason: path);
     }
   });
 }

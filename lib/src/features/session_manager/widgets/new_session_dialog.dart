@@ -67,7 +67,12 @@ class _NewSessionDialogState extends State<NewSessionDialog> {
       _busy = true;
       _submitError = null;
     });
-    final request = NewSessionRequest(name: _name.text.trim(), startsOn: _startsOn!, limits: _limits, registerAllCabins: _registerAllCabins);
+    final request = NewSessionRequest(
+      name: _name.text.trim(),
+      startsOn: _startsOn!,
+      limits: _limits,
+      registerAllCabins: _registerAllCabins,
+    );
     final failure = await submitCatching(() => widget.onSubmit(request));
     if (!mounted) return;
     if (failure == null) {
@@ -98,7 +103,12 @@ class _NewSessionDialogState extends State<NewSessionDialog> {
           LabeledField(
             label: 'Name',
             error: _errors.name,
-            child: ShadInput(controller: _name, autofocus: true, placeholder: const Text('e.g. Session 3'), onChanged: (_) => _revalidate()),
+            child: ShadInput(
+              controller: _name,
+              autofocus: true,
+              placeholder: const Text('e.g. Session 3'),
+              onChanged: (_) => _revalidate(),
+            ),
           ),
           gap,
           LabeledField(
@@ -121,7 +131,10 @@ class _NewSessionDialogState extends State<NewSessionDialog> {
             ),
           ),
           gap,
-          LabeledField(label: 'Preference limits', child: LimitsEditor(draft: _limits, onChanged: (limits) => setState(() => _limits = limits))),
+          LabeledField(
+            label: 'Preference limits',
+            child: LimitsEditor(draft: _limits, onChanged: (limits) => setState(() => _limits = limits)),
+          ),
           gap,
           ShadSwitch(
             value: _registerAllCabins,

@@ -10,8 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/invariants.dart';
 import 'support/scenario_builder.dart';
 
-String activityOf(String scheduledActivityId) =>
-    scheduledActivityId.split('@').first;
+String activityOf(String scheduledActivityId) => scheduledActivityId.split('@').first;
 
 void main() {
   // Defect 1 (file name case) and 10 (dead code), 11 (intl): source_hygiene_test.dart
@@ -22,32 +21,22 @@ void main() {
   // Defect 9 (performance): performance_test.dart
 
   group('Defect 3: scoring must not depend on which period is scored first', () {
-    test(
-      'a participant gets their request even when every earlier period is full',
-      () {
-        final builder = ScenarioBuilder()
-            .day('mon', periods: 5)
-            .activity('swim', capacity: 1)
-            .activity('art', capacity: 20)
-            .offerEverywhere('swim')
-            .offerEverywhere('art')
-            .participant('amy', requests: ['swim']);
-        for (final p in ['mon1', 'mon2', 'mon3', 'mon4']) {
-          builder.external('swim@$p', 1);
-        }
-        for (var seed = 0; seed < 10; seed++) {
-          final result = AssignmentEngine.run(
-            builder.build(),
-            random: Random(seed),
-          );
-          expect(
-            result.placedFor('amy'),
-            contains('swim@mon5'),
-            reason: 'seed $seed',
-          );
-        }
-      },
-    );
+    test('a participant gets their request even when every earlier period is full', () {
+      final builder = ScenarioBuilder()
+          .day('mon', periods: 5)
+          .activity('swim', capacity: 1)
+          .activity('art', capacity: 20)
+          .offerEverywhere('swim')
+          .offerEverywhere('art')
+          .participant('amy', requests: ['swim']);
+      for (final p in ['mon1', 'mon2', 'mon3', 'mon4']) {
+        builder.external('swim@$p', 1);
+      }
+      for (var seed = 0; seed < 10; seed++) {
+        final result = AssignmentEngine.run(builder.build(), random: Random(seed));
+        expect(result.placedFor('amy'), contains('swim@mon5'), reason: 'seed $seed');
+      }
+    });
   });
 
   group('Defect 4: both halves of a double block are checked', () {
@@ -66,51 +55,33 @@ void main() {
 
       for (var seed = 0; seed < 10; seed++) {
         final result = AssignmentEngine.run(context, random: Random(seed));
-        expect(
-          result.placedFor('amy').where((s) => s.startsWith('canoe')),
-          isEmpty,
-          reason: 'seed $seed: every canoe block needs mon2',
-        );
+        expect(result.placedFor('amy').where((s) => s.startsWith('canoe')), isEmpty, reason: 'seed $seed: every canoe block needs mon2');
         expectEngineInvariants(context, result, label: 'seed $seed:');
       }
     });
 
-    test(
-      'two campers cannot overbook the second period of a one-seat double activity',
-      () {
-        // Blocks: mon1+mon2 and mon2+mon3 share mon2. Whichever block is chosen
-        // first, the other camper's block collides in mon2 -- in its FIRST period
-        // or in its SECOND one, depending on the order. Only the second case was
-        // missed by the original code.
-        final context =
-            ScenarioBuilder()
-                .day('mon', periods: 3)
-                .activity('canoe', capacity: 1, doubleSchedule: true)
-                .offerEverywhere('canoe')
-                .participant('a', requests: ['canoe'])
-                .participant('b', requests: ['canoe'])
-                .build();
+    test('two campers cannot overbook the second period of a one-seat double activity', () {
+      // Blocks: mon1+mon2 and mon2+mon3 share mon2. Whichever block is chosen
+      // first, the other camper's block collides in mon2 -- in its FIRST period
+      // or in its SECOND one, depending on the order. Only the second case was
+      // missed by the original code.
+      final context =
+          ScenarioBuilder()
+              .day('mon', periods: 3)
+              .activity('canoe', capacity: 1, doubleSchedule: true)
+              .offerEverywhere('canoe')
+              .participant('a', requests: ['canoe'])
+              .participant('b', requests: ['canoe'])
+              .build();
 
-        for (var seed = 0; seed < 40; seed++) {
-          final result = AssignmentEngine.run(context, random: Random(seed));
-          final canoes =
-              result.newPlacements
-                  .where((p) => p.scheduledActivityId.startsWith('canoe'))
-                  .toList();
-          expect(
-            canoes,
-            hasLength(2),
-            reason: 'seed $seed: exactly one block fits',
-          );
-          expect(
-            canoes.where((p) => p.scheduledActivityId == 'canoe@mon2'),
-            hasLength(1),
-            reason: 'seed $seed: canoe@mon2 has one seat',
-          );
-          expectEngineInvariants(context, result, label: 'seed $seed:');
-        }
-      },
-    );
+      for (var seed = 0; seed < 40; seed++) {
+        final result = AssignmentEngine.run(context, random: Random(seed));
+        final canoes = result.newPlacements.where((p) => p.scheduledActivityId.startsWith('canoe')).toList();
+        expect(canoes, hasLength(2), reason: 'seed $seed: exactly one block fits');
+        expect(canoes.where((p) => p.scheduledActivityId == 'canoe@mon2'), hasLength(1), reason: 'seed $seed: canoe@mon2 has one seat');
+        expectEngineInvariants(context, result, label: 'seed $seed:');
+      }
+    });
 
     test('a block that would break the cap is refused as a whole', () {
       // The cap is checked for the block once (it is one occurrence), but the
@@ -150,25 +121,13 @@ void main() {
       expectEngineInvariants(context, result);
     });
 
-    test(
-      'without external enrollment the same camp would be accepted in full',
-      () {
-        final builder = ScenarioBuilder()
-            .day('mon', periods: 1)
-            .activity('swim', capacity: 3)
-            .offer('swim', ['mon1']);
-        for (var i = 0; i < 4; i++) {
-          builder.participant('p$i', requests: ['swim']);
-        }
-        expect(
-          AssignmentEngine.run(
-            builder.build(),
-            random: Random(0),
-          ).newPlacements,
-          hasLength(3),
-        );
-      },
-    );
+    test('without external enrollment the same camp would be accepted in full', () {
+      final builder = ScenarioBuilder().day('mon', periods: 1).activity('swim', capacity: 3).offer('swim', ['mon1']);
+      for (var i = 0; i < 4; i++) {
+        builder.participant('p$i', requests: ['swim']);
+      }
+      expect(AssignmentEngine.run(builder.build(), random: Random(0)).newPlacements, hasLength(3));
+    });
 
     test('external enrollment is per scheduled activity, not per activity', () {
       final context =
@@ -215,10 +174,7 @@ void main() {
 
       expect(result.newPlacements, hasLength(1));
       expect(result.stalemates, hasLength(1));
-      expect(
-        result.stalemates.single.reason,
-        contains('maximum number of assignments'),
-      );
+      expect(result.stalemates.single.reason, contains('maximum number of assignments'));
     });
 
     test('existing assignments are not echoed as new placements', () {
@@ -269,96 +225,57 @@ void main() {
               .build();
       final result = AssignmentEngine.run(context, random: Random(0));
 
-      expect(
-        result.placedFor('a'),
-        unorderedEquals(['swim@mon1', 'swim@mon3']),
-      );
+      expect(result.placedFor('a'), unorderedEquals(['swim@mon1', 'swim@mon3']));
       for (final placement in result.newPlacements) {
         expect(activityOf(placement.scheduledActivityId), isNot('lifeguard'));
       }
       expectEngineInvariants(context, result);
     });
 
-    test(
-      'a camper busy with a hidden activity is neither placed nor reported as stuck',
-      () {
-        final context =
-            ScenarioBuilder()
-                .day('mon', periods: 1)
-                .activity('meeting', capacity: 1, assignable: false)
-                .activity('swim', capacity: 5)
-                .offer('meeting', ['mon1'])
-                .offer('swim', ['mon1'])
-                .participant('a')
-                .existing('a', ['meeting@mon1'])
-                .build();
-        final result = AssignmentEngine.run(context, random: Random(0));
+    test('a camper busy with a hidden activity is neither placed nor reported as stuck', () {
+      final context =
+          ScenarioBuilder()
+              .day('mon', periods: 1)
+              .activity('meeting', capacity: 1, assignable: false)
+              .activity('swim', capacity: 5)
+              .offer('meeting', ['mon1'])
+              .offer('swim', ['mon1'])
+              .participant('a')
+              .existing('a', ['meeting@mon1'])
+              .build();
+      final result = AssignmentEngine.run(context, random: Random(0));
 
-        expect(result.newPlacements, isEmpty);
-        expect(result.stalemates, isEmpty);
-        expect(
-          result.satisfaction.containsKey('a'),
-          isTrue,
-        ); // the week is not empty
-      },
-    );
+      expect(result.newPlacements, isEmpty);
+      expect(result.stalemates, isEmpty);
+      expect(result.satisfaction.containsKey('a'), isTrue); // the week is not empty
+    });
   });
 
   group('Defect 11: misc', () {
-    test(
-      'PreferenceType has no "flexible": neutral is the absence of an entry',
-      () {
-        expect(PreferenceType.values, [
-          PreferenceType.request,
-          PreferenceType.veto,
-        ]);
-      },
-    );
+    test('PreferenceType has no "flexible": neutral is the absence of an entry', () {
+      expect(PreferenceType.values, [PreferenceType.request, PreferenceType.veto]);
+    });
 
-    test(
-      'same-day checks compare dayIds, so the date a period starts at is irrelevant',
-      () {
-        // Two periods that start at the same instant but are different days...
-        final context = AssignmentContext(
-          participants: [AlgoParticipant(id: 'a', birthdate: DateTime(2013))],
-          preferences: const {},
-          periods: [
-            AlgoPeriod(
-              id: 'p1',
-              dayId: 'day1',
-              start: DateTime(2025, 7, 14, 9),
-            ),
-            AlgoPeriod(
-              id: 'p2',
-              dayId: 'day2',
-              start: DateTime(2025, 7, 14, 10),
-            ),
-          ],
-          targetPeriodIds: const {'p1', 'p2'},
-          activities: const [
-            AlgoActivity(id: 'canoe', capacity: 5, doubleSchedule: true),
-          ],
-          scheduledActivities: const [
-            AlgoScheduledActivity(
-              id: 'c1',
-              activityId: 'canoe',
-              periodId: 'p1',
-            ),
-            AlgoScheduledActivity(
-              id: 'c2',
-              activityId: 'canoe',
-              periodId: 'p2',
-            ),
-          ],
-          existingAssignments: const {},
-          now: DateTime(2025, 7, 15),
-        );
-        // ...cannot form a double block, even though the calendar date is the same.
-        expect(
-          AssignmentEngine.run(context, random: Random(0)).newPlacements,
-          isEmpty,
-        );
-      },
-    );
+    test('same-day checks compare dayIds, so the date a period starts at is irrelevant', () {
+      // Two periods that start at the same instant but are different days...
+      final context = AssignmentContext(
+        participants: [AlgoParticipant(id: 'a', birthdate: DateTime(2013))],
+        preferences: const {},
+        periods: [
+          AlgoPeriod(id: 'p1', dayId: 'day1', start: DateTime(2025, 7, 14, 9)),
+          AlgoPeriod(id: 'p2', dayId: 'day2', start: DateTime(2025, 7, 14, 10)),
+        ],
+        targetPeriodIds: const {'p1', 'p2'},
+        activities: const [AlgoActivity(id: 'canoe', capacity: 5, doubleSchedule: true)],
+        scheduledActivities: const [
+          AlgoScheduledActivity(id: 'c1', activityId: 'canoe', periodId: 'p1'),
+          AlgoScheduledActivity(id: 'c2', activityId: 'canoe', periodId: 'p2'),
+        ],
+        existingAssignments: const {},
+        now: DateTime(2025, 7, 15),
+      );
+      // ...cannot form a double block, even though the calendar date is the same.
+      expect(AssignmentEngine.run(context, random: Random(0)).newPlacements, isEmpty);
+    });
   });
 }

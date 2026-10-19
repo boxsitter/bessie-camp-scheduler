@@ -4,13 +4,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../constants/colors.dart';
 
 class BessShimmerEffect extends StatelessWidget {
-  const BessShimmerEffect({
-    super.key,
-    required this.width,
-    required this.height,
-    this.radius = 0,
-    this.color,
-  });
+  const BessShimmerEffect({super.key, required this.width, required this.height, this.radius = 0, this.color});
 
   final double width, height, radius;
   final Color? color;
@@ -23,10 +17,7 @@ class BessShimmerEffect extends StatelessWidget {
       child: Container(
         width: width,
         height: height,
-        decoration: BoxDecoration(
-          color: BessColors.overlay1,
-          borderRadius: BorderRadius.circular(radius),
-        ),
+        decoration: BoxDecoration(color: BessColors.overlay1, borderRadius: BorderRadius.circular(radius)),
       ),
     );
   }
@@ -55,4 +46,3 @@ class BessShimmerWrapper extends StatelessWidget {
     );
   }
 }
-

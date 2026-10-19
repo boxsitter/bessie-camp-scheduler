@@ -25,20 +25,27 @@ class CabinsCatalogSection extends StatelessWidget {
     return SectionCard(
       title: 'Cabins',
       subtitle: '${pluralize(cabins.length, 'cabin')} in the branch. Register them for a session on the session setup page.',
-      trailing: canEdit
-          ? ShadButton(size: ShadButtonSize.sm, leading: const Icon(LucideIcons.plus, size: 16), onPressed: onCreate, child: const Text('New cabin'))
-          : null,
-      child: cabins.isEmpty
-          ? Text(canEdit ? 'No cabins yet. Create the first one.' : 'No cabins yet.', style: BessTextStyles.standardSecondary)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final group in groupCabinsByVillage(cabins)) ...[
-                  GroupHeading(label: group.label, detail: '${pluralize(group.cabins.length, 'cabin')}, sleeps ${group.capacity}'),
-                  for (final cabin in group.cabins) _CabinRow(cabin: cabin, canEdit: canEdit, onDelete: () => onDelete(cabin)),
+      trailing:
+          canEdit
+              ? ShadButton(
+                size: ShadButtonSize.sm,
+                leading: const Icon(LucideIcons.plus, size: 16),
+                onPressed: onCreate,
+                child: const Text('New cabin'),
+              )
+              : null,
+      child:
+          cabins.isEmpty
+              ? Text(canEdit ? 'No cabins yet. Create the first one.' : 'No cabins yet.', style: BessTextStyles.standardSecondary)
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final group in groupCabinsByVillage(cabins)) ...[
+                    GroupHeading(label: group.label, detail: '${pluralize(group.cabins.length, 'cabin')}, sleeps ${group.capacity}'),
+                    for (final cabin in group.cabins) _CabinRow(cabin: cabin, canEdit: canEdit, onDelete: () => onDelete(cabin)),
+                  ],
                 ],
-              ],
-            ),
+              ),
     );
   }
 }
@@ -64,7 +71,8 @@ class _CabinRow extends StatelessWidget {
         ],
       ),
       actions: [
-        if (canEdit) RowIconButton(icon: LucideIcons.trash2, tooltip: 'Delete ${cabin.title}', color: BessColors.error, onPressed: onDelete),
+        if (canEdit)
+          RowIconButton(icon: LucideIcons.trash2, tooltip: 'Delete ${cabin.title}', color: BessColors.error, onPressed: onDelete),
       ],
     );
   }

@@ -41,7 +41,9 @@ void main() {
   });
 
   Future<Camper> addCamper(String cabinName, {String first = 'Zed'}) async {
-    await env!.roster.importCampers(session.id, [CamperImportRow(firstName: first, lastName: 'Test', birthdate: DateTime(2016, 1, 2), cabinName: cabinName)]);
+    await env!.roster.importCampers(session.id, [
+      CamperImportRow(firstName: first, lastName: 'Test', birthdate: DateTime(2016, 1, 2), cabinName: cabinName),
+    ]);
     return (await env!.roster.fetchCampers(session.id)).firstWhere((c) => c.firstName == first);
   }
 
@@ -109,7 +111,11 @@ void main() {
       await controller.saveCabins();
 
       expect(env!.popups.confirmations.single.message, contains('1 camper will be left without a cabin'));
-      expect((await env!.sessions.listSessionCabins(session.id)).map((c) => c.name), contains('Maple'), reason: 'declined, so nothing changed');
+      expect(
+        (await env!.sessions.listSessionCabins(session.id)).map((c) => c.name),
+        contains('Maple'),
+        reason: 'declined, so nothing changed',
+      );
       expect(controller.selectedCabinIds, isNot(contains(cabinId('Maple'))), reason: 'the unsaved choice is kept');
 
       env!.popups.answer = true;
@@ -247,7 +253,9 @@ void main() {
       await open(admin);
 
       await expectLater(
-        controller.createSession(NewSessionRequest(name: session.name, startsOn: DateTime(2031, 8, 4), limits: LimitsDraft.defaults, registerAllCabins: true)),
+        controller.createSession(
+          NewSessionRequest(name: session.name, startsOn: DateTime(2031, 8, 4), limits: LimitsDraft.defaults, registerAllCabins: true),
+        ),
         throwsA(isA<AppException>().having((e) => e.message, 'message', 'That already exists.')),
       );
     });

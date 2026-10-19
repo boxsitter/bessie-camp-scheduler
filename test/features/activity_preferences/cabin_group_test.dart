@@ -33,11 +33,7 @@ void main() {
   test('gathers campers without a session cabin in a last group', () {
     final groups = groupCampersByCabin(
       [oak],
-      [
-        camper('1', last: 'A', cabinId: 'oak'),
-        camper('2', last: 'B'),
-        camper('3', last: 'C', cabinId: 'removed-cabin'),
-      ],
+      [camper('1', last: 'A', cabinId: 'oak'), camper('2', last: 'B'), camper('3', last: 'C', cabinId: 'removed-cabin')],
     );
 
     expect(groups.map((g) => g.title), ['Oak', noCabinTitle]);
@@ -55,14 +51,11 @@ void main() {
     final now = DateTime(2026, 7, 6);
 
     test('counts campers whose preferences were saved', () {
-      final group = groupCampersByCabin(
-        [oak],
-        [
-          camper('1', cabinId: 'oak', submittedAt: now),
-          camper('2', cabinId: 'oak'),
-          camper('3', cabinId: 'oak', submittedAt: now),
-        ],
-      ).single;
+      final group =
+          groupCampersByCabin(
+            [oak],
+            [camper('1', cabinId: 'oak', submittedAt: now), camper('2', cabinId: 'oak'), camper('3', cabinId: 'oak', submittedAt: now)],
+          ).single;
 
       expect(group.total, 3);
       expect(group.submitted, 2);

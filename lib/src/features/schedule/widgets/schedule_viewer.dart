@@ -58,10 +58,7 @@ class _ScheduleViewerState extends State<ScheduleViewer> {
             scaleFactor: 800,
             minScale: 0.1,
             maxScale: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(_margin),
-              child: SchedulePaper(grid: widget.grid, title: widget.title),
-            ),
+            child: Padding(padding: const EdgeInsets.all(_margin), child: SchedulePaper(grid: widget.grid, title: widget.title)),
           ),
         );
       },

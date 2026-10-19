@@ -11,7 +11,10 @@ void main() {
   group('PostgrestException', () {
     test('database-raised messages pass through', () {
       for (final code in ['BS001', 'BS002', 'BS003', 'BS004']) {
-        expect(messageFor(PostgrestException(message: 'You can request at most 3 activities', code: code)), 'You can request at most 3 activities');
+        expect(
+          messageFor(PostgrestException(message: 'You can request at most 3 activities', code: code)),
+          'You can request at most 3 activities',
+        );
       }
     });
 
@@ -20,11 +23,13 @@ void main() {
       expect(messageFor(PostgrestException(message: 'x', code: '23505')), contains('already exists'));
       expect(messageFor(PostgrestException(message: 'x', code: '23503')), contains('no longer exists'));
       expect(
-        messageFor(PostgrestException(
-          message: 'update or delete on table "activities" violates foreign key constraint',
-          code: '23503',
-          details: 'Key (id)=(1) is still referenced from table "scheduled_activities".',
-        )),
+        messageFor(
+          PostgrestException(
+            message: 'update or delete on table "activities" violates foreign key constraint',
+            code: '23503',
+            details: 'Key (id)=(1) is still referenced from table "scheduled_activities".',
+          ),
+        ),
         contains('still depends'),
         reason: 'a blocked delete is not a dangling reference',
       );
@@ -70,7 +75,9 @@ void main() {
   });
 
   test('ensureAffected', () {
-    ensureAffected([{'id': 1}], 1);
+    ensureAffected([
+      {'id': 1},
+    ], 1);
     ensureAffected([], 0);
     expect(() => ensureAffected([], 2), throwsA(isA<AppException>()));
   });

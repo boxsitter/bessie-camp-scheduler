@@ -42,25 +42,26 @@ class TabSwitcher<T extends Titled> extends StatelessWidget {
       spacing: 12.0, // Horizontal space between tabs.
       runSpacing: 4.0, // Vertical space between rows of tabs.
       alignment: WrapAlignment.start,
-      children: items.map((item) {
-        final isSelected = selectedItem == item;
+      children:
+          items.map((item) {
+            final isSelected = selectedItem == item;
 
-        return CardButton(
-          onPressed: () => onItemSelected(item),
-          tintConditions: [(isSelected, BessColors.primary)],
-          backgroundColor: BessColors.background,
-          showBorder: false,
-          showShadow: false,
-          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
-          child: Text(
-            item.title,
-            textAlign: TextAlign.center,
-            style: BessTextStyles.standard,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        );
-      }).toList(),
+            return CardButton(
+              onPressed: () => onItemSelected(item),
+              tintConditions: [(isSelected, BessColors.primary)],
+              backgroundColor: BessColors.background,
+              showBorder: false,
+              showShadow: false,
+              padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+              child: Text(
+                item.title,
+                textAlign: TextAlign.center,
+                style: BessTextStyles.standard,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }).toList(),
     );
   }
 }

@@ -355,7 +355,14 @@ void main() {
 
     test('a change by someone else shows up for the selected camper', () async {
       await roster.emit([
-        camper('amy', first: 'Amy', last: 'Adams', cabinId: 'oak', preferences: {'kayak': PreferenceKind.veto}, submittedAt: DateTime(2026, 7, 2)),
+        camper(
+          'amy',
+          first: 'Amy',
+          last: 'Adams',
+          cabinId: 'oak',
+          preferences: {'kayak': PreferenceKind.veto},
+          submittedAt: DateTime(2026, 7, 2),
+        ),
         ...roster.campers.skip(1),
       ]);
 
@@ -384,10 +391,7 @@ void main() {
     });
 
     test('moves to another camper when the selected one leaves the cabin', () async {
-      await roster.emit([
-        camper('amy', first: 'Amy', last: 'Adams', cabinId: 'fox'),
-        ...roster.campers.skip(1),
-      ]);
+      await roster.emit([camper('amy', first: 'Amy', last: 'Adams', cabinId: 'fox'), ...roster.campers.skip(1)]);
 
       expect(controller.selectedCamper?.id, 'bo');
       expect(controller.campersInSelectedCabin.map((c) => c.id), ['bo']);

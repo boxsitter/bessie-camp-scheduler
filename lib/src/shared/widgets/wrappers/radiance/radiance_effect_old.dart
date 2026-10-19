@@ -3,7 +3,6 @@ import 'package:bessie/src/shared/widgets/wrappers/radiance/radiance_consts_old.
 import 'package:bessie/src/shared/widgets/wrappers/radiance/radiance_painter_old.dart';
 import 'package:flutter/material.dart';
 
-
 enum _ExitDirection { top, right, bottom, left }
 
 class RadianceEffectOld extends StatefulWidget {
@@ -28,8 +27,7 @@ class RadianceEffectOld extends StatefulWidget {
   State<RadianceEffectOld> createState() => _RadianceEffectOldState();
 }
 
-class _RadianceEffectOldState extends State<RadianceEffectOld>
-    with TickerProviderStateMixin {
+class _RadianceEffectOldState extends State<RadianceEffectOld> with TickerProviderStateMixin {
   late final AnimationController _hoverController;
   late final AnimationController _releaseController;
   late final AnimationController _holdController;
@@ -52,8 +50,7 @@ class _RadianceEffectOldState extends State<RadianceEffectOld>
   @override
   void initState() {
     super.initState();
-    _hoverController =
-        AnimationController(vsync: this, duration: kHoverFadeDuration);
+    _hoverController = AnimationController(vsync: this, duration: kHoverFadeDuration);
     _hoverOpacityAnimation = CurvedAnimation(
       parent: _hoverController,
       curve: kHoverFadeCurve,
@@ -61,15 +58,11 @@ class _RadianceEffectOldState extends State<RadianceEffectOld>
     _hoverRadiusAnimation = CurvedAnimation(
       parent: _hoverController,
       curve: kHoverFadeCurve,
-    ).drive(Tween<double>(
-        begin: kHoverRadius * kHoverRadiusBeginFactor, end: kHoverRadius));
+    ).drive(Tween<double>(begin: kHoverRadius * kHoverRadiusBeginFactor, end: kHoverRadius));
 
-    _releaseController =
-        AnimationController(vsync: this, duration: kQuickReleaseLifespan);
-    _releaseRadiusAnimation =
-        Tween<double>(begin: 0, end: 0).animate(_releaseController);
-    _releaseOpacityAnimation =
-        Tween<double>(begin: 0, end: 0).animate(_releaseController);
+    _releaseController = AnimationController(vsync: this, duration: kQuickReleaseLifespan);
+    _releaseRadiusAnimation = Tween<double>(begin: 0, end: 0).animate(_releaseController);
+    _releaseOpacityAnimation = Tween<double>(begin: 0, end: 0).animate(_releaseController);
     _releaseController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         if (_isQuickBurst) {
@@ -83,14 +76,10 @@ class _RadianceEffectOldState extends State<RadianceEffectOld>
       }
     });
 
-    _holdController =
-        AnimationController(vsync: this, duration: kHoldChargeDuration);
+    _holdController = AnimationController(vsync: this, duration: kHoldChargeDuration);
 
-    _exitTravelController =
-        AnimationController(vsync: this, duration: kExitTravelDuration);
-    _exitTravelAnimation =
-        Tween<Offset>(begin: Offset.zero, end: Offset.zero)
-            .animate(_exitTravelController);
+    _exitTravelController = AnimationController(vsync: this, duration: kExitTravelDuration);
+    _exitTravelAnimation = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(_exitTravelController);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -184,8 +173,10 @@ class _RadianceEffectOldState extends State<RadianceEffectOld>
         break;
     }
 
-    _exitTravelAnimation = CurvedAnimation(parent: _exitTravelController, curve: kExitTravelCurve)
-        .drive(Tween<Offset>(begin: _lastPosition, end: targetPosition));
+    _exitTravelAnimation = CurvedAnimation(
+      parent: _exitTravelController,
+      curve: kExitTravelCurve,
+    ).drive(Tween<Offset>(begin: _lastPosition, end: targetPosition));
 
     _exitTravelController.forward(from: 0.0);
   }
@@ -194,27 +185,28 @@ class _RadianceEffectOldState extends State<RadianceEffectOld>
     _releasePosition = _lastPosition;
     if (_releasePosition == null) return;
 
-    final chargedRadius = lerpDouble(kQuickReleaseRadiusMax,
-        kQuickReleaseRadiusMax + kChargedReleaseRadiusBonus, _charge)!;
+    final chargedRadius = lerpDouble(kQuickReleaseRadiusMax, kQuickReleaseRadiusMax + kChargedReleaseRadiusBonus, _charge)!;
     final chargedLifespan = Duration(
-        milliseconds: lerpDouble(
+      milliseconds:
+          lerpDouble(
             kQuickReleaseLifespan.inMilliseconds,
-            kQuickReleaseLifespan.inMilliseconds +
-                kChargedReleaseLifespanBonus.inMilliseconds,
-            _charge)!
-            .toInt());
-    final initialOpacity =
-    lerpDouble(kHoverOpacity, kHoldOpacityMax, _charge)!;
+            kQuickReleaseLifespan.inMilliseconds + kChargedReleaseLifespanBonus.inMilliseconds,
+            _charge,
+          )!.toInt(),
+    );
+    final initialOpacity = lerpDouble(kHoverOpacity, kHoldOpacityMax, _charge)!;
     final initialRadius = lerpDouble(kHoverRadius, kHoldRadiusMin, _charge)!;
 
     _releaseController.duration = chargedLifespan;
 
-    _releaseRadiusAnimation =
-        CurvedAnimation(parent: _releaseController, curve: Curves.easeOut)
-            .drive(Tween<double>(begin: initialRadius, end: chargedRadius));
+    _releaseRadiusAnimation = CurvedAnimation(
+      parent: _releaseController,
+      curve: Curves.easeOut,
+    ).drive(Tween<double>(begin: initialRadius, end: chargedRadius));
     _releaseOpacityAnimation = CurvedAnimation(
-        parent: _releaseController, curve: kQuickReleaseFadeOutCurve)
-        .drive(Tween<double>(begin: initialOpacity, end: 0.0));
+      parent: _releaseController,
+      curve: kQuickReleaseFadeOutCurve,
+    ).drive(Tween<double>(begin: initialOpacity, end: 0.0));
 
     _releaseController.forward(from: 0.0);
   }
@@ -229,10 +221,14 @@ class _RadianceEffectOldState extends State<RadianceEffectOld>
 
     _releaseController.duration = kQuickClickMorphDuration;
 
-    _releaseRadiusAnimation = CurvedAnimation(parent: _releaseController, curve: Curves.easeOut)
-        .drive(Tween<double>(begin: initialRadius, end: kQuickClickStartRadius));
-    _releaseOpacityAnimation = CurvedAnimation(parent: _releaseController, curve: Curves.easeOut)
-        .drive(Tween<double>(begin: initialOpacity, end: kQuickClickStartOpacity));
+    _releaseRadiusAnimation = CurvedAnimation(
+      parent: _releaseController,
+      curve: Curves.easeOut,
+    ).drive(Tween<double>(begin: initialRadius, end: kQuickClickStartRadius));
+    _releaseOpacityAnimation = CurvedAnimation(
+      parent: _releaseController,
+      curve: Curves.easeOut,
+    ).drive(Tween<double>(begin: initialOpacity, end: kQuickClickStartOpacity));
 
     _releaseController.forward(from: 0.0);
   }
@@ -240,10 +236,14 @@ class _RadianceEffectOldState extends State<RadianceEffectOld>
   void _triggerQuickReleaseBurst() {
     _releaseController.duration = kQuickClickBurstDuration;
 
-    _releaseRadiusAnimation = CurvedAnimation(parent: _releaseController, curve: Curves.easeOut)
-        .drive(Tween<double>(begin: kQuickClickStartRadius, end: kQuickClickEndRadius));
-    _releaseOpacityAnimation = CurvedAnimation(parent: _releaseController, curve: kQuickReleaseFadeOutCurve)
-        .drive(Tween<double>(begin: kQuickClickStartOpacity, end: 0.0));
+    _releaseRadiusAnimation = CurvedAnimation(
+      parent: _releaseController,
+      curve: Curves.easeOut,
+    ).drive(Tween<double>(begin: kQuickClickStartRadius, end: kQuickClickEndRadius));
+    _releaseOpacityAnimation = CurvedAnimation(
+      parent: _releaseController,
+      curve: kQuickReleaseFadeOutCurve,
+    ).drive(Tween<double>(begin: kQuickClickStartOpacity, end: 0.0));
 
     _releaseController.forward(from: 0.0);
   }
@@ -252,23 +252,20 @@ class _RadianceEffectOldState extends State<RadianceEffectOld>
     _releasePosition = _lastPosition;
     if (_releasePosition == null) return;
 
-    final scaleDownProgress = (_charge *
-        kHoldChargeDuration.inMilliseconds /
-        kHoldScaleDownDuration.inMilliseconds)
-        .clamp(0.0, 1.0);
-    final initialRadius =
-    lerpDouble(kHoverRadius, kHoldRadiusMin, scaleDownProgress)!;
-    final initialOpacity =
-    lerpDouble(kHoverOpacity, kHoldOpacityMax, _charge)!;
+    final scaleDownProgress = (_charge * kHoldChargeDuration.inMilliseconds / kHoldScaleDownDuration.inMilliseconds).clamp(0.0, 1.0);
+    final initialRadius = lerpDouble(kHoverRadius, kHoldRadiusMin, scaleDownProgress)!;
+    final initialOpacity = lerpDouble(kHoverOpacity, kHoldOpacityMax, _charge)!;
 
     _releaseController.duration = const Duration(milliseconds: 150);
 
-    _releaseRadiusAnimation =
-        CurvedAnimation(parent: _releaseController, curve: Curves.easeOut)
-            .drive(Tween<double>(begin: initialRadius, end: initialRadius * 0.8));
-    _releaseOpacityAnimation =
-        CurvedAnimation(parent: _releaseController, curve: Curves.easeOut)
-            .drive(Tween<double>(begin: initialOpacity, end: 0.0));
+    _releaseRadiusAnimation = CurvedAnimation(
+      parent: _releaseController,
+      curve: Curves.easeOut,
+    ).drive(Tween<double>(begin: initialRadius, end: initialRadius * 0.8));
+    _releaseOpacityAnimation = CurvedAnimation(
+      parent: _releaseController,
+      curve: Curves.easeOut,
+    ).drive(Tween<double>(begin: initialOpacity, end: 0.0));
 
     _releaseController.forward(from: 0.0);
   }
@@ -279,56 +276,57 @@ class _RadianceEffectOldState extends State<RadianceEffectOld>
       key: _widgetKey,
       borderRadius: widget.borderRadius,
       child: Stack(
-            fit: StackFit.passthrough,
-            children: [
-              widget.child,
-              Positioned.fill(
-                child: AnimatedBuilder(
-                  animation: Listenable.merge([
-                    _hoverController,
-                    _releaseController,
-                    _holdController,
-                    _exitTravelController,
-                    widget.tapPositionNotifier,
-                  ]),
-                  builder: (context, child) {
-                    final currentPosition = widget.tapPositionNotifier.value;
-                    if (currentPosition != null) {
-                      _lastPosition = currentPosition;
-                    }
+        fit: StackFit.passthrough,
+        children: [
+          widget.child,
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: Listenable.merge([
+                _hoverController,
+                _releaseController,
+                _holdController,
+                _exitTravelController,
+                widget.tapPositionNotifier,
+              ]),
+              builder: (context, child) {
+                final currentPosition = widget.tapPositionNotifier.value;
+                if (currentPosition != null) {
+                  _lastPosition = currentPosition;
+                }
 
-                    final bool isExiting = _exitTravelController.isAnimating;
-                    final paintPosition = isExiting ? _exitTravelAnimation.value : _lastPosition;
+                final bool isExiting = _exitTravelController.isAnimating;
+                final paintPosition = isExiting ? _exitTravelAnimation.value : _lastPosition;
 
-                    final bool shouldPaint = widget.isHovering ||
-                        widget.isHeld ||
-                        _hoverController.isAnimating ||
-                        _holdController.isAnimating ||
-                        _releaseController.isAnimating ||
-                        isExiting;
+                final bool shouldPaint =
+                    widget.isHovering ||
+                    widget.isHeld ||
+                    _hoverController.isAnimating ||
+                    _holdController.isAnimating ||
+                    _releaseController.isAnimating ||
+                    isExiting;
 
-                    if (!shouldPaint || (paintPosition == null && !_releaseController.isAnimating)) {
-                      return const SizedBox.shrink();
-                    }
+                if (!shouldPaint || (paintPosition == null && !_releaseController.isAnimating)) {
+                  return const SizedBox.shrink();
+                }
 
-                    return CustomPaint(
-                      painter: RadiancePainterOld(
-                        hoverPosition: paintPosition,
-                        releasePosition: _releasePosition,
-                        hoverOpacity: _hoverOpacityAnimation.value,
-                        hoverRadius: _hoverRadiusAnimation.value,
-                        releaseOpacity: _releaseOpacityAnimation.value,
-                        releaseRadius: _releaseRadiusAnimation.value,
-                        isHolding: widget.isHeld,
-                        isReleasing: _releaseController.isAnimating,
-                        holdProgress: _holdController.value,
-                        color: widget.color ?? Colors.white,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+                return CustomPaint(
+                  painter: RadiancePainterOld(
+                    hoverPosition: paintPosition,
+                    releasePosition: _releasePosition,
+                    hoverOpacity: _hoverOpacityAnimation.value,
+                    hoverRadius: _hoverRadiusAnimation.value,
+                    releaseOpacity: _releaseOpacityAnimation.value,
+                    releaseRadius: _releaseRadiusAnimation.value,
+                    isHolding: widget.isHeld,
+                    isReleasing: _releaseController.isAnimating,
+                    holdProgress: _holdController.value,
+                    color: widget.color ?? Colors.white,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

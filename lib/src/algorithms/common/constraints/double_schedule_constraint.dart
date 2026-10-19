@@ -12,15 +12,10 @@ import '../../data_models/potential_assignment.dart';
 /// (and the one that keeps the `randomize` fallback honest).
 class DoubleScheduleConstraint implements Constraint {
   @override
-  String get violationMessage =>
-      'Cannot fulfill double-schedule activity. The subsequent period is unavailable or unscheduled.';
+  String get violationMessage => 'Cannot fulfill double-schedule activity. The subsequent period is unavailable or unscheduled.';
 
   @override
-  bool isViolated(
-    PotentialAssignment assignment,
-    AssignmentContext context,
-    AssignmentLedger ledger,
-  ) {
+  bool isViolated(PotentialAssignment assignment, AssignmentContext context, AssignmentLedger ledger) {
     if (!assignment.activity.doubleSchedule) return false;
 
     // A double activity placed as a single period is malformed.
@@ -37,10 +32,7 @@ class DoubleScheduleConstraint implements Constraint {
     if (!context.isSameDay(assignment.period, nextPeriod)) return true;
 
     // ...where the same activity is offered.
-    final expected = context.scheduledActivityOf(
-      assignment.activity.id,
-      nextPeriod.id,
-    );
+    final expected = context.scheduledActivityOf(assignment.activity.id, nextPeriod.id);
     return expected == null || expected.id != linkedScheduled.id;
   }
 }

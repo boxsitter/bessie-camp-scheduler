@@ -26,9 +26,10 @@ class BranchManagerView extends StatelessWidget {
       final tab = controller.tab.value;
       return SetupPage(
         title: 'Branch catalog',
-        subtitle: canEdit
-            ? 'The activities and cabins of ${controller.branchName}.'
-            : 'The activities and cabins of ${controller.branchName}. You can look but not change them.',
+        subtitle:
+            canEdit
+                ? 'The activities and cabins of ${controller.branchName}.'
+                : 'The activities and cabins of ${controller.branchName}. You can look but not change them.',
         children: [
           _TabBar(selected: tab, onSelected: (value) => controller.tab.value = value),
           if (tab == CatalogTab.activities)
@@ -40,7 +41,12 @@ class BranchManagerView extends StatelessWidget {
               onDelete: controller.deleteActivity,
             )
           else
-            CabinsCatalogSection(cabins: controller.cabins.toList(), canEdit: canEdit, onCreate: controller.openCabinForm, onDelete: controller.deleteCabin),
+            CabinsCatalogSection(
+              cabins: controller.cabins.toList(),
+              canEdit: canEdit,
+              onCreate: controller.openCabinForm,
+              onDelete: controller.deleteCabin,
+            ),
         ],
       );
     });

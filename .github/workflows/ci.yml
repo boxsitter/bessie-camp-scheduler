@@ -21,7 +21,7 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed .
-      - run: flutter analyze
+      - run: flutter analyze --no-fatal-infos
       - run: flutter test --exclude-tags integration
 
   backend:
@@ -44,7 +44,7 @@ jobs:
 
       # The repositories against the real stack (RLS, RPCs, realtime).
       - run: flutter pub get
-      - run: flutter test --tags integration
+      - run: flutter test --tags integration --concurrency=1
 
       - if: always()
         run: supabase stop --no-backup

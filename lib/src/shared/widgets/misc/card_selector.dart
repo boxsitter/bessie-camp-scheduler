@@ -37,29 +37,27 @@ class CardSelector<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> cardItems = items.map((item) {
-      final bool isSelected = selectedItem == item;
-      final bool isCompleted = itemCompleted != null ? itemCompleted!(item) : false;
-      final bool isInProgress = itemInProgress != null ? itemInProgress!(item) : false;
+    final List<Widget> cardItems =
+        items.map((item) {
+          final bool isSelected = selectedItem == item;
+          final bool isCompleted = itemCompleted != null ? itemCompleted!(item) : false;
+          final bool isInProgress = itemInProgress != null ? itemInProgress!(item) : false;
 
-      return Padding(
-        padding: isHorizontal
-            ? const EdgeInsets.symmetric(horizontal: BessSizes.spaceBtwItems / 2)
-            : const EdgeInsets.symmetric(vertical: 6, horizontal: BessSizes.spaceBtwItems),
-        child: CardButton(
-          height: cardHeight,
-          width: cardWidth,
-          tintConditions: [
-            (isSelected, BessColors.primary),
-            (isCompleted, BessColors.green),
-            (isInProgress, BessColors.yellow)
-          ],
-          onPressed: () => onSelectItem(item),
-          padding: EdgeInsets.all(8),
-          child: SizedBox(width: double.infinity, child: childBuilder!(context, item)),
-        ),
-      );
-    }).toList();
+          return Padding(
+            padding:
+                isHorizontal
+                    ? const EdgeInsets.symmetric(horizontal: BessSizes.spaceBtwItems / 2)
+                    : const EdgeInsets.symmetric(vertical: 6, horizontal: BessSizes.spaceBtwItems),
+            child: CardButton(
+              height: cardHeight,
+              width: cardWidth,
+              tintConditions: [(isSelected, BessColors.primary), (isCompleted, BessColors.green), (isInProgress, BessColors.yellow)],
+              onPressed: () => onSelectItem(item),
+              padding: EdgeInsets.all(8),
+              child: SizedBox(width: double.infinity, child: childBuilder!(context, item)),
+            ),
+          );
+        }).toList();
 
     return SingleChildScrollView(
       scrollDirection: isHorizontal ? Axis.horizontal : Axis.vertical,

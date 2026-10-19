@@ -22,7 +22,6 @@ Duration parseTime(String value) {
 }
 
 /// 10h15m -> `10:15:00`.
-String formatDbTime(Duration time) =>
-    '${time.inHours.toString().padLeft(2, '0')}:${(time.inMinutes % 60).toString().padLeft(2, '0')}:00';
+String formatDbTime(Duration time) => '${time.inHours.toString().padLeft(2, '0')}:${(time.inMinutes % 60).toString().padLeft(2, '0')}:00';
 
 DateTime parseTimestamp(String value) => DateTime.parse(value);

@@ -65,7 +65,9 @@ void main() {
     });
 
     test('works without embeds', () {
-      final camper = Camper.fromRow(camperRow(overrides: {'assignments': null, 'camper_preferences': null, 'preferences_submitted_at': null, 'gender': null}));
+      final camper = Camper.fromRow(
+        camperRow(overrides: {'assignments': null, 'camper_preferences': null, 'preferences_submitted_at': null, 'gender': null}),
+      );
       expect(camper.assignments, isEmpty);
       expect(camper.preferences, isEmpty);
       expect(camper.preferencesSubmitted, isFalse);
@@ -123,8 +125,17 @@ void main() {
 
     test('keeps blocks chronological and offers lookups', () {
       const pottery = Activity(
-        id: 'a1', branchId: 'br', name: 'Pottery', description: '', capacity: 8, category: ActivityCategory.creative,
-        isSkillsRec: false, doubleSchedule: false, maxAssignments: null, isHidden: false, preferenceRequired: true,
+        id: 'a1',
+        branchId: 'br',
+        name: 'Pottery',
+        description: '',
+        capacity: 8,
+        category: ActivityCategory.creative,
+        isSkillsRec: false,
+        doubleSchedule: false,
+        maxAssignments: null,
+        isHidden: false,
+        preferenceRequired: true,
       );
       final schedule = Schedule(
         days: [tuesday, monday],
@@ -154,8 +165,14 @@ void main() {
 
   test('CampSession and Season parse', () {
     final session = CampSession.fromRow({
-      'id': 's', 'season_id': 'se', 'name': 'Session 1', 'starts_on': '2026-07-06',
-      'max_requests': 3, 'max_vetoes': 2, 'max_skills_requests': 2, 'max_skills_vetoes': 1,
+      'id': 's',
+      'season_id': 'se',
+      'name': 'Session 1',
+      'starts_on': '2026-07-06',
+      'max_requests': 3,
+      'max_vetoes': 2,
+      'max_skills_requests': 2,
+      'max_skills_vetoes': 1,
     });
     expect(session.startsOn, DateTime(2026, 7, 6));
     expect(session.limits.maxVetoes, 2);
@@ -182,8 +199,14 @@ void main() {
 
   test('StaffProfile parses and derives names', () {
     final profile = StaffProfile.fromRow({
-      'id': 'u', 'organization_id': 'o', 'first_name': 'Dana', 'last_name': 'Director', 'preferred_name': null,
-      'role': 'director', 'active': true, 'preferences': {'last_session_id': 'x'},
+      'id': 'u',
+      'organization_id': 'o',
+      'first_name': 'Dana',
+      'last_name': 'Director',
+      'preferred_name': null,
+      'role': 'director',
+      'active': true,
+      'preferences': {'last_session_id': 'x'},
     });
     expect(profile.fullName, 'Dana Director');
     expect(profile.initials, 'DD');
@@ -191,12 +214,24 @@ void main() {
   });
 
   test('CamperImportRow serializes for the import RPC', () {
-    final json = CamperImportRow(
-      firstName: 'Ada', lastName: 'Lovelace', birthdate: DateTime(2015, 12, 10), gender: Gender.nonBinary, cabinName: 'Oak',
-    ).toJson();
+    final json =
+        CamperImportRow(
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          birthdate: DateTime(2015, 12, 10),
+          gender: Gender.nonBinary,
+          cabinName: 'Oak',
+        ).toJson();
     expect(json['birthdate'], '2015-12-10');
     expect(json['gender'], 'NB');
     expect(json['cabin'], 'Oak');
-    expect(CamperImportResult.fromJson({'inserted': 2, 'duplicates': 1, 'unknown_cabins': ['X']}).unknownCabins, ['X']);
+    expect(
+      CamperImportResult.fromJson({
+        'inserted': 2,
+        'duplicates': 1,
+        'unknown_cabins': ['X'],
+      }).unknownCabins,
+      ['X'],
+    );
   });
 }

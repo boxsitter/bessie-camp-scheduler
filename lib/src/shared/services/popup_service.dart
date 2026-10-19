@@ -15,29 +15,20 @@ import '../styles/text_styles.dart';
 import '../widgets/form_inputs/dynamic_form_fields.dart';
 
 class PopupService extends GetxService {
-
-  Future<bool> showFullScreenDialog({
-    String? title,
-    String? description,
-    List<Widget>? actions,
-    Widget? child,
-  }) async {
+  Future<bool> showFullScreenDialog({String? title, String? description, List<Widget>? actions, Widget? child}) async {
     return await Get.dialog<bool>(
-      ShadDialog(
-        title: title != null ? Text(title) : null,
-        description: description != null ? Text(description) : null,
-        actions: actions ?? [],
-        child: child,
-      ),
-      transitionDuration: const Duration(milliseconds: 200),
-    ) ??
-    false;
+          ShadDialog(
+            title: title != null ? Text(title) : null,
+            description: description != null ? Text(description) : null,
+            actions: actions ?? [],
+            child: child,
+          ),
+          transitionDuration: const Duration(milliseconds: 200),
+        ) ??
+        false;
   }
 
-  Future<bool> showConfirmationDialog({
-    String? title,
-    String? message,
-  }) async {
+  Future<bool> showConfirmationDialog({String? title, String? message}) async {
     return await showFullScreenDialog(
       title: title,
       description: message,
@@ -85,9 +76,10 @@ class PopupService extends GetxService {
     // For single selection (ShadSelect)
     RxString singleSelectedValue = ''.obs;
     if (!allowMultipleSelections) {
-      String? initialSingleSelection = defaultSelections?.isNotEmpty == true && options.contains(defaultSelections!.first)
-          ? defaultSelections.first
-          : (options.isNotEmpty ? options.first : null);
+      String? initialSingleSelection =
+          defaultSelections?.isNotEmpty == true && options.contains(defaultSelections!.first)
+              ? defaultSelections.first
+              : (options.isNotEmpty ? options.first : null);
       if (initialSingleSelection == null && options.isNotEmpty) {
         initialSingleSelection = options.first;
       }
@@ -96,9 +88,7 @@ class PopupService extends GetxService {
     }
 
     // For multiple selections (Checkboxes)
-    RxList<String> multiSelectedValues = RxList<String>.from(
-      defaultSelections?.where((s) => options.contains(s)).toList() ?? <String>[],
-    );
+    RxList<String> multiSelectedValues = RxList<String>.from(defaultSelections?.where((s) => options.contains(s)).toList() ?? <String>[]);
 
     Widget selectionWidget;
     if (allowMultipleSelections) {
@@ -110,19 +100,21 @@ class PopupService extends GetxService {
           itemCount: options.length,
           itemBuilder: (context, index) {
             final option = options[index];
-            return Obx(() => ShadCheckbox(
-              label: Text(option),
-              value: multiSelectedValues.contains(option),
-              onChanged: (isChecked) {
-                if (isChecked == true) {
-                  if (!multiSelectedValues.contains(option)) {
-                    multiSelectedValues.add(option);
+            return Obx(
+              () => ShadCheckbox(
+                label: Text(option),
+                value: multiSelectedValues.contains(option),
+                onChanged: (isChecked) {
+                  if (isChecked == true) {
+                    if (!multiSelectedValues.contains(option)) {
+                      multiSelectedValues.add(option);
+                    }
+                  } else {
+                    multiSelectedValues.remove(option);
                   }
-                } else {
-                  multiSelectedValues.remove(option);
-                }
-              },
-            ));
+                },
+              ),
+            );
           },
         ),
       );
@@ -141,12 +133,7 @@ class PopupService extends GetxService {
           selectedOptionBuilder: (context, value) => Text(value.isNotEmpty ? value : "Select..."), // Handle empty string case
           placeholder: const Text('Select an option'),
           initialValue: singleSelectedValue.value,
-          options: options
-              .map((option) => ShadOption<String>(
-            value: option,
-            child: Text(option),
-          ))
-              .toList(),
+          options: options.map((option) => ShadOption<String>(value: option, child: Text(option))).toList(),
           onChanged: (value) {
             singleSelectedValue.value = value!;
           },
@@ -159,14 +146,8 @@ class PopupService extends GetxService {
       description: message,
       child: selectionWidget,
       actions: [
-        ShadButton.outline(
-          child: const Text('Cancel'),
-          onPressed: () => Get.back(result: false),
-        ),
-        ShadButton(
-          child: const Text('Confirm'),
-          onPressed: () => Get.back(result: true),
-        ),
+        ShadButton.outline(child: const Text('Cancel'), onPressed: () => Get.back(result: false)),
+        ShadButton(child: const Text('Confirm'), onPressed: () => Get.back(result: true)),
       ],
     );
 
@@ -186,11 +167,7 @@ class PopupService extends GetxService {
     return [];
   }
 
-  Future<T> executeWithSpinner<T>({
-    required String inProgressMessage,
-    String? title,
-    required Future<T> Function() task,
-  }) async {
+  Future<T> executeWithSpinner<T>({required String inProgressMessage, String? title, required Future<T> Function() task}) async {
     Get.dialog(
       ShadDialog(
         title: title != null ? Text(title) : null,
@@ -217,12 +194,7 @@ class PopupService extends GetxService {
     }
   }
 
-  void showToast({
-    String? title,
-    String? message,
-    Widget? action,
-    ToastType type = ToastType.info,
-  }) {
+  void showToast({String? title, String? message, Widget? action, ToastType type = ToastType.info}) {
     final sonner = ShadSonner.of(Get.context!);
     final id = Random().nextInt(1000);
     final Color? color = switch (type) {
@@ -244,31 +216,20 @@ class PopupService extends GetxService {
         duration: duration,
         id: id,
         title: title != null ? Text(title) : null,
-        description: message != null ?
-          Column(
-            children: [
-              SizedBox(height: 6),
-
-              Text(message),
-            ],
-          )
-            : null,
+        description: message != null ? Column(children: [SizedBox(height: 6), Text(message)]) : null,
         action: action,
         padding: EdgeInsets.fromLTRB(24, 24, 32, 24),
         radius: BorderRadius.circular(BessSizes.cardRadiusMd),
         backgroundColor: color != null ? BessHelperFunctions.blendColors(color, BessColors.core, 225) : BessColors.core,
         border: Border.all(width: 2, color: color != null ? color : BessColors.borderPrimary),
         titleStyle: BessTextStyles.tableHeader.copyWith(fontSize: 16),
-        descriptionStyle:  BessTextStyles.standard,
+        descriptionStyle: BessTextStyles.standard,
       ),
     );
   }
 
   Future<bool> showActivityInfo(Activity activity) async {
-    return await showFullScreenDialog(
-      title: activity.name,
-      description: activity.description,
-    );
+    return await showFullScreenDialog(title: activity.name, description: activity.description);
   }
 
   Future<List<dynamic>?> showDynamicFormDialog({
@@ -313,22 +274,13 @@ class PopupService extends GetxService {
             onSaved: (value) => formValues[currentIndex] = value,
           );
         } else if (field is SelectFormFieldDescriptor) {
-          fieldWidget = DynamicSelectFormField(
-            descriptor: field,
-            onSaved: (value) => formValues[currentIndex] = value,
-          );
+          fieldWidget = DynamicSelectFormField(descriptor: field, onSaved: (value) => formValues[currentIndex] = value);
         } else if (field is MultiSelectFormFieldDescriptor) {
-          fieldWidget = DynamicMultiSelectFormField(
-            descriptor: field,
-            onSaved: (value) => formValues[currentIndex] = value,
-          );
+          fieldWidget = DynamicMultiSelectFormField(descriptor: field, onSaved: (value) => formValues[currentIndex] = value);
         } else {
           fieldWidget = Text('Unsupported field type: ${field.runtimeType}');
         }
-        widgets.add(Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: fieldWidget,
-        ));
+        widgets.add(Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: fieldWidget));
       }
       return widgets;
     }
@@ -343,19 +295,12 @@ class PopupService extends GetxService {
           child: Form(
             key: formKey,
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: buildFormWidgets(),
-              ),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: buildFormWidgets()),
             ),
           ),
         ),
         actions: [
-          ShadButton.outline(
-            child: Text(cancelButtonText),
-            onPressed: () => Get.back(result: false),
-          ),
+          ShadButton.outline(child: Text(cancelButtonText), onPressed: () => Get.back(result: false)),
           ShadButton(
             child: Text(confirmButtonText),
             onPressed: () {
@@ -375,5 +320,4 @@ class PopupService extends GetxService {
     }
     return null; // User cancelled
   }
-
 }

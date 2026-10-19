@@ -7,11 +7,7 @@ import '../../data_models/potential_assignment.dart';
 extension ConstraintChecks on Iterable<Constraint> {
   /// The violation message of the first constraint [candidate] breaks, or
   /// `null` if it breaks none.
-  String? firstViolation(
-    PotentialAssignment candidate,
-    AssignmentContext context,
-    AssignmentLedger ledger,
-  ) {
+  String? firstViolation(PotentialAssignment candidate, AssignmentContext context, AssignmentLedger ledger) {
     for (final constraint in this) {
       if (constraint.isViolated(candidate, context, ledger)) {
         return constraint.violationMessage;
@@ -21,15 +17,10 @@ extension ConstraintChecks on Iterable<Constraint> {
   }
 
   /// The violation messages of every constraint [candidate] breaks.
-  List<String> violations(
-    PotentialAssignment candidate,
-    AssignmentContext context,
-    AssignmentLedger ledger,
-  ) {
+  List<String> violations(PotentialAssignment candidate, AssignmentContext context, AssignmentLedger ledger) {
     return [
       for (final constraint in this)
-        if (constraint.isViolated(candidate, context, ledger))
-          constraint.violationMessage,
+        if (constraint.isViolated(candidate, context, ledger)) constraint.violationMessage,
     ];
   }
 }

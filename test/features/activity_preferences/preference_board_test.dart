@@ -116,10 +116,7 @@ void main() {
     });
 
     test('skills recs and standard activities are counted separately', () {
-      var board = apply(boardOf(), [
-        ('swimskills', PreferenceKind.request),
-        ('climbskills', PreferenceKind.request),
-      ]);
+      var board = apply(boardOf(), [('swimskills', PreferenceKind.request), ('climbskills', PreferenceKind.request)]);
       expect(board.remaining(PreferenceKind.request, skillsRec: true), 0);
       // The skills limit does not eat into the standard allowance.
       expect(board.remaining(PreferenceKind.request, skillsRec: false), 3);
@@ -127,11 +124,7 @@ void main() {
       final rejected = board.place(archerySkills, PreferenceKind.request);
       expect(rejected.rejection, 'You can only request 2 skills recs. Move one back to the library first.');
 
-      board = apply(board, [
-        ('archery', PreferenceKind.request),
-        ('pottery', PreferenceKind.request),
-        ('drama', PreferenceKind.request),
-      ]);
+      board = apply(board, [('archery', PreferenceKind.request), ('pottery', PreferenceKind.request), ('drama', PreferenceKind.request)]);
       expect(board.remaining(PreferenceKind.request, skillsRec: false), 0);
       expect(board.remaining(PreferenceKind.request, skillsRec: true), 0);
     });
@@ -161,10 +154,7 @@ void main() {
 
     test('remaining never goes below zero when the limits were lowered', () {
       const strict = PreferenceLimits(maxRequests: 1, maxVetoes: 0, maxSkillsRequests: 0, maxSkillsVetoes: 0);
-      final board = boardOf(
-        choices: {'archery': PreferenceKind.request, 'pottery': PreferenceKind.request},
-        boardLimits: strict,
-      );
+      final board = boardOf(choices: {'archery': PreferenceKind.request, 'pottery': PreferenceKind.request}, boardLimits: strict);
       expect(board.remaining(PreferenceKind.request, skillsRec: false), 0);
       expect(board.count(PreferenceKind.request, skillsRec: false), 2);
     });
@@ -178,7 +168,10 @@ void main() {
 
     test('speaks in the singular for a limit of one', () {
       final board = apply(boardOf(), [('swimskills', PreferenceKind.veto)]);
-      expect(board.place(climbSkills, PreferenceKind.veto).rejection, 'You can only veto 1 skills rec. Move one back to the library first.');
+      expect(
+        board.place(climbSkills, PreferenceKind.veto).rejection,
+        'You can only veto 1 skills rec. Move one back to the library first.',
+      );
     });
   });
 
@@ -224,11 +217,7 @@ void main() {
   group('categories', () {
     test('lists only categories of standard activities, in display order', () {
       final board = boardOf();
-      expect(board.standardCategories, [
-        ActivityCategory.creative,
-        ActivityCategory.sportsAndAthletics,
-        ActivityCategory.waterfront,
-      ]);
+      expect(board.standardCategories, [ActivityCategory.creative, ActivityCategory.sportsAndAthletics, ActivityCategory.waterfront]);
     });
 
     test('groups the library by category and hides what was chosen', () {

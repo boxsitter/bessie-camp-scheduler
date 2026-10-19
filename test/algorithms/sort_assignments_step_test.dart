@@ -31,10 +31,7 @@ PipelineState tiedState() {
   return state;
 }
 
-String orderOf(PipelineState state) => [
-  for (final c in state.potentialAssignments)
-    '${c.participant.id}${c.period.id}',
-].join(',');
+String orderOf(PipelineState state) => [for (final c in state.potentialAssignments) '${c.participant.id}${c.period.id}'].join(',');
 
 /// A [Random] that counts how it is used.
 class CountingRandom implements Random {
@@ -65,32 +62,25 @@ class CountingRandom implements Random {
 
 void main() {
   group('SortAssignmentsStep', () {
-    test(
-      'orders by score descending, then by the random tiebreak ascending',
-      () {
-        final state = tiedState();
-        // Give a few candidates distinct, higher scores.
-        state.potentialAssignments[3].score = 900;
-        state.potentialAssignments[7].score = 700;
-        SortAssignmentsStep(random: Random(1)).execute(state);
+    test('orders by score descending, then by the random tiebreak ascending', () {
+      final state = tiedState();
+      // Give a few candidates distinct, higher scores.
+      state.potentialAssignments[3].score = 900;
+      state.potentialAssignments[7].score = 700;
+      SortAssignmentsStep(random: Random(1)).execute(state);
 
-        final sorted = state.potentialAssignments;
-        expect(sorted[0].score, 900);
-        expect(sorted[1].score, 700);
-        for (var i = 1; i < sorted.length; i++) {
-          final a = sorted[i - 1];
-          final b = sorted[i];
-          expect(a.score, greaterThanOrEqualTo(b.score));
-          if (a.score == b.score) {
-            expect(
-              a.tiebreak,
-              lessThan(b.tiebreak),
-              reason: 'tie between #${i - 1} and #$i',
-            );
-          }
+      final sorted = state.potentialAssignments;
+      expect(sorted[0].score, 900);
+      expect(sorted[1].score, 700);
+      for (var i = 1; i < sorted.length; i++) {
+        final a = sorted[i - 1];
+        final b = sorted[i];
+        expect(a.score, greaterThanOrEqualTo(b.score));
+        if (a.score == b.score) {
+          expect(a.tiebreak, lessThan(b.tiebreak), reason: 'tie between #${i - 1} and #$i');
         }
-      },
-    );
+      }
+    });
 
     test('is deterministic for a seeded Random', () {
       final first = tiedState();
@@ -131,35 +121,28 @@ void main() {
       for (var seed = 0; seed < 20; seed++) {
         final shuffled = [...base.potentialAssignments]..shuffle(Random(seed));
         shuffled.sort(PotentialAssignment.byPriority);
-        expect(
-          shuffled.map((c) => '${c.participant.id}${c.period.id}').join(','),
-          expected,
-          reason: 'permutation $seed',
-        );
+        expect(shuffled.map((c) => '${c.participant.id}${c.period.id}').join(','), expected, reason: 'permutation $seed');
       }
     });
 
-    test(
-      'byPriority is antisymmetric and never reports a tie between distinct candidates',
-      () {
-        final state = tiedState();
-        SortAssignmentsStep(random: Random(9)).execute(state);
-        final candidates = state.potentialAssignments;
+    test('byPriority is antisymmetric and never reports a tie between distinct candidates', () {
+      final state = tiedState();
+      SortAssignmentsStep(random: Random(9)).execute(state);
+      final candidates = state.potentialAssignments;
 
-        for (final a in candidates) {
-          for (final b in candidates) {
-            final ab = PotentialAssignment.byPriority(a, b);
-            final ba = PotentialAssignment.byPriority(b, a);
-            if (identical(a, b)) {
-              expect(ab, 0);
-            } else {
-              expect(ab.sign, -ba.sign);
-              expect(ab, isNot(0));
-            }
+      for (final a in candidates) {
+        for (final b in candidates) {
+          final ab = PotentialAssignment.byPriority(a, b);
+          final ba = PotentialAssignment.byPriority(b, a);
+          if (identical(a, b)) {
+            expect(ab, 0);
+          } else {
+            expect(ab.sign, -ba.sign);
+            expect(ab, isNot(0));
           }
         }
-      },
-    );
+      }
+    });
 
     test('falls back to generation order if two keys are identical', () {
       final state = tiedState();
@@ -169,33 +152,22 @@ void main() {
       state.potentialAssignments.shuffle(Random(2));
       state.potentialAssignments.sort(PotentialAssignment.byPriority);
 
-      expect([
-        for (final c in state.potentialAssignments) c.sequence,
-      ], List.generate(12, (i) => i));
+      expect([for (final c in state.potentialAssignments) c.sequence], List.generate(12, (i) => i));
     });
 
-    test(
-      'ties are broken fairly: a contested seat does not always go to the first in line',
-      () {
-        // Ten identical participants, one seat, nothing else to choose from.
-        final winners = <String>{};
-        for (var seed = 0; seed < 60; seed++) {
-          final builder = ScenarioBuilder()
-              .day('mon', periods: 1)
-              .activity('swim', capacity: 1)
-              .offer('swim', ['mon1']);
-          for (var i = 0; i < 10; i++) {
-            builder.participant('p$i');
-          }
-          final result = AssignmentEngine.run(
-            builder.build(),
-            random: Random(seed),
-          );
-          expect(result.newPlacements, hasLength(1));
-          winners.add(result.newPlacements.single.participantId);
+    test('ties are broken fairly: a contested seat does not always go to the first in line', () {
+      // Ten identical participants, one seat, nothing else to choose from.
+      final winners = <String>{};
+      for (var seed = 0; seed < 60; seed++) {
+        final builder = ScenarioBuilder().day('mon', periods: 1).activity('swim', capacity: 1).offer('swim', ['mon1']);
+        for (var i = 0; i < 10; i++) {
+          builder.participant('p$i');
         }
-        expect(winners.length, greaterThanOrEqualTo(6));
-      },
-    );
+        final result = AssignmentEngine.run(builder.build(), random: Random(seed));
+        expect(result.newPlacements, hasLength(1));
+        winners.add(result.newPlacements.single.participantId);
+      }
+      expect(winners.length, greaterThanOrEqualTo(6));
+    });
   });
 }

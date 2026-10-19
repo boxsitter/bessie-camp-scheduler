@@ -11,18 +11,10 @@ class BessieTextFormFieldTheme {
     prefixIconColor: BessColors.high,
     suffixIconColor: BessColors.high,
     // constraints: const BoxConstraints.expand(height: TSizes.inputFieldHeight),
-    labelStyle: const TextStyle().copyWith(
-        fontSize: BessSizes.fontSizeMd,
-        color: BessColors.textPrimary,
-        fontFamily: 'Inter'),
-    hintStyle: const TextStyle().copyWith(
-        fontSize: BessSizes.fontSizeSm,
-        color: BessColors.textSecondary,
-        fontFamily: 'Inter'),
-    errorStyle: const TextStyle()
-        .copyWith(fontStyle: FontStyle.normal, fontFamily: 'Inter'),
-    floatingLabelStyle: const TextStyle()
-        .copyWith(color: BessColors.textSecondary, fontFamily: 'Inter'),
+    labelStyle: const TextStyle().copyWith(fontSize: BessSizes.fontSizeMd, color: BessColors.textPrimary, fontFamily: 'Inter'),
+    hintStyle: const TextStyle().copyWith(fontSize: BessSizes.fontSizeSm, color: BessColors.textSecondary, fontFamily: 'Inter'),
+    errorStyle: const TextStyle().copyWith(fontStyle: FontStyle.normal, fontFamily: 'Inter'),
+    floatingLabelStyle: const TextStyle().copyWith(color: BessColors.textSecondary, fontFamily: 'Inter'),
     border: const OutlineInputBorder().copyWith(
       borderRadius: BorderRadius.circular(BessSizes.inputFieldRadius),
       borderSide: BorderSide(width: 1, color: BessColors.borderPrimary),

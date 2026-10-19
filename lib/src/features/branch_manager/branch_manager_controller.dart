@@ -134,7 +134,8 @@ class BranchManagerController extends GetxController with RouteAwareControllerMi
     if (!_ensureCanEdit()) return;
     final confirmed = await _popups.showConfirmationDialog(
       title: 'Delete ${activity.name}?',
-      message: 'This removes the activity from the catalog and cannot be undone. An activity that is still scheduled in a session cannot be deleted.',
+      message:
+          'This removes the activity from the catalog and cannot be undone. An activity that is still scheduled in a session cannot be deleted.',
     );
     if (!confirmed) return;
 

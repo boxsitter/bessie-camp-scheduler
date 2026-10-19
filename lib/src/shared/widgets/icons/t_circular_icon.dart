@@ -34,15 +34,15 @@ class BessCircularIcon extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: backgroundColor != null
-            ? backgroundColor!
-            : BessHelperFunctions.isDarkMode(context)
+        color:
+            backgroundColor != null
+                ? backgroundColor!
+                : BessHelperFunctions.isDarkMode(context)
                 ? BessColors.high.withValues(alpha: 0.9)
                 : BessColors.low.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(100),
       ),
-      child: IconButton(
-          onPressed: onPressed, icon: Icon(icon, color: color, size: size)),
+      child: IconButton(onPressed: onPressed, icon: Icon(icon, color: color, size: size)),
     );
   }
 }

@@ -9,10 +9,7 @@ class NoveltyEvaluator {
   ///   assignment, so there is nothing to repeat).
   /// - 0.0: the very same activity in every period.
   /// - `null`: the participant has no assignments to evaluate.
-  double? calculateNoveltyPercentage({
-    required String participantId,
-    required AssignmentLedger ledger,
-  }) {
+  double? calculateNoveltyPercentage({required String participantId, required AssignmentLedger ledger}) {
     final activityIds = ledger.weekActivityIds(participantId).toList();
 
     if (activityIds.isEmpty) return null;

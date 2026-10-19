@@ -32,7 +32,10 @@ void main() {
   setUp(() {
     Get.reset();
     final client = newClient();
-    final roster = FakeRosterRepository(client)..campers = [camper('a', assignments: {'morning': 's-archery'})];
+    final roster = FakeRosterRepository(client)
+      ..campers = [
+        camper('a', assignments: {'morning': 's-archery'}),
+      ];
     sessions = FakeSessionRepository(client, schedule);
     context = ContextService(
       CatalogRepository(client),
@@ -56,7 +59,7 @@ void main() {
         home: Scaffold(
           body: GetBuilder<SchedulePageController>(
             // `state.controller` is not set yet while initState runs.
-      initState: (_) => Get.find<SchedulePageController>().ensureLoaded(),
+            initState: (_) => Get.find<SchedulePageController>().ensureLoaded(),
             builder: (controller) => ScheduleBody(controller: controller),
           ),
         ),

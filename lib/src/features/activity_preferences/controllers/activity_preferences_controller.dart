@@ -145,8 +145,7 @@ class ActivityPreferencesController extends GetxController with RouteAwareContro
   }
 
   /// The activities the camper is open to, for the current tab.
-  List<Activity> get libraryActivities =>
-      board?.neutral(skillsRec: skillsMode, category: skillsMode ? null : selectedCategory) ?? const [];
+  List<Activity> get libraryActivities => board?.neutral(skillsRec: skillsMode, category: skillsMode ? null : selectedCategory) ?? const [];
 
   List<Activity> chosenActivities(PreferenceKind kind) => board?.chosen(kind, skillsRec: skillsMode) ?? const [];
 

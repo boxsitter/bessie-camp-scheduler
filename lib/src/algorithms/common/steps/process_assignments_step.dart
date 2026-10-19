@@ -44,9 +44,7 @@ class ProcessAssignmentsStep extends AlgorithmStep {
     final context = state.context;
     final ledger = state.ledger;
 
-    final queue = HeapPriorityQueue<PotentialAssignment>(
-      PotentialAssignment.byPriority,
-    )..addAll(state.potentialAssignments);
+    final queue = HeapPriorityQueue<PotentialAssignment>(PotentialAssignment.byPriority)..addAll(state.potentialAssignments);
 
     var accepted = 0;
     var placements = 0;
@@ -72,8 +70,7 @@ class ProcessAssignmentsStep extends AlgorithmStep {
       );
       candidate.score = fresh;
 
-      if (queue.isNotEmpty &&
-          PotentialAssignment.byPriority(candidate, queue.first) > 0) {
+      if (queue.isNotEmpty && PotentialAssignment.byPriority(candidate, queue.first) > 0) {
         queue.add(candidate);
         rescored++;
         continue;

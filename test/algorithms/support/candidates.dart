@@ -21,26 +21,18 @@ PotentialAssignment candidateOf(
     activity: context.activityById(activityId)!,
     scheduledActivity: context.scheduledActivityOf(activityId, periodId)!,
     period: context.periodById(periodId)!,
-    linkedScheduledActivity:
-        linkedPeriodId == null
-            ? null
-            : context.scheduledActivityOf(activityId, linkedPeriodId)!,
-    linkedPeriod:
-        linkedPeriodId == null ? null : context.periodById(linkedPeriodId)!,
+    linkedScheduledActivity: linkedPeriodId == null ? null : context.scheduledActivityOf(activityId, linkedPeriodId)!,
+    linkedPeriod: linkedPeriodId == null ? null : context.periodById(linkedPeriodId)!,
     sequence: sequence,
   );
 }
 
 /// A fresh pipeline state (and ledger) for [context].
-PipelineState stateFor(AssignmentContext context) =>
-    PipelineState(context: context, ledger: AssignmentLedger(context));
+PipelineState stateFor(AssignmentContext context) => PipelineState(context: context, ledger: AssignmentLedger(context));
 
 /// A copy of the double-schedule [block] whose second half is [linked], for
 /// building deliberately malformed candidates.
-PotentialAssignment withLinkedScheduledActivity(
-  PotentialAssignment block,
-  AlgoScheduledActivity linked,
-) {
+PotentialAssignment withLinkedScheduledActivity(PotentialAssignment block, AlgoScheduledActivity linked) {
   return PotentialAssignment(
     participant: block.participant,
     activity: block.activity,

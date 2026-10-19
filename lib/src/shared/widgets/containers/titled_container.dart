@@ -32,9 +32,8 @@ class TitledContainer extends StatelessWidget {
           Container(
             child: Row(
               children: [
-                Expanded(child: Text(title, style: BessTextStyles.tableHeaderSecondary, overflow: TextOverflow.ellipsis, maxLines: 1,)),
-                if (trailing != null)
-                  trailing!,
+                Expanded(child: Text(title, style: BessTextStyles.tableHeaderSecondary, overflow: TextOverflow.ellipsis, maxLines: 1)),
+                if (trailing != null) trailing!,
               ],
             ),
             height: 40,

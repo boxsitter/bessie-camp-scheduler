@@ -10,11 +10,7 @@ class AlgoScheduledActivity {
   /// The period in which it is offered.
   final String periodId;
 
-  const AlgoScheduledActivity({
-    required this.id,
-    required this.activityId,
-    required this.periodId,
-  });
+  const AlgoScheduledActivity({required this.id, required this.activityId, required this.periodId});
 
   @override
   String toString() => 'AlgoScheduledActivity($id)';

@@ -11,21 +11,14 @@ class TintInfo {
   final Color borderColor;
   final Color foregroundColor;
 
-  const TintInfo({
-    required this.backgroundColor,
-    required this.borderColor,
-    required this.foregroundColor,
-  });
+  const TintInfo({required this.backgroundColor, required this.borderColor, required this.foregroundColor});
   //... equality and hashCode
 }
 
 class _TintData extends InheritedWidget {
   final TintInfo tintInfo;
 
-  const _TintData({
-    required this.tintInfo,
-    required super.child,
-  });
+  const _TintData({required this.tintInfo, required super.child});
 
   @override
   bool updateShouldNotify(_TintData oldWidget) => tintInfo != oldWidget.tintInfo;
@@ -69,30 +62,25 @@ class Tint extends StatelessWidget {
     // --- Calculate Background Color ---
     Color effectiveBackgroundColor = baseBackgroundColor ?? BessColors.core;
     if (activeTint != null) {
-      effectiveBackgroundColor =
-          BessHelperFunctions.blendColors(effectiveBackgroundColor, activeTint, 60);
+      effectiveBackgroundColor = BessHelperFunctions.blendColors(effectiveBackgroundColor, activeTint, 60);
     }
     if (darken) {
       effectiveBackgroundColor = BessHelperFunctions.adjustHSL(effectiveBackgroundColor, luminance: -0.07, saturation: 0.2);
     }
 
     // --- Calculate Border Color ---
-    Color effectiveBorderColor =
-        activeTint ?? baseBorderColor ?? BessColors.borderPrimary;
+    Color effectiveBorderColor = activeTint ?? baseBorderColor ?? BessColors.borderPrimary;
     if (darken) {
       effectiveBorderColor = BessHelperFunctions.adjustHSL(effectiveBorderColor, luminance: -0.07, saturation: 0.2);
     }
 
     // --- Calculate Foreground Color ---
-    Color effectiveForegroundColor =
-        activeTint ?? baseForegroundColor ?? BessColors.textPrimary;
+    Color effectiveForegroundColor = activeTint ?? baseForegroundColor ?? BessColors.textPrimary;
     if (darken) {
       effectiveForegroundColor = BessHelperFunctions.adjustHSL(effectiveForegroundColor, luminance: -0.07, saturation: 0.2);
     }
     // Apply final adjustment regardless of tint or darken
-    effectiveForegroundColor = BessHelperFunctions.adjustHSL(
-        effectiveForegroundColor,
-        luminance: -0.2);
+    effectiveForegroundColor = BessHelperFunctions.adjustHSL(effectiveForegroundColor, luminance: -0.2);
 
     final tintInfo = TintInfo(
       backgroundColor: effectiveBackgroundColor,
@@ -100,9 +88,6 @@ class Tint extends StatelessWidget {
       foregroundColor: effectiveForegroundColor,
     );
 
-    return _TintData(
-      tintInfo: tintInfo,
-      child: child,
-    );
+    return _TintData(tintInfo: tintInfo, child: child);
   }
 }

@@ -19,30 +19,20 @@ List<String> generate(AssignmentContext context, {PipelineState? state}) {
 
 void main() {
   group('GeneratePotentialAssignmentsStep', () {
-    test(
-      'produces one candidate per assignable activity per free target slot',
-      () {
-        final context =
-            ScenarioBuilder()
-                .day('mon', periods: 2)
-                .activity('swim')
-                .activity('art')
-                .offerEverywhere('swim')
-                .offer('art', ['mon2'])
-                .participant('a')
-                .participant('b')
-                .build();
+    test('produces one candidate per assignable activity per free target slot', () {
+      final context =
+          ScenarioBuilder()
+              .day('mon', periods: 2)
+              .activity('swim')
+              .activity('art')
+              .offerEverywhere('swim')
+              .offer('art', ['mon2'])
+              .participant('a')
+              .participant('b')
+              .build();
 
-        expect(generate(context), [
-          'a:swim@mon1',
-          'a:swim@mon2',
-          'a:art@mon2',
-          'b:swim@mon1',
-          'b:swim@mon2',
-          'b:art@mon2',
-        ]);
-      },
-    );
+      expect(generate(context), ['a:swim@mon1', 'a:swim@mon2', 'a:art@mon2', 'b:swim@mon1', 'b:swim@mon2', 'b:art@mon2']);
+    });
 
     test('excludes vetoed activities, and only those', () {
       final context =
@@ -73,92 +63,60 @@ void main() {
       expect(generate(context), ['a:swim@mon1']);
     });
 
-    test(
-      'skips periods in which the participant is already busy, hidden ones included',
-      () {
-        final context =
-            ScenarioBuilder()
-                .day('mon', periods: 3)
-                .activity('swim')
-                .activity('staffMeeting', assignable: false)
-                .offerEverywhere('swim')
-                .offer('staffMeeting', ['mon2'])
-                .participant('a')
-                .existing('a', ['staffMeeting@mon2', 'swim@mon3'])
-                .build();
-
-        expect(generate(context), ['a:swim@mon1']);
-      },
-    );
-
-    test('only generates for target periods', () {
+    test('skips periods in which the participant is already busy, hidden ones included', () {
       final context =
           ScenarioBuilder()
               .day('mon', periods: 3)
               .activity('swim')
+              .activity('staffMeeting', assignable: false)
               .offerEverywhere('swim')
+              .offer('staffMeeting', ['mon2'])
               .participant('a')
-              .targets(['mon2'])
+              .existing('a', ['staffMeeting@mon2', 'swim@mon3'])
               .build();
+
+      expect(generate(context), ['a:swim@mon1']);
+    });
+
+    test('only generates for target periods', () {
+      final context =
+          ScenarioBuilder().day('mon', periods: 3).activity('swim').offerEverywhere('swim').participant('a').targets(['mon2']).build();
 
       expect(generate(context), ['a:swim@mon2']);
     });
 
-    test(
-      'follows the supplied participant order and chronological periods',
-      () {
-        // Periods are supplied out of order on purpose.
-        final periods = [
-          AlgoPeriod(id: 'late', dayId: 'd', start: DateTime(2025, 7, 14, 15)),
-          AlgoPeriod(id: 'early', dayId: 'd', start: DateTime(2025, 7, 14, 9)),
-        ];
-        final context = AssignmentContext(
-          participants: [
-            AlgoParticipant(id: 'z', birthdate: DateTime(2013)),
-            AlgoParticipant(id: 'a', birthdate: DateTime(2013)),
-          ],
-          preferences: const {},
-          periods: periods,
-          targetPeriodIds: {'late', 'early'},
-          activities: const [AlgoActivity(id: 'swim', capacity: 5)],
-          scheduledActivities: const [
-            AlgoScheduledActivity(
-              id: 's1',
-              activityId: 'swim',
-              periodId: 'late',
-            ),
-            AlgoScheduledActivity(
-              id: 's2',
-              activityId: 'swim',
-              periodId: 'early',
-            ),
-          ],
-          existingAssignments: const {},
-          now: DateTime(2025, 7, 15),
-        );
-        final state = stateFor(context);
-        generate(context, state: state);
+    test('follows the supplied participant order and chronological periods', () {
+      // Periods are supplied out of order on purpose.
+      final periods = [
+        AlgoPeriod(id: 'late', dayId: 'd', start: DateTime(2025, 7, 14, 15)),
+        AlgoPeriod(id: 'early', dayId: 'd', start: DateTime(2025, 7, 14, 9)),
+      ];
+      final context = AssignmentContext(
+        participants: [AlgoParticipant(id: 'z', birthdate: DateTime(2013)), AlgoParticipant(id: 'a', birthdate: DateTime(2013))],
+        preferences: const {},
+        periods: periods,
+        targetPeriodIds: {'late', 'early'},
+        activities: const [AlgoActivity(id: 'swim', capacity: 5)],
+        scheduledActivities: const [
+          AlgoScheduledActivity(id: 's1', activityId: 'swim', periodId: 'late'),
+          AlgoScheduledActivity(id: 's2', activityId: 'swim', periodId: 'early'),
+        ],
+        existingAssignments: const {},
+        now: DateTime(2025, 7, 15),
+      );
+      final state = stateFor(context);
+      generate(context, state: state);
 
-        expect(
-          [
-            for (final c in state.potentialAssignments)
-              '${c.participant.id}:${c.period.id}',
-          ],
-          ['z:early', 'z:late', 'a:early', 'a:late'],
-        );
-        expect(
-          [for (final c in state.potentialAssignments) c.sequence],
-          [0, 1, 2, 3],
-        );
-      },
-    );
+      expect(
+        [for (final c in state.potentialAssignments) '${c.participant.id}:${c.period.id}'],
+        ['z:early', 'z:late', 'a:early', 'a:late'],
+      );
+      expect([for (final c in state.potentialAssignments) c.sequence], [0, 1, 2, 3]);
+    });
 
     group('double-schedule activities', () {
-      ScenarioBuilder base() => ScenarioBuilder()
-          .day('mon', periods: 3)
-          .day('tue', periods: 2)
-          .activity('canoe', doubleSchedule: true)
-          .participant('a');
+      ScenarioBuilder base() =>
+          ScenarioBuilder().day('mon', periods: 3).day('tue', periods: 2).activity('canoe', doubleSchedule: true).participant('a');
 
       test('yield ONE linked candidate for the whole block', () {
         final context = base().offer('canoe', ['mon1', 'mon2']).build();
@@ -169,19 +127,13 @@ void main() {
         expect(block.isDoubleAssignment, isTrue);
         expect(block.period.id, 'mon1');
         expect(block.linkedPeriod!.id, 'mon2');
-        expect(block.scheduledActivities.map((s) => s.id), [
-          'canoe@mon1',
-          'canoe@mon2',
-        ]);
+        expect(block.scheduledActivities.map((s) => s.id), ['canoe@mon1', 'canoe@mon2']);
         expect(block.periods.map((p) => p.id), ['mon1', 'mon2']);
       });
 
       test('overlapping blocks are all offered (mon1+mon2 and mon2+mon3)', () {
         final context = base().offer('canoe', ['mon1', 'mon2', 'mon3']).build();
-        expect(generate(context), [
-          'a:canoe@mon1+canoe@mon2',
-          'a:canoe@mon2+canoe@mon3',
-        ]);
+        expect(generate(context), ['a:canoe@mon1+canoe@mon2', 'a:canoe@mon2+canoe@mon3']);
       });
 
       test('are not generated for the last period of a day', () {
@@ -190,31 +142,19 @@ void main() {
         expect(generate(context), isEmpty);
       });
 
-      test(
-        'are not generated when the next period does not offer the activity',
-        () {
-          final context = base().offer('canoe', ['mon1', 'mon3']).build();
-          expect(generate(context), isEmpty);
-        },
-      );
+      test('are not generated when the next period does not offer the activity', () {
+        final context = base().offer('canoe', ['mon1', 'mon3']).build();
+        expect(generate(context), isEmpty);
+      });
 
-      test(
-        'are not generated when the participant is busy in the second period',
-        () {
-          final context =
-              base()
-                  .activity('swim')
-                  .offer('canoe', ['mon1', 'mon2'])
-                  .offer('swim', ['mon2'])
-                  .existing('a', ['swim@mon2'])
-                  .build();
-          expect(generate(context), isEmpty);
-        },
-      );
+      test('are not generated when the participant is busy in the second period', () {
+        final context =
+            base().activity('swim').offer('canoe', ['mon1', 'mon2']).offer('swim', ['mon2']).existing('a', ['swim@mon2']).build();
+        expect(generate(context), isEmpty);
+      });
 
       test('may extend into a period that is not a target period', () {
-        final context =
-            base().offer('canoe', ['mon1', 'mon2']).targets(['mon1']).build();
+        final context = base().offer('canoe', ['mon1', 'mon2']).targets(['mon1']).build();
         expect(generate(context), ['a:canoe@mon1+canoe@mon2']);
       });
 
@@ -240,9 +180,7 @@ void main() {
               .offer('canoe', ['mon1'])
               .participant('a', vetoes: ['swim'])
               .build();
-      final outcome = GeneratePotentialAssignmentsStep().execute(
-        stateFor(context),
-      );
+      final outcome = GeneratePotentialAssignmentsStep().execute(stateFor(context));
 
       expect(outcome.details['count'], 0);
       expect(outcome.details['skippedVetoed'], 1);

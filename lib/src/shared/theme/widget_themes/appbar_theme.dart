@@ -12,14 +12,8 @@ class BessieAppBarTheme {
     scrolledUnderElevation: 0,
     backgroundColor: BessColors.core,
     surfaceTintColor: BessColors.core,
-    iconTheme:
-        IconThemeData(color: BessColors.icon, size: BessSizes.iconMd),
-    actionsIconTheme:
-        IconThemeData(color: BessColors.icon, size: BessSizes.iconMd),
-    titleTextStyle: TextStyle(
-        fontSize: 18.0,
-        fontWeight: FontWeight.w600,
-        color: BessColors.high,
-        fontFamily: 'Inter'),
+    iconTheme: IconThemeData(color: BessColors.icon, size: BessSizes.iconMd),
+    actionsIconTheme: IconThemeData(color: BessColors.icon, size: BessSizes.iconMd),
+    titleTextStyle: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w600, color: BessColors.high, fontFamily: 'Inter'),
   );
 }

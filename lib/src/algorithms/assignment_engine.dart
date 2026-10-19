@@ -15,8 +15,7 @@ export 'data_models/analogs/algo_scheduled_activity.dart';
 export 'data_models/assignment_context.dart';
 export 'data_models/assignment_result.dart';
 export 'data_models/assignment_stalemate_exception.dart';
-export 'data_models/enums.dart'
-    show AssignmentStrategy, PreferenceType, StalemateStrategy;
+export 'data_models/enums.dart' show AssignmentStrategy, PreferenceType, StalemateStrategy;
 export 'evaluation/participant_evaluation_report.dart';
 export 'evaluation/step_report.dart';
 
@@ -43,14 +42,8 @@ class AssignmentEngine {
     Random? random,
   }) {
     final AssignmentAlgorithm algorithm = switch (strategy) {
-      AssignmentStrategy.diplomatic => DiplomaticAlgorithm(
-        stalemateStrategy: stalemateStrategy,
-        random: random,
-      ),
-      AssignmentStrategy.greedy => GreedyScoringAlgorithm(
-        stalemateStrategy: stalemateStrategy,
-        random: random,
-      ),
+      AssignmentStrategy.diplomatic => DiplomaticAlgorithm(stalemateStrategy: stalemateStrategy, random: random),
+      AssignmentStrategy.greedy => GreedyScoringAlgorithm(stalemateStrategy: stalemateStrategy, random: random),
     };
     return AlgorithmPipeline(algorithm.steps).run(context);
   }

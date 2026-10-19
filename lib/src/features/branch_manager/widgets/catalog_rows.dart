@@ -64,13 +64,7 @@ class RowIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: ShadIconButton.ghost(
-        width: 32,
-        height: 32,
-        foregroundColor: color,
-        icon: Icon(icon, size: 16),
-        onPressed: onPressed,
-      ),
+      child: ShadIconButton.ghost(width: 32, height: 32, foregroundColor: color, icon: Icon(icon, size: 16), onPressed: onPressed),
     );
   }
 }

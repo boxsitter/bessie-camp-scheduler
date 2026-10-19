@@ -55,29 +55,29 @@ class BessIconButton extends StatelessWidget {
         enabled: enabled,
         disabledBackgroundColor: disabledBackgroundColor,
         child: Center(
-          child: Builder(builder: (context) {
-            if (isLoading) {
-              return SizedBox(child: BessCircularLoader(), width: 24, height: 24,);
-            }
-            return Icon(
-              iconData,
-              color: baseIconColor != null
-                  ? baseIconColor
-                  : Tint.of(context) != null
-                      ? Tint.of(context)?.foregroundColor
-                      : BessColors.textPrimary,
-              size: iconSize,
-            );
-          }),
+          child: Builder(
+            builder: (context) {
+              if (isLoading) {
+                return SizedBox(child: BessCircularLoader(), width: 24, height: 24);
+              }
+              return Icon(
+                iconData,
+                color:
+                    baseIconColor != null
+                        ? baseIconColor
+                        : Tint.of(context) != null
+                        ? Tint.of(context)?.foregroundColor
+                        : BessColors.textPrimary,
+                size: iconSize,
+              );
+            },
+          ),
         ),
       ),
     );
 
     if (size == null) {
-      return AspectRatio(
-        aspectRatio: 1.0,
-        child: widget,
-      );
+      return AspectRatio(aspectRatio: 1.0, child: widget);
     } else {
       return widget;
     }

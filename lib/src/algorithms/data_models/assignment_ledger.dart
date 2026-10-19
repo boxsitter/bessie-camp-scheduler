@@ -32,8 +32,7 @@ class AssignmentLedger {
 
     // Seats held by campers who are not part of this run.
     context.externalEnrollment.forEach((scheduledActivityId, seats) {
-      if (context.scheduledActivityById(scheduledActivityId) != null &&
-          seats > 0) {
+      if (context.scheduledActivityById(scheduledActivityId) != null && seats > 0) {
         _seatsTaken[scheduledActivityId] = seats;
       }
     });
@@ -52,20 +51,13 @@ class AssignmentLedger {
         // is still counted.
         book.slots[periodIndex] ??= scheduled;
         _seatsTaken[scheduled.id] = (_seatsTaken[scheduled.id] ?? 0) + 1;
-        _insertSorted(
-          book.periodIndicesByActivity.putIfAbsent(
-            scheduled.activityId,
-            () => [],
-          ),
-          periodIndex,
-        );
+        _insertSorted(book.periodIndicesByActivity.putIfAbsent(scheduled.activityId, () => []), periodIndex);
       }
     }
     for (final book in _books.values) {
       book.periodIndicesByActivity.forEach((activityId, indices) {
         final activity = context.activityById(activityId)!;
-        book.occurrences[activityId] =
-            activity.doubleSchedule ? _countBlocks(indices) : indices.length;
+        book.occurrences[activityId] = activity.doubleSchedule ? _countBlocks(indices) : indices.length;
       });
     }
   }
@@ -74,12 +66,10 @@ class AssignmentLedger {
   List<NewPlacement> get newPlacements => List.unmodifiable(_newPlacements);
 
   /// Whether the participant already holds something in the period.
-  bool isBusy(String participantId, int periodIndex) =>
-      _books[participantId]?.slots[periodIndex] != null;
+  bool isBusy(String participantId, int periodIndex) => _books[participantId]?.slots[periodIndex] != null;
 
   /// What the participant holds in the period, if anything.
-  AlgoScheduledActivity? heldIn(String participantId, int periodIndex) =>
-      _books[participantId]?.slots[periodIndex];
+  AlgoScheduledActivity? heldIn(String participantId, int periodIndex) => _books[participantId]?.slots[periodIndex];
 
   /// Whether the participant is free in every period [candidate] would occupy.
   bool isFree(PotentialAssignment candidate) {
@@ -91,21 +81,15 @@ class AssignmentLedger {
 
   /// The seats taken so far in a scheduled activity: external enrollment,
   /// existing assignments of the run's participants and new placements.
-  int seatsTaken(String scheduledActivityId) =>
-      _seatsTaken[scheduledActivityId] ?? 0;
+  int seatsTaken(String scheduledActivityId) => _seatsTaken[scheduledActivityId] ?? 0;
 
   /// How many times the participant holds the activity this week. A
   /// double-schedule block counts once.
-  int occurrences(String participantId, String activityId) =>
-      _books[participantId]?.occurrences[activityId] ?? 0;
+  int occurrences(String participantId, String activityId) => _books[participantId]?.occurrences[activityId] ?? 0;
 
   /// Whether the participant holds the activity at least once (existing or
   /// new).
-  bool holds(String participantId, String activityId) =>
-      (_books[participantId]
-          ?.periodIndicesByActivity[activityId]
-          ?.isNotEmpty) ??
-      false;
+  bool holds(String participantId, String activityId) => (_books[participantId]?.periodIndicesByActivity[activityId]?.isNotEmpty) ?? false;
 
   /// The chronological indexes of the periods in which the participant holds
   /// the activity.
@@ -151,12 +135,7 @@ class AssignmentLedger {
       book.slots[indices[i]] = scheduled;
       _seatsTaken[scheduled.id] = (_seatsTaken[scheduled.id] ?? 0) + 1;
       _insertSorted(held, indices[i]);
-      _newPlacements.add(
-        NewPlacement(
-          participantId: participantId,
-          scheduledActivityId: scheduled.id,
-        ),
-      );
+      _newPlacements.add(NewPlacement(participantId: participantId, scheduledActivityId: scheduled.id));
     }
     book.occurrences[activityId] = (book.occurrences[activityId] ?? 0) + 1;
   }
@@ -172,8 +151,7 @@ class AssignmentLedger {
       final pairs =
           i + 1 < indices.length &&
           indices[i + 1] == indices[i] + 1 &&
-          context.periods[indices[i]].dayId ==
-              context.periods[indices[i + 1]].dayId;
+          context.periods[indices[i]].dayId == context.periods[indices[i + 1]].dayId;
       i += pairs ? 2 : 1;
     }
     return blocks;

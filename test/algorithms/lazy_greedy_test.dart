@@ -8,11 +8,9 @@ import 'support/eager_greedy_reference.dart';
 import 'support/scenario_builder.dart';
 
 /// The activity id of a placed scheduled activity id (`swim@mon1` -> `swim`).
-String activityOf(String scheduledActivityId) =>
-    scheduledActivityId.split('@').first;
+String activityOf(String scheduledActivityId) => scheduledActivityId.split('@').first;
 
-String periodOf(String scheduledActivityId) =>
-    scheduledActivityId.split('@').last;
+String periodOf(String scheduledActivityId) => scheduledActivityId.split('@').last;
 
 void main() {
   group('lazy-greedy selection', () {
@@ -34,33 +32,26 @@ void main() {
 
       for (var seed = 0; seed < 20; seed++) {
         final result = AssignmentEngine.run(context, random: Random(seed));
-        expect(
-          result.placedFor('amy'),
-          containsAll(['swim@mon2', 'art@mon1']),
-          reason: 'seed $seed',
-        );
+        expect(result.placedFor('amy'), containsAll(['swim@mon2', 'art@mon1']), reason: 'seed $seed');
         expect(result.stalemates, isEmpty);
       }
     });
 
-    test(
-      'a request is fulfilled in whichever period still has room, not the earliest',
-      () {
-        // Five periods, only the LAST has a free swim seat. All earlier ones are full.
-        final builder = ScenarioBuilder()
-            .day('mon', periods: 5)
-            .activity('swim', capacity: 1)
-            .activity('art', capacity: 10)
-            .offerEverywhere('swim')
-            .offerEverywhere('art')
-            .participant('amy', requests: ['swim']);
-        for (final p in ['mon1', 'mon2', 'mon3', 'mon4']) {
-          builder.external('swim@$p', 1);
-        }
-        final result = AssignmentEngine.run(builder.build(), random: Random(0));
-        expect(result.placedFor('amy'), contains('swim@mon5'));
-      },
-    );
+    test('a request is fulfilled in whichever period still has room, not the earliest', () {
+      // Five periods, only the LAST has a free swim seat. All earlier ones are full.
+      final builder = ScenarioBuilder()
+          .day('mon', periods: 5)
+          .activity('swim', capacity: 1)
+          .activity('art', capacity: 10)
+          .offerEverywhere('swim')
+          .offerEverywhere('art')
+          .participant('amy', requests: ['swim']);
+      for (final p in ['mon1', 'mon2', 'mon3', 'mon4']) {
+        builder.external('swim@$p', 1);
+      }
+      final result = AssignmentEngine.run(builder.build(), random: Random(0));
+      expect(result.placedFor('amy'), contains('swim@mon5'));
+    });
 
     test('requests outrank novelty, which outranks repeats (placement order)', () {
       // One participant, unlimited seats: the greedy order is observable in the
@@ -79,21 +70,11 @@ void main() {
 
       for (var seed = 0; seed < 30; seed++) {
         final placed =
-            AssignmentEngine.run(context, random: Random(seed)).newPlacements
-                .map((p) => activityOf(p.scheduledActivityId))
-                .toList();
+            AssignmentEngine.run(context, random: Random(seed)).newPlacements.map((p) => activityOf(p.scheduledActivityId)).toList();
 
         expect(placed, hasLength(6), reason: 'seed $seed');
-        expect(
-          placed.first,
-          'swim',
-          reason: 'the request goes first (seed $seed)',
-        );
-        expect(placed.take(3).toSet(), {
-          'swim',
-          'art',
-          'chess',
-        }, reason: 'novelty before any repeat (seed $seed)');
+        expect(placed.first, 'swim', reason: 'the request goes first (seed $seed)');
+        expect(placed.take(3).toSet(), {'swim', 'art', 'chess'}, reason: 'novelty before any repeat (seed $seed)');
       }
     });
 
@@ -111,9 +92,7 @@ void main() {
 
       for (var seed = 0; seed < 20; seed++) {
         final result = AssignmentEngine.run(context, random: Random(seed));
-        expect(result.placedFor('hopeful'), [
-          'swim@mon1',
-        ], reason: 'seed $seed');
+        expect(result.placedFor('hopeful'), ['swim@mon1'], reason: 'seed $seed');
         expect(result.placedFor('neutral'), ['art@mon1'], reason: 'seed $seed');
       }
     });
@@ -135,9 +114,7 @@ void main() {
 
       for (var seed = 0; seed < 20; seed++) {
         final result = AssignmentEngine.run(context, random: Random(seed));
-        expect(result.placedFor('newbie'), [
-          'chess@mon1',
-        ], reason: 'seed $seed');
+        expect(result.placedFor('newbie'), ['chess@mon1'], reason: 'seed $seed');
         expect(result.placedFor('veteran'), isEmpty, reason: 'seed $seed');
         expect(result.stalemateKeys, ['veteran@mon1'], reason: 'seed $seed');
       }
@@ -175,20 +152,13 @@ void main() {
               .build();
 
       final lazy = AssignmentEngine.run(context, random: Random(11));
-      final eager = eagerGreedyPlacements(
-        context,
-        const DiplomaticScorer(),
-        Random(11),
-      );
+      final eager = eagerGreedyPlacements(context, const DiplomaticScorer(), Random(11));
       expect(lazy.newPlacements, eager);
 
       // Every request is in the 1000 tier and never contested beyond capacity,
       // so all of them are fulfilled.
       expect(lazy.placedFor('a').map(activityOf), contains('swim'));
-      expect(
-        lazy.placedFor('b').map(activityOf),
-        containsAll(['swim', 'chess']),
-      );
+      expect(lazy.placedFor('b').map(activityOf), containsAll(['swim', 'chess']));
       expect(lazy.placedFor('c').map(activityOf), contains('art'));
       expect(lazy.placedFor('c').map(activityOf), isNot(contains('chess')));
     });
@@ -206,9 +176,7 @@ void main() {
         builder.participant('p$i', requests: ['swim']);
       }
       final result = AssignmentEngine.run(builder.build(), random: Random(2));
-      final process = result.stepReports.firstWhere(
-        (r) => r.stepName.startsWith('Process'),
-      );
+      final process = result.stepReports.firstWhere((r) => r.stepName.startsWith('Process'));
 
       expect(process.details['rescored'], greaterThan(0));
       // Everybody got their request exactly once as the first thing, then novelty.
@@ -232,9 +200,7 @@ void main() {
               .participant('c')
               .build();
       final result = AssignmentEngine.run(context, random: Random(0));
-      final process = result.stepReports.firstWhere(
-        (r) => r.stepName.startsWith('Process'),
-      );
+      final process = result.stepReports.firstWhere((r) => r.stepName.startsWith('Process'));
 
       expect(result.newPlacements, hasLength(1));
       expect(process.details['droppedByConstraint'], 2);
@@ -252,9 +218,7 @@ void main() {
               .participant('a')
               .build();
       final result = AssignmentEngine.run(context, random: Random(0));
-      final process = result.stepReports.firstWhere(
-        (r) => r.stepName.startsWith('Process'),
-      );
+      final process = result.stepReports.firstWhere((r) => r.stepName.startsWith('Process'));
 
       expect(result.newPlacements, hasLength(2));
       expect(process.details['skippedBusy'], 1);

@@ -64,7 +64,11 @@ void main() {
     });
 
     test('breaks position ties by name, treating numbers naturally', () {
-      final groups = groupCabinsByVillage([cabin('Cabin 10', village: 'A'), cabin('Cabin 9', village: 'A'), cabin('cabin 2', village: 'A')]);
+      final groups = groupCabinsByVillage([
+        cabin('Cabin 10', village: 'A'),
+        cabin('Cabin 9', village: 'A'),
+        cabin('cabin 2', village: 'A'),
+      ]);
       expect(groups.single.cabins.map((c) => c.name), ['cabin 2', 'Cabin 9', 'Cabin 10']);
     });
 
@@ -74,7 +78,11 @@ void main() {
     });
 
     test('lists cabins without a village last, under a readable label', () {
-      final groups = groupCabinsByVillage([cabin('Loner', position: 1), cabin('Oak', village: 'Pines', position: 9), cabin('Blank', village: '  ', position: 2)]);
+      final groups = groupCabinsByVillage([
+        cabin('Loner', position: 1),
+        cabin('Oak', village: 'Pines', position: 9),
+        cabin('Blank', village: '  ', position: 2),
+      ]);
 
       expect(groups.map((g) => g.label), ['Pines', noVillageLabel]);
       expect(groups.last.cabins.map((c) => c.name), ['Loner', 'Blank']);
@@ -121,7 +129,10 @@ void main() {
     test('names and display names may not repeat, ignoring case, among names or display names', () {
       expect(validateCabinForm(const CabinFormInput(name: 'oak', capacity: '5'), existing: existing).name, contains('already'));
       expect(validateCabinForm(const CabinFormInput(name: 'big oak', capacity: '5'), existing: existing).name, contains('already'));
-      expect(validateCabinForm(const CabinFormInput(name: 'New', displayName: 'MAPLE', capacity: '5'), existing: existing).displayName, contains('already'));
+      expect(
+        validateCabinForm(const CabinFormInput(name: 'New', displayName: 'MAPLE', capacity: '5'), existing: existing).displayName,
+        contains('already'),
+      );
     });
 
     test('limits the length of names', () {
@@ -174,7 +185,9 @@ void main() {
     test('accepts a minimal form and a fully filled one', () {
       expect(validateActivityForm(valid).hasErrors, isFalse);
       expect(
-        validateActivityForm(const ActivityFormInput(name: 'Ropes', description: 'High up', capacity: '8', maxAssignments: '2', doubleSchedule: true)).hasErrors,
+        validateActivityForm(
+          const ActivityFormInput(name: 'Ropes', description: 'High up', capacity: '8', maxAssignments: '2', doubleSchedule: true),
+        ).hasErrors,
         isFalse,
       );
     });
@@ -185,7 +198,10 @@ void main() {
     });
 
     test('names are unique ignoring case and surrounding spaces', () {
-      expect(validateActivityForm(const ActivityFormInput(name: ' archery ', capacity: '10'), otherActivityNames: ['Archery']).name, contains('already'));
+      expect(
+        validateActivityForm(const ActivityFormInput(name: ' archery ', capacity: '10'), otherActivityNames: ['Archery']).name,
+        contains('already'),
+      );
       expect(validateActivityForm(valid, otherActivityNames: ['Pottery']).name, isNull);
     });
 
@@ -259,7 +275,15 @@ void main() {
     });
 
     test('round-trips through the form', () {
-      final original = activity('Archery', category: ActivityCategory.sportsAndAthletics, skills: true, double: true, hidden: true, ranked: false, capacity: 12);
+      final original = activity(
+        'Archery',
+        category: ActivityCategory.sportsAndAthletics,
+        skills: true,
+        double: true,
+        hidden: true,
+        ranked: false,
+        capacity: 12,
+      );
       final rebuilt = buildActivity(ActivityFormInput.fromActivity(original), branchId: original.branchId, id: original.id);
 
       expect(rebuilt.toInsertRow(), original.toInsertRow());

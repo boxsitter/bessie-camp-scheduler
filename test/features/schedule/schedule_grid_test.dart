@@ -35,7 +35,13 @@ void main() {
     test('orders the blocks of a day chronologically, whatever order they come in', () {
       final late = block('late', monday, title: 'Skills Rec', start: const Duration(hours: 14), end: const Duration(hours: 15));
       final early = block('early', monday, title: 'Choice 1', start: const Duration(hours: 9, minutes: 15), end: const Duration(hours: 10));
-      final noon = block('noon', monday, title: 'Choice 2', start: const Duration(hours: 11, minutes: 20), end: const Duration(hours: 12, minutes: 20));
+      final noon = block(
+        'noon',
+        monday,
+        title: 'Choice 2',
+        start: const Duration(hours: 11, minutes: 20),
+        end: const Duration(hours: 12, minutes: 20),
+      );
       final schedule = scheduleOf(days: [monday], blocks: [late, noon, early], scheduled: const [], activities: const []);
 
       final grid = ScheduleGrid.build(schedule, const []);

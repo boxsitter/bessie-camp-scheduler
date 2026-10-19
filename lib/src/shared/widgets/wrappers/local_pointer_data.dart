@@ -8,10 +8,7 @@ import 'package:flutter/material.dart';
 /// outside the widget's bounds and then released, which is useful for complex
 /// interactions like drag-and-drop.
 class LocalPointerData extends StatefulWidget {
-  const LocalPointerData({
-    super.key,
-    required this.builder,
-  });
+  const LocalPointerData({super.key, required this.builder});
 
   /// A builder function that provides the gesture state to the child widget.
   ///
@@ -21,13 +18,14 @@ class LocalPointerData extends StatefulWidget {
   /// - `lastKnownClickState`: The value of `isDown` just before the pointer left the widget.
   /// - `lastKnownPosition`: The value of `localPosition` just before the pointer left the widget.
   final Widget Function(
-      BuildContext context,
-      bool isHovering,
-      bool? isDown,
-      Offset? localPosition,
-      bool? lastKnownClickState,
-      Offset? lastKnownPosition,
-      ) builder;
+    BuildContext context,
+    bool isHovering,
+    bool? isDown,
+    Offset? localPosition,
+    bool? lastKnownClickState,
+    Offset? lastKnownPosition,
+  )
+  builder;
 
   @override
   State<LocalPointerData> createState() => _LocalPointerDataState();
@@ -181,14 +179,7 @@ class _LocalPointerDataState extends State<LocalPointerData> {
             });
           }
         },
-        child: widget.builder(
-          context,
-          _isHovering,
-          _isDown,
-          _localPosition,
-          _lastKnownClickState,
-          _lastKnownPosition,
-        ),
+        child: widget.builder(context, _isHovering, _isDown, _localPosition, _lastKnownClickState, _lastKnownPosition),
       ),
     );
   }

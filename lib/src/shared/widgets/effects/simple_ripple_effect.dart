@@ -26,8 +26,7 @@ const double kRippleHoldOpacityMax = 0.08;
 // --- PROLONGED HOLD PHASE CONSTANTS ---
 
 // Prolonged Hold -> Opacity Fade-In (Phase 2)
-const Duration kRippleProlongedHoldOpacityFadeInDuration =
-    Duration(milliseconds: 5000);
+const Duration kRippleProlongedHoldOpacityFadeInDuration = Duration(milliseconds: 5000);
 const Curve kRippleProlongedHoldOpacityFadeInCurve = Curves.linear;
 const double kRippleProlongedHoldOpacityMax = 1.0;
 
@@ -41,6 +40,7 @@ const double kRippleReleaseExpandRadiusMax = 100.0;
 // Release -> Opacity Fade-Out
 const Duration kRippleReleaseOpacityFadeOutDuration = Duration(milliseconds: 550);
 const Curve kRippleReleaseOpacityFadeOutCurve = Curves.decelerate;
+
 /// If the ripple's opacity is below this value on release, it will be bumped up
 /// to this value to ensure the fade-out is noticeable.
 const double kRippleReleaseOpacityMinThreshold = 0.08;
@@ -102,28 +102,17 @@ class _RippleEffectState extends State<RippleEffect> with TickerProviderStateMix
     super.initState();
 
     // -- Controllers --
-    _expandController =
-        AnimationController(vsync: this, duration: kRippleReleaseExpandDuration);
-    _holdController =
-        AnimationController(vsync: this, duration: kRippleHoldShrinkDuration);
-    _slowFadeInController = AnimationController(
-        vsync: this, duration: kRippleProlongedHoldOpacityFadeInDuration);
-    _releaseFadeOutController = AnimationController(
-        vsync: this, duration: kRippleReleaseOpacityFadeOutDuration);
+    _expandController = AnimationController(vsync: this, duration: kRippleReleaseExpandDuration);
+    _holdController = AnimationController(vsync: this, duration: kRippleHoldShrinkDuration);
+    _slowFadeInController = AnimationController(vsync: this, duration: kRippleProlongedHoldOpacityFadeInDuration);
+    _releaseFadeOutController = AnimationController(vsync: this, duration: kRippleReleaseOpacityFadeOutDuration);
 
     // -- Animations --
-    _curvedExpandAnimation = CurvedAnimation(
-        parent: _expandController, curve: kRippleReleaseExpandCurve);
-    _curvedHoldShrinkAnimation =
-        CurvedAnimation(parent: _holdController, curve: kRippleHoldShrinkCurve);
-    _curvedHoldFadeInAnimation = CurvedAnimation(
-        parent: _holdController, curve: kRippleHoldOpacityFadeInCurve);
-    _curvedSlowFadeInAnimation = CurvedAnimation(
-        parent: _slowFadeInController,
-        curve: kRippleProlongedHoldOpacityFadeInCurve);
-    _curvedReleaseFadeOutAnimation = CurvedAnimation(
-        parent: _releaseFadeOutController,
-        curve: kRippleReleaseOpacityFadeOutCurve);
+    _curvedExpandAnimation = CurvedAnimation(parent: _expandController, curve: kRippleReleaseExpandCurve);
+    _curvedHoldShrinkAnimation = CurvedAnimation(parent: _holdController, curve: kRippleHoldShrinkCurve);
+    _curvedHoldFadeInAnimation = CurvedAnimation(parent: _holdController, curve: kRippleHoldOpacityFadeInCurve);
+    _curvedSlowFadeInAnimation = CurvedAnimation(parent: _slowFadeInController, curve: kRippleProlongedHoldOpacityFadeInCurve);
+    _curvedReleaseFadeOutAnimation = CurvedAnimation(parent: _releaseFadeOutController, curve: kRippleReleaseOpacityFadeOutCurve);
 
     // -- Listeners --
     _holdController.addStatusListener((status) {
@@ -165,11 +154,10 @@ class _RippleEffectState extends State<RippleEffect> with TickerProviderStateMix
     _opacityOnRelease = 0.0;
     _radiusOnRelease = 0.0;
     _holdController.forward(from: 0);
-    }
+  }
 
   void _startReleaseAnimation() {
-    _opacityOnRelease =
-        max(_calculateCurrentOpacity(), kRippleReleaseOpacityMinThreshold);
+    _opacityOnRelease = max(_calculateCurrentOpacity(), kRippleReleaseOpacityMinThreshold);
     _radiusOnRelease = _calculateCurrentRadius();
 
     _expandController.forward(from: 0);
@@ -180,68 +168,62 @@ class _RippleEffectState extends State<RippleEffect> with TickerProviderStateMix
 
   double _calculateCurrentOpacity() {
     if (_holdController.status != AnimationStatus.completed) {
-      return lerpDouble(kRippleHoldOpacityMin, kRippleHoldOpacityMax,
-          _curvedHoldFadeInAnimation.value)!;
+      return lerpDouble(kRippleHoldOpacityMin, kRippleHoldOpacityMax, _curvedHoldFadeInAnimation.value)!;
     } else {
-      return lerpDouble(kRippleHoldOpacityMax, kRippleProlongedHoldOpacityMax,
-          _curvedSlowFadeInAnimation.value)!;
+      return lerpDouble(kRippleHoldOpacityMax, kRippleProlongedHoldOpacityMax, _curvedSlowFadeInAnimation.value)!;
     }
   }
 
   double _calculateCurrentRadius() {
-    return lerpDouble(kRippleHoldShrinkRadiusStart,
-        kRippleHoldShrinkRadiusEnd, _curvedHoldShrinkAnimation.value)!;
+    return lerpDouble(kRippleHoldShrinkRadiusStart, kRippleHoldShrinkRadiusEnd, _curvedHoldShrinkAnimation.value)!;
   }
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-        borderRadius: widget.borderRadius,
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [
-            widget.child,
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: Listenable.merge([
-                  _expandController,
+      borderRadius: widget.borderRadius,
+      child: Stack(
+        fit: StackFit.passthrough,
+        children: [
+          widget.child,
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: Listenable.merge([
+                _expandController,
                 _holdController,
-                  _slowFadeInController,
-                  _releaseFadeOutController,
+                _slowFadeInController,
+                _releaseFadeOutController,
                 widget.tapPositionNotifier,
-                ]),
-                builder: (context, child) {
-                  final bool isAnimating = _expandController.isAnimating ||
-                      _releaseFadeOutController.isAnimating;
+              ]),
+              builder: (context, child) {
+                final bool isAnimating = _expandController.isAnimating || _releaseFadeOutController.isAnimating;
                 final tapPosition = widget.tapPositionNotifier.value;
 
-                if ((!widget.isHeld && !isAnimating && !widget.isHovering) ||
-                    tapPosition == null) {
-                    return const SizedBox.shrink();
-                  }
-                  return CustomPaint(
-                    painter: RipplePainter(
+                if ((!widget.isHeld && !isAnimating && !widget.isHovering) || tapPosition == null) {
+                  return const SizedBox.shrink();
+                }
+                return CustomPaint(
+                  painter: RipplePainter(
                     position: tapPosition,
                     isHolding: widget.isHeld,
                     isHovering: widget.isHovering,
                     holdShrinkProgress: _curvedHoldShrinkAnimation.value,
                     holdFadeInProgress: _curvedHoldFadeInAnimation.value,
-                      expandProgress: _curvedExpandAnimation.value,
-                      releaseOpacityProgress:
-                          _curvedReleaseFadeOutAnimation.value,
-                      color: widget.rippleColor ?? Colors.white,
-                      currentOpacity: _calculateCurrentOpacity(),
-                      opacityOnRelease: _opacityOnRelease,
-                      radiusOnRelease: _radiusOnRelease,
+                    expandProgress: _curvedExpandAnimation.value,
+                    releaseOpacityProgress: _curvedReleaseFadeOutAnimation.value,
+                    color: widget.rippleColor ?? Colors.white,
+                    currentOpacity: _calculateCurrentOpacity(),
+                    opacityOnRelease: _opacityOnRelease,
+                    radiusOnRelease: _radiusOnRelease,
                     useSolidColor: widget.useSolidColor,
                     gradientHotspot: widget.gradientHotspot,
-                    ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -286,16 +268,12 @@ class RipplePainter extends CustomPainter {
 
     if (isHolding) {
       // --- HOLD PHASE ---
-      opacity = lerpDouble(
-          kRippleHoldOpacityMin, kRippleHoldOpacityMax, holdFadeInProgress)!;
-      radius = lerpDouble(kRippleHoldShrinkRadiusStart,
-          kRippleHoldShrinkRadiusEnd, holdShrinkProgress)!;
+      opacity = lerpDouble(kRippleHoldOpacityMin, kRippleHoldOpacityMax, holdFadeInProgress)!;
+      radius = lerpDouble(kRippleHoldShrinkRadiusStart, kRippleHoldShrinkRadiusEnd, holdShrinkProgress)!;
     } else if (isAnimatingOut) {
       // --- EXPAND & FADE-OUT PHASE ---
-      opacity = lerpDouble(
-          opacityOnRelease, kRippleReleaseOpacityMin, releaseOpacityProgress)!;
-      radius = lerpDouble(
-          radiusOnRelease, kRippleReleaseExpandRadiusMax, expandProgress)!;
+      opacity = lerpDouble(opacityOnRelease, kRippleReleaseOpacityMin, releaseOpacityProgress)!;
+      radius = lerpDouble(radiusOnRelease, kRippleReleaseExpandRadiusMax, expandProgress)!;
     } else if (isHovering) {
       // --- HOVER PHASE ---
       opacity = kRippleHoverGlowOpacity;
@@ -313,17 +291,13 @@ class RipplePainter extends CustomPainter {
       paint.style = PaintingStyle.fill;
     } else {
       paint.shader = RadialGradient(
-        colors: [
-          color.withOpacity(opacity),
-          color.withOpacity(0.0),
-        ],
+        colors: [color.withOpacity(opacity), color.withOpacity(0.0)],
         stops: [gradientHotspot, 1.0],
       ).createShader(Rect.fromCircle(center: position, radius: radius));
 
-    if (kBloomAmount > 0) {
-      paint.maskFilter =
-          MaskFilter.blur(BlurStyle.normal, kBloomAmount * opacity);
-    }
+      if (kBloomAmount > 0) {
+        paint.maskFilter = MaskFilter.blur(BlurStyle.normal, kBloomAmount * opacity);
+      }
     }
     canvas.drawCircle(position, radius, paint);
   }

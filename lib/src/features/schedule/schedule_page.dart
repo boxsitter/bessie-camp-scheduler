@@ -19,20 +19,21 @@ class SchedulePage extends StatelessWidget {
     return GetBuilder<SchedulePageController>(
       // `state.controller` is not set yet while initState runs.
       initState: (_) => Get.find<SchedulePageController>().ensureLoaded(),
-      builder: (controller) => BessSiteTemplate(
-        desktop: ScheduleBody(controller: controller),
-        desktopPadding: false,
-        menuBar: BessMenuBar<SchedulePageController>(externalPageController: controller),
-        centerActions: [
-          BessIconButton(
-            iconData: LucideIcons.rotateCw500,
-            onPressed: controller.reload,
-            enabled: !controller.isLoading,
-            isLoading: controller.isLoading,
-            radius: 8,
+      builder:
+          (controller) => BessSiteTemplate(
+            desktop: ScheduleBody(controller: controller),
+            desktopPadding: false,
+            menuBar: BessMenuBar<SchedulePageController>(externalPageController: controller),
+            centerActions: [
+              BessIconButton(
+                iconData: LucideIcons.rotateCw500,
+                onPressed: controller.reload,
+                enabled: !controller.isLoading,
+                isLoading: controller.isLoading,
+                radius: 8,
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

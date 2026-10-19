@@ -33,7 +33,10 @@ void main() {
   setUp(() {
     Get.reset();
     final client = newClient();
-    roster = FakeRosterRepository(client)..campers = [camper('a', assignments: {'morning': 's-archery'})];
+    roster = FakeRosterRepository(client)
+      ..campers = [
+        camper('a', assignments: {'morning': 's-archery'}),
+      ];
     sessions = FakeSessionRepository(client, schedule);
     context = ContextService(
       CatalogRepository(client),

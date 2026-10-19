@@ -15,7 +15,14 @@ import '../session_setup_logic.dart';
 /// What is offered in each block of the session, with add and remove for
 /// people who may change session data.
 class ScheduleSection extends StatelessWidget {
-  const ScheduleSection({super.key, required this.setup, required this.canEdit, required this.busy, required this.onAdd, required this.onRemove});
+  const ScheduleSection({
+    super.key,
+    required this.setup,
+    required this.canEdit,
+    required this.busy,
+    required this.onAdd,
+    required this.onRemove,
+  });
 
   final SessionSetup setup;
   final bool canEdit;
@@ -27,35 +34,44 @@ class ScheduleSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return SectionCard(
       title: 'Schedule',
-      subtitle: 'The activities campers can be placed in during each block. The number beside an activity is campers assigned out of its capacity.',
-      child: setup.schedule.blocks.isEmpty
-          ? Text('This session has no blocks yet.', style: BessTextStyles.standardSecondary)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final day in groupBlocksByDay(setup.schedule.blocks)) ...[
-                  GroupHeading(label: day.heading),
-                  for (final block in day.blocks)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: BessSizes.sm),
-                      child: _BlockTile(
-                        setup: setup,
-                        block: block,
-                        canEdit: canEdit,
-                        busy: busy,
-                        onAdd: () => onAdd(block),
-                        onRemove: (scheduled) => onRemove(block, scheduled),
+      subtitle:
+          'The activities campers can be placed in during each block. The number beside an activity is campers assigned out of its capacity.',
+      child:
+          setup.schedule.blocks.isEmpty
+              ? Text('This session has no blocks yet.', style: BessTextStyles.standardSecondary)
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final day in groupBlocksByDay(setup.schedule.blocks)) ...[
+                    GroupHeading(label: day.heading),
+                    for (final block in day.blocks)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: BessSizes.sm),
+                        child: _BlockTile(
+                          setup: setup,
+                          block: block,
+                          canEdit: canEdit,
+                          busy: busy,
+                          onAdd: () => onAdd(block),
+                          onRemove: (scheduled) => onRemove(block, scheduled),
+                        ),
                       ),
-                    ),
+                  ],
                 ],
-              ],
-            ),
+              ),
     );
   }
 }
 
 class _BlockTile extends StatelessWidget {
-  const _BlockTile({required this.setup, required this.block, required this.canEdit, required this.busy, required this.onAdd, required this.onRemove});
+  const _BlockTile({
+    required this.setup,
+    required this.block,
+    required this.canEdit,
+    required this.busy,
+    required this.onAdd,
+    required this.onRemove,
+  });
 
   final SessionSetup setup;
   final Block block;
@@ -150,7 +166,10 @@ class _ActivityChip extends StatelessWidget {
           const SizedBox(width: BessSizes.sm),
           Text(
             '$enrolled/${activity.capacity}',
-            style: BessTextStyles.label.copyWith(color: overCapacity ? BessColors.error : BessColors.textSecondary, fontWeight: FontWeight.w600),
+            style: BessTextStyles.label.copyWith(
+              color: overCapacity ? BessColors.error : BessColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           if (onRemove != null)
             Tooltip(

@@ -98,11 +98,12 @@ class _CamperHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pending = controller.isPending(camper.id);
-    final status = pending
-        ? 'Saving...'
-        : camper.preferencesSubmitted
-        ? 'Saved'
-        : 'Not saved yet';
+    final status =
+        pending
+            ? 'Saving...'
+            : camper.preferencesSubmitted
+            ? 'Saved'
+            : 'Not saved yet';
 
     return Row(
       children: [
@@ -123,10 +124,7 @@ class _CamperHeader extends StatelessWidget {
             baseTint: BessColors.green,
             onPressed: controller.markSelectedDone,
             child: Center(
-              child: Text(
-                controller.board!.isEmpty ? 'No preferences - mark as done' : 'Mark as done',
-                style: BessTextStyles.standard,
-              ),
+              child: Text(controller.board!.isEmpty ? 'No preferences - mark as done' : 'Mark as done', style: BessTextStyles.standard),
             ),
           ),
       ],

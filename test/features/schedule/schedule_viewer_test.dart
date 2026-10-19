@@ -14,7 +14,13 @@ void main() {
   final pottery = activity('pottery', name: 'Pottery', capacity: 10);
   final swimTest = activity('swimtest', name: 'Swim Test', hidden: true);
   final choice1 = block('c1', monday, title: 'Choice Activity 1');
-  final skills = block('sk', tuesday, title: 'Skills Rec', start: const Duration(hours: 9, minutes: 15), end: const Duration(hours: 10, minutes: 10));
+  final skills = block(
+    'sk',
+    tuesday,
+    title: 'Skills Rec',
+    start: const Duration(hours: 9, minutes: 15),
+    end: const Duration(hours: 10, minutes: 10),
+  );
 
   final grid = ScheduleGrid.build(
     scheduleOf(
@@ -72,7 +78,11 @@ void main() {
   });
 
   testWidgets('the sheet has the proportions of a landscape letter page', (tester) async {
-    await pumpPaper(tester, SingleChildScrollView(scrollDirection: Axis.horizontal, child: SchedulePaper(grid: grid)), size: const Size(2600, 2200));
+    await pumpPaper(
+      tester,
+      SingleChildScrollView(scrollDirection: Axis.horizontal, child: SchedulePaper(grid: grid)),
+      size: const Size(2600, 2200),
+    );
 
     final size = tester.getSize(find.byType(SchedulePaper));
     expect(size.width, SchedulePaperLayout.width);

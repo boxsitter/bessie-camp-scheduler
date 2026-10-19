@@ -12,8 +12,7 @@ class AlgoParticipant {
   /// The participant's age in whole years on [now].
   int ageOn(DateTime now) {
     var age = now.year - birthdate.year;
-    if (now.month < birthdate.month ||
-        (now.month == birthdate.month && now.day < birthdate.day)) {
+    if (now.month < birthdate.month || (now.month == birthdate.month && now.day < birthdate.day)) {
       age--;
     }
     return age;

@@ -169,12 +169,17 @@ List<ActivityChoiceGroup> addableActivityGroups({
   required Iterable<String> offeredActivityIds,
 }) {
   final offered = offeredActivityIds.toSet();
-  final addable = catalog.where((activity) => !offered.contains(activity.id)).sorted((a, b) => compareAsciiLowerCaseNatural(a.name, b.name));
+  final addable = catalog
+      .where((activity) => !offered.contains(activity.id))
+      .sorted((a, b) => compareAsciiLowerCaseNatural(a.name, b.name));
   final groups = [
     ActivityChoiceGroup(standardActivitiesTitle, addable.where((a) => !a.isSkillsRec).toList()),
     ActivityChoiceGroup(skillsRecsTitle, addable.where((a) => a.isSkillsRec).toList()),
   ];
-  return [for (final group in block.isSkillsRec ? groups.reversed : groups) if (group.activities.isNotEmpty) group];
+  return [
+    for (final group in block.isSkillsRec ? groups.reversed : groups)
+      if (group.activities.isNotEmpty) group,
+  ];
 }
 
 // Preference limits -----------------------------------------------------------
@@ -201,8 +206,12 @@ class LimitsDraft {
   final int maxSkillsRequests;
   final int maxSkillsVetoes;
 
-  PreferenceLimits toLimits() =>
-      PreferenceLimits(maxRequests: maxRequests, maxVetoes: maxVetoes, maxSkillsRequests: maxSkillsRequests, maxSkillsVetoes: maxSkillsVetoes);
+  PreferenceLimits toLimits() => PreferenceLimits(
+    maxRequests: maxRequests,
+    maxVetoes: maxVetoes,
+    maxSkillsRequests: maxSkillsRequests,
+    maxSkillsVetoes: maxSkillsVetoes,
+  );
 
   LimitsDraft copyWith({int? maxRequests, int? maxVetoes, int? maxSkillsRequests, int? maxSkillsVetoes}) => LimitsDraft(
     maxRequests: _clamp(maxRequests ?? this.maxRequests),

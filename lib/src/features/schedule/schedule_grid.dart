@@ -89,15 +89,16 @@ class ScheduleGrid {
         if (blocksByDay[day.id] case final blocks? when blocks.isNotEmpty)
           DayColumn(
             day: day,
-            blocks: blocks
-                .sorted((a, b) {
-                  final byStart = a.startTime.compareTo(b.startTime);
-                  if (byStart != 0) return byStart;
-                  final byEnd = a.endTime.compareTo(b.endTime);
-                  return byEnd != 0 ? byEnd : a.title.compareTo(b.title);
-                })
-                .map(cellOf)
-                .toList(),
+            blocks:
+                blocks
+                    .sorted((a, b) {
+                      final byStart = a.startTime.compareTo(b.startTime);
+                      if (byStart != 0) return byStart;
+                      final byEnd = a.endTime.compareTo(b.endTime);
+                      return byEnd != 0 ? byEnd : a.title.compareTo(b.title);
+                    })
+                    .map(cellOf)
+                    .toList(),
           ),
     ]);
   }

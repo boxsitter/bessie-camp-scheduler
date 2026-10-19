@@ -30,10 +30,7 @@ class GenerateEvaluationReportStep extends AlgorithmStep {
             context: state.context,
             ledger: state.ledger,
           ),
-          noveltyScore: noveltyEvaluator.calculateNoveltyPercentage(
-            participantId: participantId,
-            ledger: state.ledger,
-          ),
+          noveltyScore: noveltyEvaluator.calculateNoveltyPercentage(participantId: participantId, ledger: state.ledger),
         ),
       );
 
@@ -54,10 +51,7 @@ class GenerateEvaluationReportStep extends AlgorithmStep {
       summary:
           'Evaluated ${reports.length} participants; '
           '${state.satisfaction.length} have a satisfaction index.',
-      details: {
-        'count': reports.length,
-        'scoredParticipants': state.satisfaction.length,
-      },
+      details: {'count': reports.length, 'scoredParticipants': state.satisfaction.length},
     );
   }
 }

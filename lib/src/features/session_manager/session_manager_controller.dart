@@ -179,13 +179,18 @@ class SessionManagerController extends GetxController with RouteAwareControllerM
     // Count against the roster as it is now, not as it was when the page loaded.
     final campers = await attempt(() => _roster.fetchCampers(sessionId));
     if (campers == null) return;
-    final change = diffCabinSelection(registered: current.registeredCabinIds, selected: selected, campersByCabin: camperCountsByCabin(campers));
+    final change = diffCabinSelection(
+      registered: current.registeredCabinIds,
+      selected: selected,
+      campersByCabin: camperCountsByCabin(campers),
+    );
     if (change.isEmpty) return;
 
     if (change.campersLeftWithoutCabin > 0) {
       final confirmed = await _popups.showConfirmationDialog(
         title: 'Remove ${pluralize(change.removed.length, 'cabin')}?',
-        message: '${pluralize(change.campersLeftWithoutCabin, 'camper')} will be left without a cabin. They stay on the roster and can be placed in another cabin.',
+        message:
+            '${pluralize(change.campersLeftWithoutCabin, 'camper')} will be left without a cabin. They stay on the roster and can be placed in another cabin.',
       );
       if (!confirmed) return;
     }
@@ -267,8 +272,10 @@ class SessionManagerController extends GetxController with RouteAwareControllerM
     if (campers == null) return;
     final enrolled = enrollmentCounts(campers)[scheduled.id] ?? 0;
 
-    final consequences = enrolled == 0 ? 'No campers are assigned to it.' : '${pluralize(enrolled, 'camper')} assigned to it will lose that assignment.';
-    final doubleBlock = (activity?.doubleSchedule ?? false) ? ' It is a double block activity: remove it from the neighboring block too.' : '';
+    final consequences =
+        enrolled == 0 ? 'No campers are assigned to it.' : '${pluralize(enrolled, 'camper')} assigned to it will lose that assignment.';
+    final doubleBlock =
+        (activity?.doubleSchedule ?? false) ? ' It is a double block activity: remove it from the neighboring block too.' : '';
     final confirmed = await _popups.showConfirmationDialog(
       title: 'Remove $name?',
       message: '$name will no longer be offered during ${block.displayTitle}. $consequences$doubleBlock',

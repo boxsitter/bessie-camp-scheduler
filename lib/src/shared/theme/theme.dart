@@ -19,24 +19,27 @@ class BessieAppTheme {
 
   static ThemeData theme = ThemeData(
     useMaterial3: true,
-    cupertinoOverrideTheme: MaterialBasedCupertinoThemeData(materialTheme: ThemeData(checkboxTheme: CheckboxThemeData(
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(BessSizes.xs)),
-      checkColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return BessColors.low;
-        } else {
-          return BessColors.high;
-        }
-      }),
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return BessColors.primary;
-        } else {
-          return Colors.transparent;
-        }
-      }),
-    ))),
+    cupertinoOverrideTheme: MaterialBasedCupertinoThemeData(
+      materialTheme: ThemeData(
+        checkboxTheme: CheckboxThemeData(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(BessSizes.xs)),
+          checkColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return BessColors.low;
+            } else {
+              return BessColors.high;
+            }
+          }),
+          fillColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return BessColors.primary;
+            } else {
+              return Colors.transparent;
+            }
+          }),
+        ),
+      ),
+    ),
 
     visualDensity: VisualDensity.compact,
     fontFamily: 'Inter',

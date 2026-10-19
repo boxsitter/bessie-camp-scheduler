@@ -39,14 +39,15 @@ class SessionManagerView extends StatelessWidget {
       return SetupPage(
         title: 'Session setup',
         subtitle: canEdit ? setup.session.name : '${setup.session.name}. You can look but not change it.',
-        trailing: newSession == null
-            ? null
-            : ShadButton.secondary(
-                size: ShadButtonSize.sm,
-                leading: const Icon(LucideIcons.plus, size: 16),
-                onPressed: newSession,
-                child: const Text('New session'),
-              ),
+        trailing:
+            newSession == null
+                ? null
+                : ShadButton.secondary(
+                  size: ShadButtonSize.sm,
+                  leading: const Icon(LucideIcons.plus, size: 16),
+                  onPressed: newSession,
+                  child: const Text('New session'),
+                ),
         children: [
           OverviewSection(setup: setup, seasonName: controller.seasonName),
           SessionCabinsSection(

@@ -40,25 +40,33 @@ class SessionCabinsSection extends StatelessWidget {
     final change = diffCabinSelection(registered: setup.registeredCabinIds, selected: selected, campersByCabin: setup.campersByCabin);
     return SectionCard(
       title: 'Cabins',
-      subtitle: canEdit
-          ? 'Tick the cabins this session uses. Campers can only be placed in cabins that are ticked.'
-          : 'The cabins this session uses.',
-      child: setup.cabins.isEmpty
-          ? Text('The branch has no cabins yet. Add some on the branch catalog page.', style: BessTextStyles.standardSecondary)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final group in groupCabinsByVillage(setup.cabins)) ...[
-                  _VillageHeading(group: group, selected: selected, canEdit: canEdit, onSetMany: onSetMany),
-                  for (final cabin in group.cabins)
-                    _CabinRow(setup: setup, cabin: cabin, checked: selected.contains(cabin.id), canEdit: canEdit, onToggle: () => onToggle(cabin.id)),
+      subtitle:
+          canEdit
+              ? 'Tick the cabins this session uses. Campers can only be placed in cabins that are ticked.'
+              : 'The cabins this session uses.',
+      child:
+          setup.cabins.isEmpty
+              ? Text('The branch has no cabins yet. Add some on the branch catalog page.', style: BessTextStyles.standardSecondary)
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final group in groupCabinsByVillage(setup.cabins)) ...[
+                    _VillageHeading(group: group, selected: selected, canEdit: canEdit, onSetMany: onSetMany),
+                    for (final cabin in group.cabins)
+                      _CabinRow(
+                        setup: setup,
+                        cabin: cabin,
+                        checked: selected.contains(cabin.id),
+                        canEdit: canEdit,
+                        onToggle: () => onToggle(cabin.id),
+                      ),
+                  ],
+                  if (canEdit) ...[
+                    const SizedBox(height: BessSizes.md),
+                    _SaveBar(change: change, busy: busy, onSave: onSave, onReset: onReset),
+                  ],
                 ],
-                if (canEdit) ...[
-                  const SizedBox(height: BessSizes.md),
-                  _SaveBar(change: change, busy: busy, onSave: onSave, onReset: onReset),
-                ],
-              ],
-            ),
+              ),
     );
   }
 }
@@ -77,11 +85,13 @@ class _VillageHeading extends StatelessWidget {
     final allSelected = ids.every(selected.contains);
     return Row(
       children: [
-        Expanded(
-          child: GroupHeading(label: group.label, detail: '${ids.where(selected.contains).length} of ${ids.length} ticked'),
-        ),
+        Expanded(child: GroupHeading(label: group.label, detail: '${ids.where(selected.contains).length} of ${ids.length} ticked')),
         if (canEdit)
-          ShadButton.ghost(size: ShadButtonSize.sm, onPressed: () => onSetMany(ids, !allSelected), child: Text(allSelected ? 'Clear' : 'Tick all')),
+          ShadButton.ghost(
+            size: ShadButtonSize.sm,
+            onPressed: () => onSetMany(ids, !allSelected),
+            child: Text(allSelected ? 'Clear' : 'Tick all'),
+          ),
       ],
     );
   }
@@ -103,9 +113,7 @@ class _CabinRow extends StatelessWidget {
     return CatalogRow(
       content: Row(
         children: [
-          Expanded(
-            child: ShadCheckbox(value: checked, onChanged: canEdit ? (_) => onToggle() : null, label: Text(cabin.title)),
-          ),
+          Expanded(child: ShadCheckbox(value: checked, onChanged: canEdit ? (_) => onToggle() : null, label: Text(cabin.title))),
           if (registered && !checked && campers > 0)
             Pill('${pluralize(campers, 'camper')} will lose this cabin', tone: PillTone.danger)
           else if (registered)

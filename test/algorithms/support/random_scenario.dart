@@ -39,13 +39,11 @@ class RandomScenario {
     final capacity = <String, int>{};
     final doubles = <String>{};
     final offered = <String, List<String>>{}; // activityId -> periodIds
-    final scheduledIdsByPeriod =
-        <String, List<String>>{}; // periodId -> activityIds
+    final scheduledIdsByPeriod = <String, List<String>>{}; // periodId -> activityIds
     for (var a = 0; a < activityCount; a++) {
       final id = 'a$a';
       final isDouble = rnd.nextInt(4) == 0;
-      final hidden =
-          a >= 2 && rnd.nextInt(8) == 0; // a0 and a1 are always assignable
+      final hidden = a >= 2 && rnd.nextInt(8) == 0; // a0 and a1 are always assignable
       capacity[id] = generous ? 4 + rnd.nextInt(10) : 1 + rnd.nextInt(5);
       if (isDouble) doubles.add(id);
       builder.activity(
@@ -83,20 +81,13 @@ class RandomScenario {
           vetoes.add('a$a');
         }
       }
-      builder.participant(
-        id,
-        age: 6 + rnd.nextInt(11),
-        requests: requests,
-        vetoes: vetoes,
-      );
+      builder.participant(id, age: 6 + rnd.nextInt(11), requests: requests, vetoes: vetoes);
     }
 
     // --- existing assignments (consistent: no double-booking, within capacity) ---
     final seats = <String, int>{}; // scheduledActivityId -> seats taken
     final busy = <String, Set<String>>{}; // participantId -> periodIds
-    bool hasSeat(String activityId, String periodId) =>
-        (seats[ScenarioBuilder.sa(activityId, periodId)] ?? 0) <
-        capacity[activityId]!;
+    bool hasSeat(String activityId, String periodId) => (seats[ScenarioBuilder.sa(activityId, periodId)] ?? 0) < capacity[activityId]!;
     void take(String participantId, String activityId, String periodId) {
       final saId = ScenarioBuilder.sa(activityId, periodId);
       seats[saId] = (seats[saId] ?? 0) + 1;
@@ -109,8 +100,7 @@ class RandomScenario {
       for (var k = 0; k < 1 + rnd.nextInt(2); k++) {
         final periodId = allPeriods[rnd.nextInt(allPeriods.length)];
         final here = scheduledIdsByPeriod[periodId];
-        if (here == null ||
-            (busy[participantId]?.contains(periodId) ?? false)) {
+        if (here == null || (busy[participantId]?.contains(periodId) ?? false)) {
           continue;
         }
         final activityId = here[rnd.nextInt(here.length)];
@@ -125,9 +115,7 @@ class RandomScenario {
         final index = day.indexOf(periodId);
         if (index + 1 >= day.length) continue;
         final nextId = day[index + 1];
-        if (!offered[activityId]!.contains(nextId) ||
-            (busy[participantId]?.contains(nextId) ?? false) ||
-            !hasSeat(activityId, nextId)) {
+        if (!offered[activityId]!.contains(nextId) || (busy[participantId]?.contains(nextId) ?? false) || !hasSeat(activityId, nextId)) {
           continue;
         }
         take(participantId, activityId, periodId);

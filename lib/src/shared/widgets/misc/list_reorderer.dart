@@ -5,13 +5,7 @@ import '../../constants/colors.dart';
 import '../../constants/sizes.dart';
 
 class VerticalListReorderer<T> extends StatelessWidget {
-  const VerticalListReorderer({
-    super.key,
-    this.trailingBuilder,
-    required this.items,
-    required this.onReorder,
-    required this.titleBuilder,
-  });
+  const VerticalListReorderer({super.key, this.trailingBuilder, required this.items, required this.onReorder, required this.titleBuilder});
 
   final Widget? Function(T item)? trailingBuilder;
   final Widget? Function(T item) titleBuilder;
@@ -31,31 +25,27 @@ class VerticalListReorderer<T> extends StatelessWidget {
           // The elevation creates the shadow effect you want to keep.
           elevation: 6.0,
           // CRITICAL: Match the shape and color to your ListTile's properties.
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(BessSizes.cardRadiusLg),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(BessSizes.cardRadiusLg)),
           color: BessColors.core,
           // This ensures the shadow is cast from the rounded shape,
           // and the background is seamless.
           child: child,
         );
       },
-      children: items.map((T item) {
-        return ListTile(
-          tileColor: BessColors.core,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(BessSizes.cardRadiusLg),
-            side: BorderSide.none,
-          ),
-          key: ValueKey(item),
-          title: titleBuilder(item),
-          leading: ReorderableDragStartListener(
-            index: items.indexOf(item),
-            child: MouseRegion(cursor: SystemMouseCursors.grab, child: const Icon(LucideIcons.gripVertical)),
-          ),
-          trailing: trailingBuilder?.call(item),
-        );
-      }).toList(),
+      children:
+          items.map((T item) {
+            return ListTile(
+              tileColor: BessColors.core,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(BessSizes.cardRadiusLg), side: BorderSide.none),
+              key: ValueKey(item),
+              title: titleBuilder(item),
+              leading: ReorderableDragStartListener(
+                index: items.indexOf(item),
+                child: MouseRegion(cursor: SystemMouseCursors.grab, child: const Icon(LucideIcons.gripVertical)),
+              ),
+              trailing: trailingBuilder?.call(item),
+            );
+          }).toList(),
     );
   }
 }

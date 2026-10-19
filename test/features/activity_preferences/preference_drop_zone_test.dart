@@ -31,11 +31,7 @@ void main() {
                 child: Column(
                   children: [
                     for (final a in library)
-                      DraggableActivity(
-                        activity: a,
-                        onDragStarted: () => dragged?.add(a),
-                        onTap: () => tapped?.add(a),
-                      ),
+                      DraggableActivity(activity: a, onDragStarted: () => dragged?.add(a), onTap: () => tapped?.add(a)),
                   ],
                 ),
               ),

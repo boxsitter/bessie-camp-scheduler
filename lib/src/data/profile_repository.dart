@@ -28,6 +28,11 @@ class ProfileRepository {
   Future<void> updatePreferences(Map<String, dynamic> current, Map<String, dynamic> changes) => guarded(() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
-    await _client.from('profiles').update({'preferences': {...current, ...changes}}).eq('id', userId);
+    await _client
+        .from('profiles')
+        .update({
+          'preferences': {...current, ...changes},
+        })
+        .eq('id', userId);
   });
 }

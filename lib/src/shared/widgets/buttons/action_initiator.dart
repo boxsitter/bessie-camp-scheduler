@@ -7,16 +7,17 @@ import '../../styles/text_styles.dart';
 import '../wrappers/tint.dart';
 
 class ActionInitiator extends StatelessWidget {
-  const ActionInitiator(
-      {super.key,
-      required this.onPressed,
-      this.awaiting = false,
-      this.enabledText = '',
-      this.awaitingText,
-      this.width,
-      this.disabled,
-      this.disabledText,
-      this.height});
+  const ActionInitiator({
+    super.key,
+    required this.onPressed,
+    this.awaiting = false,
+    this.enabledText = '',
+    this.awaitingText,
+    this.width,
+    this.disabled,
+    this.disabledText,
+    this.height,
+  });
 
   final void Function()? onPressed;
   final bool? awaiting;
@@ -50,9 +51,7 @@ class ActionInitiator extends StatelessWidget {
                     builder: (BuildContext context) {
                       return Text(
                         awaitingText ?? 'One moment...',
-                        style: BessTextStyles.standard.copyWith(
-                          color: Tint.of(context)?.foregroundColor,
-                        ),
+                        style: BessTextStyles.standard.copyWith(color: Tint.of(context)?.foregroundColor),
                         maxLines: 1,
                         overflow: TextOverflow.clip,
                       );
@@ -72,9 +71,7 @@ class ActionInitiator extends StatelessWidget {
               child: Center(
                 child: Text(
                   awaitingText ?? enabledText,
-                  style: BessTextStyles.standardInverted.copyWith(
-                    color: BessColors.textInverted.withAlpha(150),
-                  ),
+                  style: BessTextStyles.standardInverted.copyWith(color: BessColors.textInverted.withAlpha(150)),
                 ),
               ),
             ),
@@ -89,9 +86,7 @@ class ActionInitiator extends StatelessWidget {
             builder: (BuildContext context) {
               return Text(
                 disabledText ?? enabledText,
-                style: BessTextStyles.standard.copyWith(
-                  color: Tint.of(context)?.foregroundColor,
-                ),
+                style: BessTextStyles.standard.copyWith(color: Tint.of(context)?.foregroundColor),
                 maxLines: 1,
                 overflow: TextOverflow.clip,
               );

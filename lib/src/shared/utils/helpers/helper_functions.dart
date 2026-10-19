@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
-
 class BessHelperFunctions {
   static DateTime getStartOfWeek(DateTime date) {
     final int daysUntilMonday = date.weekday - 1;
     final DateTime startOfWeek = date.subtract(Duration(days: daysUntilMonday));
-    return DateTime(
-        startOfWeek.year, startOfWeek.month, startOfWeek.day, 0, 0, 0, 0, 0);
+    return DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day, 0, 0, 0, 0, 0);
   }
 
   static Color? getColor(String value) {
@@ -48,10 +46,7 @@ class BessHelperFunctions {
   }
 
   static void navigateToScreen(BuildContext context, Widget screen) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => screen),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 
   static String truncateText(String text, int maxLength) {
@@ -78,8 +73,7 @@ class BessHelperFunctions {
     return MediaQuery.of(Get.context!).size.width;
   }
 
-  static String getFormattedDate(DateTime date,
-      {String format = 'dd MMM yyyy'}) {
+  static String getFormattedDate(DateTime date, {String format = 'dd MMM yyyy'}) {
     return DateFormat(format).format(date);
   }
 
@@ -90,8 +84,7 @@ class BessHelperFunctions {
   static List<Widget> wrapWidgets(List<Widget> widgets, int rowSize) {
     final wrappedList = <Widget>[];
     for (var i = 0; i < widgets.length; i += rowSize) {
-      final rowChildren = widgets.sublist(
-          i, i + rowSize > widgets.length ? widgets.length : i + rowSize);
+      final rowChildren = widgets.sublist(i, i + rowSize > widgets.length ? widgets.length : i + rowSize);
       wrappedList.add(Row(children: rowChildren));
     }
     return wrappedList;
@@ -134,12 +127,7 @@ class BessHelperFunctions {
     final int resultBlueInt = (resultBlueNorm * 255.0).round().clamp(0, 255);
 
     // Construct color using ints
-    return Color.fromARGB(
-      resultAlphaInt,
-      resultRedInt,
-      resultGreenInt,
-      resultBlueInt,
-    );
+    return Color.fromARGB(resultAlphaInt, resultRedInt, resultGreenInt, resultBlueInt);
   }
 
   /// Adjusts the HSL (Hue, Saturation, Lightness) values of a given color.
@@ -150,12 +138,7 @@ class BessHelperFunctions {
   /// - [luminance]: The amount to adjust the lightness/luminance by (e.g., -0.1 for 10% less luminance). The final value is clipped between 0.0 and 1.0.
   ///
   /// Returns a new [Color] with the transformations applied.
-  static Color adjustHSL(
-      Color color, {
-        double? hue,
-        double? saturation,
-        double? luminance,
-      }) {
+  static Color adjustHSL(Color color, {double? hue, double? saturation, double? luminance}) {
     HSLColor hslColor = HSLColor.fromColor(color);
 
     if (hue != null) {
@@ -192,14 +175,16 @@ class BessHelperFunctions {
       return ''; // Handles cases where the string might only contain spaces.
     }
 
-    final List<String> titleCasedWords = words.map((word) {
-      if (word.isEmpty) { // Should not happen due to the .where() filter above, but good for safety.
-        return '';
-      }
-      final String firstLetter = word[0].toUpperCase();
-      final String restOfWord = word.substring(1).toLowerCase();
-      return '$firstLetter$restOfWord';
-    }).toList();
+    final List<String> titleCasedWords =
+        words.map((word) {
+          if (word.isEmpty) {
+            // Should not happen due to the .where() filter above, but good for safety.
+            return '';
+          }
+          final String firstLetter = word[0].toUpperCase();
+          final String restOfWord = word.substring(1).toLowerCase();
+          return '$firstLetter$restOfWord';
+        }).toList();
 
     return titleCasedWords.join(' ');
   }
@@ -228,19 +213,19 @@ class BessHelperFunctions {
     // Categorize each interval in a single pass
     for (final entry in intervals.entries) {
       if (entry.value.length != 2) {
-      continue; // Skip invalid entries
+        continue; // Skip invalid entries
       }
 
       final DateTime start = entry.value[0];
       final DateTime end = entry.value[1];
 
-    // --- More Robust "Current" Check ---
-    // A block is current if 'now' is within [start, end).
-    final bool isCurrentDuringDuration = !now.isBefore(start) && now.isBefore(end);
-    // A block is also current if it's instantaneous (start == end) and happening right now.
-    final bool isCurrentInstantaneous = start == end && now.isAtSameMomentAs(start);
+      // --- More Robust "Current" Check ---
+      // A block is current if 'now' is within [start, end).
+      final bool isCurrentDuringDuration = !now.isBefore(start) && now.isBefore(end);
+      // A block is also current if it's instantaneous (start == end) and happening right now.
+      final bool isCurrentInstantaneous = start == end && now.isAtSameMomentAs(start);
 
-    if (isCurrentDuringDuration || isCurrentInstantaneous) {
+      if (isCurrentDuringDuration || isCurrentInstantaneous) {
         currentIntervals.add(entry);
       } else if (start.isAfter(now)) {
         futureIntervals.add(entry);
@@ -251,8 +236,8 @@ class BessHelperFunctions {
 
     // Priority 1: Check for and return a currently occurring interval
     if (currentIntervals.isNotEmpty) {
-    // Sort by start time to be deterministic if multiple are current
-    currentIntervals.sort((a, b) => a.value[0].compareTo(b.value[0]));
+      // Sort by start time to be deterministic if multiple are current
+      currentIntervals.sort((a, b) => a.value[0].compareTo(b.value[0]));
       return currentIntervals.first.key;
     }
 

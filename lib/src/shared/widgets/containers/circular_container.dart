@@ -35,7 +35,7 @@ class TCircularContainer extends StatelessWidget {
   final double? height;
   final bool showBorder;
   final Color? borderColor;
-  final Color? backgroundColor ;
+  final Color? backgroundColor;
   final EdgeInsetsGeometry? margin;
   final EdgeInsetsGeometry? padding;
 

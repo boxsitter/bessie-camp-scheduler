@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 
-
 class WidgetList<T> extends StatelessWidget {
-  const WidgetList({
-    super.key,
-    required this.items,
-    required this.itemBuilder,
-  });
+  const WidgetList({super.key, required this.items, required this.itemBuilder});
 
   /// The list of data items to display.
   final List<T> items;

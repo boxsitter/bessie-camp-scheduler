@@ -33,26 +33,33 @@ class ActivitiesSection extends StatelessWidget {
     return SectionCard(
       title: 'Activities',
       subtitle: '${pluralize(activities.length, 'activity', 'activities')} in the catalog',
-      trailing: canEdit
-          ? ShadButton(size: ShadButtonSize.sm, leading: const Icon(LucideIcons.plus, size: 16), onPressed: onCreate, child: const Text('New activity'))
-          : null,
-      child: activities.isEmpty
-          ? Text(canEdit ? 'No activities yet. Create the first one.' : 'No activities yet.', style: BessTextStyles.standardSecondary)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final group in groupActivitiesByCategory(activities)) ...[
-                  GroupHeading(label: group.category.title, detail: '${group.activities.length}'),
-                  for (final activity in group.activities)
-                    _ActivityRow(
-                      activity: activity,
-                      canEdit: canEdit,
-                      onEdit: () => onEdit(activity),
-                      onDelete: () => onDelete(activity),
-                    ),
+      trailing:
+          canEdit
+              ? ShadButton(
+                size: ShadButtonSize.sm,
+                leading: const Icon(LucideIcons.plus, size: 16),
+                onPressed: onCreate,
+                child: const Text('New activity'),
+              )
+              : null,
+      child:
+          activities.isEmpty
+              ? Text(canEdit ? 'No activities yet. Create the first one.' : 'No activities yet.', style: BessTextStyles.standardSecondary)
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final group in groupActivitiesByCategory(activities)) ...[
+                    GroupHeading(label: group.category.title, detail: '${group.activities.length}'),
+                    for (final activity in group.activities)
+                      _ActivityRow(
+                        activity: activity,
+                        canEdit: canEdit,
+                        onEdit: () => onEdit(activity),
+                        onDelete: () => onDelete(activity),
+                      ),
+                  ],
                 ],
-              ],
-            ),
+              ),
     );
   }
 }
@@ -78,9 +85,11 @@ class _ActivityRow extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(activity.name, style: BessTextStyles.standardBold),
-              for (final badge in badges) Pill(badge.label, tone: badge == ActivityBadge.hidden ? PillTone.warning : PillTone.info, tooltip: badge.hint),
+              for (final badge in badges)
+                Pill(badge.label, tone: badge == ActivityBadge.hidden ? PillTone.warning : PillTone.info, tooltip: badge.hint),
               Pill('Capacity ${activity.capacity}'),
-              if (activity.maxAssignments != null) Pill('Max ${activity.maxAssignments} per camper', tooltip: 'Most times one camper may get it in a session.'),
+              if (activity.maxAssignments != null)
+                Pill('Max ${activity.maxAssignments} per camper', tooltip: 'Most times one camper may get it in a session.'),
             ],
           ),
           if (activity.description.isNotEmpty)

@@ -142,7 +142,7 @@ See [docs/architecture.md](docs/architecture.md) for how the pieces fit together
 ```bash
 flutter analyze
 flutter test --exclude-tags integration     # unit tests, no backend needed
-flutter test --tags integration             # repositories against the local stack
+flutter test --tags integration --concurrency=1   # against the local stack; serial, they share one database
 supabase test db                            # database tests (pgTAP)
 dart format .
 ```

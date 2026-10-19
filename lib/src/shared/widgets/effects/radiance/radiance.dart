@@ -62,45 +62,32 @@ class Radiance extends StatelessWidget {
     if (passes == 1) {
       layers.add(
         CustomPaint(
-      painter: RadiancePainter(
-        shapePath: shapePath,
-        intensity: intensity,
-        spread: spread,
-        color: color,
-        blendMode: blendMode,
-      ),
-        ),
-    );
-    } else {
-    final double passIntensity = intensity / passes;
-    for (int i = 1; i <= passes; i++) {
-      final double passSpread = spread * falloffCurve.transform(i / passes);
-      layers.add(
-        CustomPaint(
-          painter: RadiancePainter(
-            shapePath: shapePath,
-            intensity: passIntensity,
-            spread: passSpread,
-            color: color,
-            blendMode: blendMode,
-          ),
+          painter: RadiancePainter(shapePath: shapePath, intensity: intensity, spread: spread, color: color, blendMode: blendMode),
         ),
       );
-    }
+    } else {
+      final double passIntensity = intensity / passes;
+      for (int i = 1; i <= passes; i++) {
+        final double passSpread = spread * falloffCurve.transform(i / passes);
+        layers.add(
+          CustomPaint(
+            painter: RadiancePainter(
+              shapePath: shapePath,
+              intensity: passIntensity,
+              spread: passSpread,
+              color: color,
+              blendMode: blendMode,
+            ),
+          ),
+        );
+      }
     }
 
     // --- Dither Layer ---
     if (ditherOpacity > 0) {
       layers.add(
         // This forces the dither painter to fill the entire area.
-        Positioned.fill(
-          child: Opacity(
-          opacity: ditherOpacity.clamp(0.0, 1.0),
-          child: CustomPaint(
-            painter: _DitherPainter(),
-          ),
-        ),
-        ),
+        Positioned.fill(child: Opacity(opacity: ditherOpacity.clamp(0.0, 1.0), child: CustomPaint(painter: _DitherPainter()))),
       );
     }
 
@@ -109,15 +96,10 @@ class Radiance extends StatelessWidget {
       layers.add(child!);
     }
 
-    final effectStack = Stack(
-      children: layers,
-    );
+    final effectStack = Stack(children: layers);
 
     if (clip) {
-      return ClipPath(
-        clipper: _PathClipper(shapePath),
-        child: effectStack,
-      );
+      return ClipPath(clipper: _PathClipper(shapePath), child: effectStack);
     }
 
     return effectStack;
@@ -145,10 +127,11 @@ class RadiancePainter extends CustomPainter {
       return;
     }
 
-    final paint = Paint()
-      ..color = color.withOpacity(intensity.clamp(0.0, 1.0))
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, spread * 0.75)
-      ..blendMode = blendMode;
+    final paint =
+        Paint()
+          ..color = color.withOpacity(intensity.clamp(0.0, 1.0))
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, spread * 0.75)
+          ..blendMode = blendMode;
 
     canvas.drawPath(shapePath, paint);
   }
@@ -183,7 +166,6 @@ class _DitherPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DitherPainter oldDelegate) => false;
 }
-
 
 class _PathClipper extends CustomClipper<Path> {
   const _PathClipper(this.path);

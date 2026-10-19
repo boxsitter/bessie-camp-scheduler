@@ -27,11 +27,7 @@ class SatisfactionCalculator {
     if (stalemates.hasStalemate(participantId)) return null;
 
     if (context.participantById(participantId) == null) {
-      throw ArgumentError.value(
-        participantId,
-        'participantId',
-        'is not part of the context',
-      );
+      throw ArgumentError.value(participantId, 'participantId', 'is not part of the context');
     }
 
     final activityIds = ledger.weekActivityIds(participantId).toList();
@@ -41,18 +37,11 @@ class SatisfactionCalculator {
       age: context.ageOf(participantId),
       settings: SatisfactionConstants.discouragementSettings,
     );
-    final preferenceScore = calculatePreferenceScore(
-      participantId,
-      activityIds,
-      context,
-      multiplier,
-    );
+    final preferenceScore = calculatePreferenceScore(participantId, activityIds, context, multiplier);
     final noveltyScore = calculateNoveltyScore(activityIds);
 
     final weights = SatisfactionConstants.satisfactionWeights;
-    final index =
-        preferenceScore * weights[SatisfactionFactor.preference]! +
-        noveltyScore * weights[SatisfactionFactor.novelty]!;
+    final index = preferenceScore * weights[SatisfactionFactor.preference]! + noveltyScore * weights[SatisfactionFactor.novelty]!;
 
     // Clamp to absorb floating point inaccuracies.
     return index.clamp(0.0, 1.0);
@@ -71,42 +60,33 @@ class SatisfactionCalculator {
 
     var totalAdjustedImpact = 0.0;
     for (final activityId in activityIds) {
-      final preference =
-          context.preferenceOf(participantId, activityId).numericValue;
+      final preference = context.preferenceOf(participantId, activityId).numericValue;
       final rawImpact = preference - neutral;
-      totalAdjustedImpact +=
-          rawImpact < 0 ? rawImpact * discouragementMultiplier : rawImpact;
+      totalAdjustedImpact += rawImpact < 0 ? rawImpact * discouragementMultiplier : rawImpact;
     }
 
     final maxPossibleImpact = activityIds.length * (1.0 - neutral);
-    final minPossibleImpact =
-        activityIds.length * (0.0 - neutral) * discouragementMultiplier;
+    final minPossibleImpact = activityIds.length * (0.0 - neutral) * discouragementMultiplier;
 
     // Nothing to normalise against (only possible without placements).
     if (maxPossibleImpact == minPossibleImpact) return 0.5;
 
-    return (totalAdjustedImpact - minPossibleImpact) /
-        (maxPossibleImpact - minPossibleImpact);
+    return (totalAdjustedImpact - minPossibleImpact) / (maxPossibleImpact - minPossibleImpact);
   }
 
   /// Unique activities divided by placements, in 0..1.
-  double calculateNoveltyScore(List<String> activityIds) =>
-      activityIds.toSet().length / activityIds.length;
+  double calculateNoveltyScore(List<String> activityIds) => activityIds.toSet().length / activityIds.length;
 
   /// The factor by which negative experiences are amplified for a participant
   /// of the given [age]: [DiscouragementSettings.maxMultiplier] at or below
   /// `minAge`, falling linearly to 1.0 (no effect) at `maxAge`.
-  double calculateDiscouragementMultiplier({
-    required int age,
-    required DiscouragementSettings settings,
-  }) {
+  double calculateDiscouragementMultiplier({required int age, required DiscouragementSettings settings}) {
     if (age <= settings.minAge) return settings.maxMultiplier;
     if (age >= settings.maxAge) return 1.0;
 
     final range = (settings.maxAge - settings.minAge).toDouble();
     final falloff = (age - settings.minAge) / range;
-    final multiplier =
-        settings.maxMultiplier - falloff * (settings.maxMultiplier - 1.0);
+    final multiplier = settings.maxMultiplier - falloff * (settings.maxMultiplier - 1.0);
     return max(1.0, multiplier);
   }
 }

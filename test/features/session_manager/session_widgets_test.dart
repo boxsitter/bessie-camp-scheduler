@@ -130,17 +130,18 @@ void main() {
   });
 
   group('LimitsSection', () {
-    Widget section({required LimitsDraft draft, bool canEdit = true, ValueChanged<LimitsDraft>? onChanged, VoidCallback? onSave}) => SingleChildScrollView(
-      child: LimitsSection(
-        draft: draft,
-        saved: LimitsDraft.defaults,
-        canEdit: canEdit,
-        busy: false,
-        onChanged: onChanged ?? (_) {},
-        onSave: onSave ?? () {},
-        onReset: () {},
-      ),
-    );
+    Widget section({required LimitsDraft draft, bool canEdit = true, ValueChanged<LimitsDraft>? onChanged, VoidCallback? onSave}) =>
+        SingleChildScrollView(
+          child: LimitsSection(
+            draft: draft,
+            saved: LimitsDraft.defaults,
+            canEdit: canEdit,
+            busy: false,
+            onChanged: onChanged ?? (_) {},
+            onSave: onSave ?? () {},
+            onReset: () {},
+          ),
+        );
 
     testWidgets('steppers change one limit at a time', (tester) async {
       LimitsDraft? changed;
@@ -181,9 +182,10 @@ void main() {
   });
 
   group('ScheduleSection', () {
-    Widget section({bool canEdit = true, void Function(Block)? onAdd, void Function(Block, ScheduledActivity)? onRemove}) => SingleChildScrollView(
-      child: ScheduleSection(setup: setup(), canEdit: canEdit, busy: false, onAdd: onAdd ?? (_) {}, onRemove: onRemove ?? (_, __) {}),
-    );
+    Widget section({bool canEdit = true, void Function(Block)? onAdd, void Function(Block, ScheduledActivity)? onRemove}) =>
+        SingleChildScrollView(
+          child: ScheduleSection(setup: setup(), canEdit: canEdit, busy: false, onAdd: onAdd ?? (_) {}, onRemove: onRemove ?? (_, __) {}),
+        );
 
     testWidgets('lists each block with its activities and how full they are', (tester) async {
       await pumpApp(tester, section());
@@ -278,15 +280,22 @@ void main() {
   });
 
   group('NewSessionDialog', () {
-    final season = Season(id: 'season', branchId: 'branch', name: 'Summer 2026', startsOn: DateTime(2026, 6, 15), endsOn: DateTime(2026, 8, 21));
-
-    Widget dialog({List<String> existingNames = const [], Future<void> Function(NewSessionRequest)? onSubmit, DateTime? initialStart}) => NewSessionDialog(
-      existingNames: existingNames,
-      season: season,
-      initialStart: initialStart ?? DateTime(2026, 7, 13),
-      initialLimits: LimitsDraft.defaults,
-      onSubmit: onSubmit ?? (_) async {},
+    final season = Season(
+      id: 'season',
+      branchId: 'branch',
+      name: 'Summer 2026',
+      startsOn: DateTime(2026, 6, 15),
+      endsOn: DateTime(2026, 8, 21),
     );
+
+    Widget dialog({List<String> existingNames = const [], Future<void> Function(NewSessionRequest)? onSubmit, DateTime? initialStart}) =>
+        NewSessionDialog(
+          existingNames: existingNames,
+          season: season,
+          initialStart: initialStart ?? DateTime(2026, 7, 13),
+          initialLimits: LimitsDraft.defaults,
+          onSubmit: onSubmit ?? (_) async {},
+        );
 
     testWidgets('needs a name, and a name the season does not have yet', (tester) async {
       var submitted = 0;

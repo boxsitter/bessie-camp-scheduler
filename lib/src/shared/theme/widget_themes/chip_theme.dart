@@ -10,7 +10,6 @@ class BessieChipTheme {
     selectedColor: BessColors.primary,
     disabledColor: BessColors.middle.withValues(alpha: 0.4),
     padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12),
-    labelStyle:
-        TextStyle(color: BessColors.high, fontFamily: 'Inter'),
+    labelStyle: TextStyle(color: BessColors.high, fontFamily: 'Inter'),
   );
 }

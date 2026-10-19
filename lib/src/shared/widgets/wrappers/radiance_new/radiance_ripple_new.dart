@@ -24,10 +24,8 @@ class _BurstAnimation {
     required Curve intensityCurve,
   }) {
     controller = AnimationController(vsync: vsync, duration: duration);
-    spread = CurvedAnimation(parent: controller, curve: spreadCurve)
-        .drive(Tween<double>(begin: beginSpread, end: endSpread));
-    intensity = CurvedAnimation(parent: controller, curve: intensityCurve)
-        .drive(Tween<double>(begin: beginIntensity, end: endIntensity));
+    spread = CurvedAnimation(parent: controller, curve: spreadCurve).drive(Tween<double>(begin: beginSpread, end: endSpread));
+    intensity = CurvedAnimation(parent: controller, curve: intensityCurve).drive(Tween<double>(begin: beginIntensity, end: endIntensity));
   }
 
   void dispose() {
@@ -80,10 +78,14 @@ class _RadianceRippleState extends State<RadianceRipple> with TickerProviderStat
     if (widget.isHovering) {
       _hoverController.value = 1.0;
     }
-    _hoverIntensityAnimation =
-        CurvedAnimation(parent: _hoverController, curve: kHoverFadeCurve).drive(Tween<double>(begin: 0.0, end: kHoverIntensity));
-    _hoverSpreadAnimation = CurvedAnimation(parent: _hoverController, curve: kHoverFadeCurve)
-        .drive(Tween<double>(begin: kHoverSpread * kHoverSpreadBeginFactor, end: kHoverSpread));
+    _hoverIntensityAnimation = CurvedAnimation(
+      parent: _hoverController,
+      curve: kHoverFadeCurve,
+    ).drive(Tween<double>(begin: 0.0, end: kHoverIntensity));
+    _hoverSpreadAnimation = CurvedAnimation(
+      parent: _hoverController,
+      curve: kHoverFadeCurve,
+    ).drive(Tween<double>(begin: kHoverSpread * kHoverSpreadBeginFactor, end: kHoverSpread));
 
     // Controller for hold/charge effect (mouse-bound)
     _holdController = AnimationController(vsync: this, duration: kHoldChargeDuration);
@@ -175,9 +177,13 @@ class _RadianceRippleState extends State<RadianceRipple> with TickerProviderStat
       // Charged Release Burst
       final chargedSpread = lerpDouble(kReleaseSpreadMax, kReleaseSpreadMax + kChargedReleaseSpreadBonus, charge)!;
       final chargedLifespan = Duration(
-          milliseconds: lerpDouble(kReleaseLifespan.inMilliseconds,
-              kReleaseLifespan.inMilliseconds + kChargedReleaseLifespanBonus.inMilliseconds, charge)!
-              .toInt());
+        milliseconds:
+            lerpDouble(
+              kReleaseLifespan.inMilliseconds,
+              kReleaseLifespan.inMilliseconds + kChargedReleaseLifespanBonus.inMilliseconds,
+              charge,
+            )!.toInt(),
+      );
       final initialIntensity = lerpDouble(kHoverIntensity, kHoldIntensityMax, charge)!;
       final initialSpread = lerpDouble(kHoverSpread, kHoldSpreadMin, charge)!;
 
@@ -229,16 +235,16 @@ class _RadianceRippleState extends State<RadianceRipple> with TickerProviderStat
               animation: Listenable.merge(_bursts.map((b) => b.controller).toList()),
               builder: (context, child) {
                 return Stack(
-                  children: _bursts.map((burst) {
-                    return Radiance(
-                      shapePath: Path()
-                        ..addOval(Rect.fromCircle(center: burst.position, radius: burst.spread.value)),
-                      intensity: burst.intensity.value,
-                      spread: burst.spread.value,
-                      color: widget.color ?? Colors.white,
-                      passes: 1,
-                    );
-                  }).toList(),
+                  children:
+                      _bursts.map((burst) {
+                        return Radiance(
+                          shapePath: Path()..addOval(Rect.fromCircle(center: burst.position, radius: burst.spread.value)),
+                          intensity: burst.intensity.value,
+                          spread: burst.spread.value,
+                          color: widget.color ?? Colors.white,
+                          passes: 1,
+                        );
+                      }).toList(),
                 );
               },
             ),
@@ -257,9 +263,10 @@ class _RadianceRippleState extends State<RadianceRipple> with TickerProviderStat
                 // The hold effect is a modification of the base hover glow
                 if (_holdController.value > 0) {
                   final holdCharge = _holdController.value;
-                  final scaleDownProgress =
-                  (holdCharge * kHoldChargeDuration.inMilliseconds / kHoldScaleDownDuration.inMilliseconds)
-                      .clamp(0.0, 1.0);
+                  final scaleDownProgress = (holdCharge * kHoldChargeDuration.inMilliseconds / kHoldScaleDownDuration.inMilliseconds).clamp(
+                    0.0,
+                    1.0,
+                  );
                   spread = lerpDouble(_hoverSpreadAnimation.value, kHoldSpreadMin, scaleDownProgress)!;
                   intensity = lerpDouble(_hoverIntensityAnimation.value, kHoldIntensityMax, holdCharge)!;
                 }

@@ -5,7 +5,5 @@ class BessieProgressIndicatorTheme {
   BessieProgressIndicatorTheme._(); //To avoid creating instances
 
   /* -- Light Theme -- */
-  static final progressIndicatorTheme = ProgressIndicatorThemeData(
-    color: BessColors.primary,
-  );
+  static final progressIndicatorTheme = ProgressIndicatorThemeData(color: BessColors.primary);
 }

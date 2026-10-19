@@ -37,21 +37,9 @@ class TTableActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        if (view)
-          IconButton(
-            onPressed: onViewPressed,
-            icon: Icon(LucideIcons.eye, color: BessColors.semiHigh),
-          ),
-        if (edit)
-          IconButton(
-            onPressed: onEditPressed,
-            icon: Icon(LucideIcons.pencil, color: BessColors.primary),
-          ),
-        if (delete)
-          IconButton(
-            onPressed: onDeletePressed,
-            icon: Icon(LucideIcons.trash2, color: BessColors.error),
-          ),
+        if (view) IconButton(onPressed: onViewPressed, icon: Icon(LucideIcons.eye, color: BessColors.semiHigh)),
+        if (edit) IconButton(onPressed: onEditPressed, icon: Icon(LucideIcons.pencil, color: BessColors.primary)),
+        if (delete) IconButton(onPressed: onDeletePressed, icon: Icon(LucideIcons.trash2, color: BessColors.error)),
       ],
     );
   }

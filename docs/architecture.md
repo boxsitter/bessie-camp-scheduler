@@ -90,7 +90,7 @@ for the details.
 | What | Where | Run |
 |---|---|---|
 | Database integrity, RPCs, RLS | `supabase/tests/database/*.test.sql` (pgTAP) | `supabase test db` |
-| Repositories against the real stack | `test/integration/` (tag `integration`) | `flutter test --tags integration` |
+| Repositories against the real stack | `test/integration/` (tag `integration`) | `flutter test --tags integration --concurrency=1` |
 | Algorithms, models, services, controllers' pure logic | `test/**` | `flutter test --exclude-tags integration` |
 | Firestore migration transform | `tools/firestore-migration/test` | `npm test` there |
 

@@ -9,7 +9,12 @@ import 'support/fixtures.dart';
 void main() {
   group('counting', () {
     test('camperCountsByCabin ignores campers without a cabin', () {
-      final counts = camperCountsByCabin([camper('a', cabinId: 'oak'), camper('b', cabinId: 'oak'), camper('c', cabinId: 'fox'), camper('d')]);
+      final counts = camperCountsByCabin([
+        camper('a', cabinId: 'oak'),
+        camper('b', cabinId: 'oak'),
+        camper('c', cabinId: 'fox'),
+        camper('d'),
+      ]);
       expect(counts, {'oak': 2, 'fox': 1});
     });
 
@@ -252,7 +257,13 @@ void main() {
   });
 
   group('season helpers', () {
-    final season = Season(id: 'season', branchId: 'branch', name: 'Summer 2026', startsOn: DateTime(2026, 6, 15), endsOn: DateTime(2026, 8, 21));
+    final season = Season(
+      id: 'season',
+      branchId: 'branch',
+      name: 'Summer 2026',
+      startsOn: DateTime(2026, 6, 15),
+      endsOn: DateTime(2026, 8, 21),
+    );
 
     test('outsideSeasonWarning only speaks up outside the season', () {
       expect(outsideSeasonWarning(DateTime(2026, 7, 6), season), isNull);

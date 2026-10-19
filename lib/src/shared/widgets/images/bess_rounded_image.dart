@@ -47,10 +47,7 @@ class BessRoundedImage extends StatelessWidget {
       height: height,
       margin: margin != null ? EdgeInsets.all(margin!) : null,
       padding: EdgeInsets.all(padding),
-      decoration: BoxDecoration(
-          border: border,
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(borderRadius)),
+      decoration: BoxDecoration(border: border, color: backgroundColor, borderRadius: BorderRadius.circular(borderRadius)),
       child: _buildImageWidget(),
     );
   }
@@ -74,12 +71,7 @@ class BessRoundedImage extends StatelessWidget {
     }
 
     // Apply ClipRRect directly to the image widget
-    return ClipRRect(
-      borderRadius: applyImageRadius
-          ? BorderRadius.circular(borderRadius)
-          : BorderRadius.zero,
-      child: imageWidget,
-    );
+    return ClipRRect(borderRadius: applyImageRadius ? BorderRadius.circular(borderRadius) : BorderRadius.zero, child: imageWidget);
   }
 
   // Function to build the network image widget
@@ -91,8 +83,7 @@ class BessRoundedImage extends StatelessWidget {
         color: overlayColor,
         imageUrl: image!,
         errorWidget: (context, url, error) => const Icon(Icons.error),
-        progressIndicatorBuilder: (context, url, downloadProgress) =>
-            BessShimmerEffect(width: width, height: height),
+        progressIndicatorBuilder: (context, url, downloadProgress) => BessShimmerEffect(width: width, height: height),
       );
     } else {
       // Return an empty container if no image is provided
@@ -104,8 +95,7 @@ class BessRoundedImage extends StatelessWidget {
   Widget _buildMemoryImage() {
     if (memoryImage != null) {
       // Display image from memory using Image widget
-      return Image(
-          fit: fit, image: MemoryImage(memoryImage!), color: overlayColor);
+      return Image(fit: fit, image: MemoryImage(memoryImage!), color: overlayColor);
     } else {
       // Return an empty container if no image is provided
       return Container();

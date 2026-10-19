@@ -42,33 +42,21 @@ class GreedyScorer implements AssignmentScorer {
   static const double youngerParticipantMaxBonus = 20.0;
 
   /// The age at which participants start receiving the age bonus.
-  static const int youngerParticipantMinAge =
-      ScoringTerms.youngerParticipantMinAge;
+  static const int youngerParticipantMinAge = ScoringTerms.youngerParticipantMinAge;
 
   /// The age at which the age bonus becomes zero.
-  static const int youngerParticipantMaxAge =
-      ScoringTerms.youngerParticipantMaxAge;
+  static const int youngerParticipantMaxAge = ScoringTerms.youngerParticipantMaxAge;
 
   @override
   String get name => 'greedy';
 
   @override
-  double score(
-    PotentialAssignment candidate,
-    AssignmentContext context,
-    AssignmentLedger ledger,
-  ) {
+  double score(PotentialAssignment candidate, AssignmentContext context, AssignmentLedger ledger) {
     final participantId = candidate.participant.id;
-    final preference = context.preferenceOf(
-      participantId,
-      candidate.activity.id,
-    );
+    final preference = context.preferenceOf(participantId, candidate.activity.id);
 
     return preferenceBonus(preference.numericValue) +
-        ScoringTerms.ageBonus(
-          context.ageOf(participantId),
-          maxBonus: youngerParticipantMaxBonus,
-        ) +
+        ScoringTerms.ageBonus(context.ageOf(participantId), maxBonus: youngerParticipantMaxBonus) +
         ScoringTerms.sameDayRepetitionPenalty(candidate, context, ledger);
   }
 
