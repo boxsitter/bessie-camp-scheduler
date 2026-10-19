@@ -58,9 +58,16 @@ void main() {
       test('${strategy.name}: identical placements, in identical order', () {
         for (var seed = 0; seed < _seeds; seed++) {
           final context = RandomScenario.generate(seed);
-          final lazy = AssignmentEngine.run(context,
-              strategy: strategy, random: Random(seed));
-          final eager = eagerGreedyPlacements(context, scorers[strategy]!, Random(seed));
+          final lazy = AssignmentEngine.run(
+            context,
+            strategy: strategy,
+            random: Random(seed),
+          );
+          final eager = eagerGreedyPlacements(
+            context,
+            scorers[strategy]!,
+            Random(seed),
+          );
           expect(lazy.newPlacements, eager, reason: 'seed $seed');
         }
       });
@@ -72,24 +79,40 @@ void main() {
       StalemateStrategy.leaveUnassigned,
       StalemateStrategy.randomize,
     ]) {
-      test('adds nothing and keeps every invariant (${stalemateStrategy.name})', () {
-        for (var seed = 0; seed < _seeds; seed++) {
-          final context = RandomScenario.generate(seed);
-          final first = AssignmentEngine.run(context,
-              stalemateStrategy: stalemateStrategy, random: Random(seed));
+      test(
+        'adds nothing and keeps every invariant (${stalemateStrategy.name})',
+        () {
+          for (var seed = 0; seed < _seeds; seed++) {
+            final context = RandomScenario.generate(seed);
+            final first = AssignmentEngine.run(
+              context,
+              stalemateStrategy: stalemateStrategy,
+              random: Random(seed),
+            );
 
-          final again = contextAfter(context, first);
-          final second = AssignmentEngine.run(again,
-              stalemateStrategy: stalemateStrategy, random: Random(seed + 1));
+            final again = contextAfter(context, first);
+            final second = AssignmentEngine.run(
+              again,
+              stalemateStrategy: stalemateStrategy,
+              random: Random(seed + 1),
+            );
 
-          expect(second.newPlacements, isEmpty, reason: 'seed $seed');
-          expect(second.stalemateKeys, first.stalemateKeys, reason: 'seed $seed');
-          expectEngineInvariants(again, second,
+            expect(second.newPlacements, isEmpty, reason: 'seed $seed');
+            expect(
+              second.stalemateKeys,
+              first.stalemateKeys,
+              reason: 'seed $seed',
+            );
+            expectEngineInvariants(
+              again,
+              second,
               enforceStandardConstraints:
                   stalemateStrategy != StalemateStrategy.randomize,
-              label: 'seed $seed (second run):');
-        }
-      });
+              label: 'seed $seed (second run):',
+            );
+          }
+        },
+      );
     }
   });
 
@@ -102,10 +125,12 @@ void main() {
             StalemateStrategy.leaveUnassigned,
             StalemateStrategy.randomize,
           ]) {
-            AssignmentResult run() => AssignmentEngine.run(context,
-                strategy: strategy,
-                stalemateStrategy: stalemateStrategy,
-                random: Random(seed));
+            AssignmentResult run() => AssignmentEngine.run(
+              context,
+              strategy: strategy,
+              stalemateStrategy: stalemateStrategy,
+              random: Random(seed),
+            );
             final a = run();
             final b = run();
             expect(a.newPlacements, b.newPlacements, reason: 'seed $seed');
@@ -125,14 +150,18 @@ void main() {
         final context = RandomScenario.generate(seed);
         final left = AssignmentEngine.run(context, random: Random(seed));
         try {
-          final result = AssignmentEngine.run(context,
-              stalemateStrategy: StalemateStrategy.fail, random: Random(seed));
+          final result = AssignmentEngine.run(
+            context,
+            stalemateStrategy: StalemateStrategy.fail,
+            random: Random(seed),
+          );
           expect(left.stalemates, isEmpty, reason: 'seed $seed');
           expect(result.newPlacements, left.newPlacements);
           returned++;
         } on AssignmentStalemateException catch (e) {
-          final keys = [for (final s in e.stalemates) '${s.participantId}@${s.periodId}']
-            ..sort();
+          final keys = [
+            for (final s in e.stalemates) '${s.participantId}@${s.periodId}',
+          ]..sort();
           expect(keys, left.stalemateKeys, reason: 'seed $seed');
           threw++;
         }

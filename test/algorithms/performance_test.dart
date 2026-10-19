@@ -13,7 +13,10 @@ import 'support/scenario_builder.dart';
 /// unfinishable doubles are removed.
 AssignmentContext bigCamp({int campers = 300, int seed = 42}) {
   final rnd = Random(seed);
-  final builder = ScenarioBuilder().day('mon', periods: 5).day('tue', periods: 5).day('wed', periods: 5);
+  final builder = ScenarioBuilder()
+      .day('mon', periods: 5)
+      .day('tue', periods: 5)
+      .day('wed', periods: 5);
   for (var a = 0; a < 25; a++) {
     builder
         .activity(
@@ -25,7 +28,8 @@ AssignmentContext bigCamp({int campers = 300, int seed = 42}) {
         .offerEverywhere('a$a');
   }
   for (var i = 0; i < campers; i++) {
-    final picks = ([for (var a = 0; a < 25; a++) 'a$a']..shuffle(rnd)).take(4).toList();
+    final picks =
+        ([for (var a = 0; a < 25; a++) 'a$a']..shuffle(rnd)).take(4).toList();
     builder.participant(
       'c$i',
       age: 7 + i % 9,
@@ -43,36 +47,50 @@ void main() {
   const budget = Duration(seconds: 5);
 
   for (final strategy in AssignmentStrategy.values) {
-    test('300 campers x 15 periods x 25 activities (${strategy.name}) finishes in a few seconds',
-        () {
-      final context = bigCamp();
-      final stopwatch = Stopwatch()..start();
-      final result = AssignmentEngine.run(context, strategy: strategy, random: Random(1));
-      stopwatch.stop();
+    test(
+      '300 campers x 15 periods x 25 activities (${strategy.name}) finishes in a few seconds',
+      () {
+        final context = bigCamp();
+        final stopwatch = Stopwatch()..start();
+        final result = AssignmentEngine.run(
+          context,
+          strategy: strategy,
+          random: Random(1),
+        );
+        stopwatch.stop();
 
-      final candidates =
-          result.stepReports.first.details['count'] as int; // 'Generate Potential Assignments'
-      expect(candidates, greaterThan(100000));
-      // ignore: avoid_print
-      print('${strategy.name}: $candidates candidates, ${result.newPlacements.length} placements, '
+        final candidates =
+            result.stepReports.first.details['count']
+                as int; // 'Generate Potential Assignments'
+        expect(candidates, greaterThan(100000));
+        // ignore: avoid_print
+        print(
+          '${strategy.name}: $candidates candidates, ${result.newPlacements.length} placements, '
           '${result.stalemates.length} stalemates in ${stopwatch.elapsedMilliseconds} ms '
-          '(${result.stepReports.map((r) => '${r.stepName.split(' ').first}=${r.duration.inMilliseconds}ms').join(', ')})');
+          '(${result.stepReports.map((r) => '${r.stepName.split(' ').first}=${r.duration.inMilliseconds}ms').join(', ')})',
+        );
 
-      expect(stopwatch.elapsed, lessThan(budget));
+        expect(stopwatch.elapsed, lessThan(budget));
 
-      // And the result is right, not just fast: 300 x 15 slots, ample seats.
-      expect(result.newPlacements.length, greaterThan(4000));
-      expectEngineInvariants(context, result, label: strategy.name);
-    });
+        // And the result is right, not just fast: 300 x 15 slots, ample seats.
+        expect(result.newPlacements.length, greaterThan(4000));
+        expectEngineInvariants(context, result, label: strategy.name);
+      },
+    );
   }
 
   test('a camp with heavy existing enrollment is also fast', () {
     // Everyone already holds the first period (hidden activity) and half the
     // seats of every activity are taken by campers outside the run.
     final rnd = Random(7);
-    final builder =
-        ScenarioBuilder().day('mon', periods: 5).day('tue', periods: 5).day('wed', periods: 5);
-    builder.activity('staff', assignable: false, capacity: 1000).offer('staff', ['mon1']);
+    final builder = ScenarioBuilder()
+        .day('mon', periods: 5)
+        .day('tue', periods: 5)
+        .day('wed', periods: 5);
+    builder.activity('staff', assignable: false, capacity: 1000).offer(
+      'staff',
+      ['mon1'],
+    );
     for (var a = 0; a < 25; a++) {
       builder.activity('a$a', capacity: 12).offerEverywhere('a$a');
       for (final p in ['mon', 'tue', 'wed']) {
@@ -82,7 +100,11 @@ void main() {
       }
     }
     for (var i = 0; i < 300; i++) {
-      builder.participant('c$i', age: 7 + i % 9, requests: ['a${rnd.nextInt(25)}']);
+      builder.participant(
+        'c$i',
+        age: 7 + i % 9,
+        requests: ['a${rnd.nextInt(25)}'],
+      );
       builder.existing('c$i', ['staff@mon1']);
     }
     final context = builder.build();

@@ -47,16 +47,23 @@ class _ExplodingStep extends AlgorithmStep {
 
 void main() {
   group('AlgorithmPipeline', () {
-    final context = ScenarioBuilder().day('mon', periods: 1).participant('a').build();
+    final context =
+        ScenarioBuilder().day('mon', periods: 1).participant('a').build();
 
     test('measures each step and attaches the duration to its report', () {
-      final result = AlgorithmPipeline([_SlowStep(), _QuickStep([])]).run(context);
+      final result = AlgorithmPipeline([
+        _SlowStep(),
+        _QuickStep([]),
+      ]).run(context);
 
       final slow = result.stepReports[0];
       expect(slow.stepName, 'Slow Step');
       expect(slow.summary, 'took a while');
       expect(slow.details, {'answer': 42});
-      expect(slow.duration, greaterThanOrEqualTo(const Duration(milliseconds: 25)));
+      expect(
+        slow.duration,
+        greaterThanOrEqualTo(const Duration(milliseconds: 25)),
+      );
 
       final quick = result.stepReports[1];
       expect(quick.stepName, 'Quick Step');
@@ -77,7 +84,10 @@ void main() {
     });
 
     test('lets a failing step propagate', () {
-      expect(() => AlgorithmPipeline([_ExplodingStep()]).run(context), throwsStateError);
+      expect(
+        () => AlgorithmPipeline([_ExplodingStep()]).run(context),
+        throwsStateError,
+      );
     });
   });
 
@@ -103,37 +113,46 @@ void main() {
     });
 
     test('report details describe what each step did', () {
-      final context = ScenarioBuilder()
-          .day('mon', periods: 1)
-          .activity('swim', capacity: 1)
-          .offer('swim', ['mon1'])
-          .participant('a')
-          .participant('b')
-          .build();
+      final context =
+          ScenarioBuilder()
+              .day('mon', periods: 1)
+              .activity('swim', capacity: 1)
+              .offer('swim', ['mon1'])
+              .participant('a')
+              .participant('b')
+              .build();
       final reports = {
-        for (final r in AssignmentEngine.run(context, random: Random(0)).stepReports)
+        for (final r
+            in AssignmentEngine.run(context, random: Random(0)).stepReports)
           r.stepName: r.details,
       };
 
       expect(reports['Generate Potential Assignments']!['count'], 2);
       expect(reports['Score Assignments (diplomatic)']!['count'], 2);
       expect(reports['Process & Finalize Assignments']!['accepted'], 1);
-      expect(reports['Process & Finalize Assignments']!['droppedByConstraint'], 1);
+      expect(
+        reports['Process & Finalize Assignments']!['droppedByConstraint'],
+        1,
+      );
       expect(reports['Resolve Stalemates']!['stalemateCount'], 1);
-      expect(reports['Resolve Stalemates']!['stalemateStrategy'], 'leaveUnassigned');
+      expect(
+        reports['Resolve Stalemates']!['stalemateStrategy'],
+        'leaveUnassigned',
+      );
       expect(reports['Generate Evaluation Report']!['count'], 2);
     });
   });
 
   group('AssignmentResult', () {
     test('is immutable', () {
-      final context = ScenarioBuilder()
-          .day('mon', periods: 1)
-          .activity('swim', capacity: 1)
-          .offer('swim', ['mon1'])
-          .participant('a')
-          .participant('b')
-          .build();
+      final context =
+          ScenarioBuilder()
+              .day('mon', periods: 1)
+              .activity('swim', capacity: 1)
+              .offer('swim', ['mon1'])
+              .participant('a')
+              .participant('b')
+              .build();
       final result = AssignmentEngine.run(context, random: Random(0));
 
       expect(() => result.newPlacements.clear(), throwsUnsupportedError);
@@ -145,8 +164,12 @@ void main() {
 
     test('can be constructed by callers, for fakes in their own tests', () {
       final result = AssignmentResult(
-        newPlacements: const [NewPlacement(participantId: 'a', scheduledActivityId: 's1')],
-        stalemates: const [Stalemate(participantId: 'b', periodId: 'p', reason: 'full')],
+        newPlacements: const [
+          NewPlacement(participantId: 'a', scheduledActivityId: 's1'),
+        ],
+        stalemates: const [
+          Stalemate(participantId: 'b', periodId: 'p', reason: 'full'),
+        ],
       );
       expect(result.newPlacements.single.scheduledActivityId, 's1');
       expect(result.hasStalemate('b'), isTrue);
@@ -156,31 +179,58 @@ void main() {
       expect(result.stepReports, isEmpty);
     });
 
-    test('NewPlacement and Stalemate print readably and NewPlacement has value equality', () {
-      const placement = NewPlacement(participantId: 'a', scheduledActivityId: 'swim@mon1');
-      expect(placement, const NewPlacement(participantId: 'a', scheduledActivityId: 'swim@mon1'));
-      expect(placement.hashCode,
-          const NewPlacement(participantId: 'a', scheduledActivityId: 'swim@mon1').hashCode);
-      expect(placement.toString(), 'a -> swim@mon1');
-      expect(const Stalemate(participantId: 'a', periodId: 'p', reason: 'because').toString(),
-          'a @ p: because');
-    });
+    test(
+      'NewPlacement and Stalemate print readably and NewPlacement has value equality',
+      () {
+        const placement = NewPlacement(
+          participantId: 'a',
+          scheduledActivityId: 'swim@mon1',
+        );
+        expect(
+          placement,
+          const NewPlacement(
+            participantId: 'a',
+            scheduledActivityId: 'swim@mon1',
+          ),
+        );
+        expect(
+          placement.hashCode,
+          const NewPlacement(
+            participantId: 'a',
+            scheduledActivityId: 'swim@mon1',
+          ).hashCode,
+        );
+        expect(placement.toString(), 'a -> swim@mon1');
+        expect(
+          const Stalemate(
+            participantId: 'a',
+            periodId: 'p',
+            reason: 'because',
+          ).toString(),
+          'a @ p: because',
+        );
+      },
+    );
 
-    test('newPlacements holds ONLY what the run added, never existing assignments', () {
-      final context = ScenarioBuilder()
-          .day('mon', periods: 3)
-          .activity('swim')
-          .activity('art')
-          .activity('lifeguard', assignable: false)
-          .offerEverywhere('swim')
-          .offer('art', ['mon3'])
-          .offer('lifeguard', ['mon1'])
-          .participant('a')
-          .existing('a', ['lifeguard@mon1', 'art@mon3'])
-          .build();
-      final result = AssignmentEngine.run(context, random: Random(0));
+    test(
+      'newPlacements holds ONLY what the run added, never existing assignments',
+      () {
+        final context =
+            ScenarioBuilder()
+                .day('mon', periods: 3)
+                .activity('swim')
+                .activity('art')
+                .activity('lifeguard', assignable: false)
+                .offerEverywhere('swim')
+                .offer('art', ['mon3'])
+                .offer('lifeguard', ['mon1'])
+                .participant('a')
+                .existing('a', ['lifeguard@mon1', 'art@mon3'])
+                .build();
+        final result = AssignmentEngine.run(context, random: Random(0));
 
-      expect(result.placedFor('a'), ['swim@mon2']);
-    });
+        expect(result.placedFor('a'), ['swim@mon2']);
+      },
+    );
   });
 }

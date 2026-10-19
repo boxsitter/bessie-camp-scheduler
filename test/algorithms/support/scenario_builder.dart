@@ -13,7 +13,8 @@ class ScenarioBuilder {
   static final DateTime defaultNow = DateTime(2025, 7, 15, 12);
 
   /// The id of the scheduled instance of [activityId] in [periodId].
-  static String sa(String activityId, String periodId) => '$activityId@$periodId';
+  static String sa(String activityId, String periodId) =>
+      '$activityId@$periodId';
 
   DateTime now = defaultNow;
 
@@ -31,11 +32,13 @@ class ScenarioBuilder {
   ScenarioBuilder day(String dayId, {required int periods}) {
     final date = DateTime(2025, 7, 14 + _dayCount);
     for (var i = 1; i <= periods; i++) {
-      _periods.add(AlgoPeriod(
-        id: '$dayId$i',
-        dayId: dayId,
-        start: DateTime(date.year, date.month, date.day, 8 + i),
-      ));
+      _periods.add(
+        AlgoPeriod(
+          id: '$dayId$i',
+          dayId: dayId,
+          start: DateTime(date.year, date.month, date.day, 8 + i),
+        ),
+      );
     }
     _dayCount++;
     return this;
@@ -48,24 +51,28 @@ class ScenarioBuilder {
     bool doubleSchedule = false,
     bool assignable = true,
   }) {
-    _activities.add(AlgoActivity(
-      id: id,
-      capacity: capacity,
-      maxAssignments: maxAssignments,
-      doubleSchedule: doubleSchedule,
-      assignable: assignable,
-    ));
+    _activities.add(
+      AlgoActivity(
+        id: id,
+        capacity: capacity,
+        maxAssignments: maxAssignments,
+        doubleSchedule: doubleSchedule,
+        assignable: assignable,
+      ),
+    );
     return this;
   }
 
   /// Offers [activityId] in each of [periodIds].
   ScenarioBuilder offer(String activityId, List<String> periodIds) {
     for (final periodId in periodIds) {
-      _scheduled.add(AlgoScheduledActivity(
-        id: sa(activityId, periodId),
-        activityId: activityId,
-        periodId: periodId,
-      ));
+      _scheduled.add(
+        AlgoScheduledActivity(
+          id: sa(activityId, periodId),
+          activityId: activityId,
+          periodId: periodId,
+        ),
+      );
     }
     return this;
   }
@@ -80,10 +87,12 @@ class ScenarioBuilder {
     List<String> requests = const [],
     List<String> vetoes = const [],
   }) {
-    _participants.add(AlgoParticipant(
-      id: id,
-      birthdate: DateTime(now.year - age, now.month, now.day),
-    ));
+    _participants.add(
+      AlgoParticipant(
+        id: id,
+        birthdate: DateTime(now.year - age, now.month, now.day),
+      ),
+    );
     final prefs = <String, PreferenceType>{
       for (final r in requests) r: PreferenceType.request,
       for (final v in vetoes) v: PreferenceType.veto,
@@ -93,7 +102,10 @@ class ScenarioBuilder {
   }
 
   /// Gives [participantId] existing assignments (scheduled activity ids).
-  ScenarioBuilder existing(String participantId, List<String> scheduledActivityIds) {
+  ScenarioBuilder existing(
+    String participantId,
+    List<String> scheduledActivityIds,
+  ) {
     (_existing[participantId] ??= {}).addAll(scheduledActivityIds);
     return this;
   }
@@ -131,26 +143,32 @@ extension AssignmentResultReading on AssignmentResult {
   /// The scheduled activity ids newly placed for [participantId], in placement
   /// order.
   List<String> placedFor(String participantId) => [
-        for (final p in newPlacements)
-          if (p.participantId == participantId) p.scheduledActivityId,
-      ];
+    for (final p in newPlacements)
+      if (p.participantId == participantId) p.scheduledActivityId,
+  ];
 
   /// All new placements as `participant:scheduledActivity` strings, sorted, for
   /// compact whole-result comparisons.
-  List<String> get placementStrings =>
-      ([for (final p in newPlacements) '${p.participantId}:${p.scheduledActivityId}']
-        ..sort());
+  List<String> get placementStrings => ([
+    for (final p in newPlacements)
+      '${p.participantId}:${p.scheduledActivityId}',
+  ]..sort());
 
   /// The `participantId@periodId` keys of the stalemates, sorted.
   List<String> get stalemateKeys =>
-      ([for (final s in stalemates) '${s.participantId}@${s.periodId}']..sort());
+      ([for (final s in stalemates) '${s.participantId}@${s.periodId}']
+        ..sort());
 }
 
 /// A copy of [context] in which everything [result] placed has become an
 /// existing assignment: "what you get if you save the result and run again".
-AssignmentContext contextAfter(AssignmentContext context, AssignmentResult result) {
+AssignmentContext contextAfter(
+  AssignmentContext context,
+  AssignmentResult result,
+) {
   final merged = <String, Set<String>>{
-    for (final entry in context.existingAssignments.entries) entry.key: {...entry.value},
+    for (final entry in context.existingAssignments.entries)
+      entry.key: {...entry.value},
   };
   for (final placement in result.newPlacements) {
     (merged[placement.participantId] ??= {}).add(placement.scheduledActivityId);

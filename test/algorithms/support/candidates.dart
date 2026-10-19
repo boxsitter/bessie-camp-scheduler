@@ -22,8 +22,11 @@ PotentialAssignment candidateOf(
     scheduledActivity: context.scheduledActivityOf(activityId, periodId)!,
     period: context.periodById(periodId)!,
     linkedScheduledActivity:
-        linkedPeriodId == null ? null : context.scheduledActivityOf(activityId, linkedPeriodId)!,
-    linkedPeriod: linkedPeriodId == null ? null : context.periodById(linkedPeriodId)!,
+        linkedPeriodId == null
+            ? null
+            : context.scheduledActivityOf(activityId, linkedPeriodId)!,
+    linkedPeriod:
+        linkedPeriodId == null ? null : context.periodById(linkedPeriodId)!,
     sequence: sequence,
   );
 }

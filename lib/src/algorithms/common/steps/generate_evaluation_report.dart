@@ -43,8 +43,9 @@ class GenerateEvaluationReportStep extends AlgorithmStep {
         ledger: state.ledger,
         stalemates: state.stalemates,
       );
-      if (satisfaction != null)
+      if (satisfaction != null) {
         state.satisfaction[participantId] = satisfaction;
+      }
     }
 
     state.evaluationReports = reports;

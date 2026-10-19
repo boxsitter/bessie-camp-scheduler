@@ -24,7 +24,10 @@ List<NewPlacement> eagerGreedyPlacements(
   AssignmentScorer scorer,
   Random random,
 ) {
-  final state = PipelineState(context: context, ledger: AssignmentLedger(context));
+  final state = PipelineState(
+    context: context,
+    ledger: AssignmentLedger(context),
+  );
   GeneratePotentialAssignmentsStep().execute(state);
   ScoreAssignmentsStep(scorer).execute(state);
   SortAssignmentsStep(random: random).execute(state);
