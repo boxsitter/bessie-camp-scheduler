@@ -51,7 +51,8 @@ void main() {
     final from = tester.getCenter(find.text(activity).first);
     final to = tester.getCenter(find.text(zoneTitle));
     await tester.timedDrag(find.text(activity).first, to - from, const Duration(milliseconds: 300));
-    await tester.pumpAndSettle();
+    // Not pumpAndSettle: the saving spinner keeps frames coming until the autosave has run.
+    await tester.pump(const Duration(milliseconds: 50));
   }
 
   group('cabins', () {
