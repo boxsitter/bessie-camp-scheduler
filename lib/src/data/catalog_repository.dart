@@ -86,6 +86,22 @@ class CatalogRepository {
     return Cabin.fromRow(row);
   });
 
+  Future<Cabin> updateCabin(Cabin cabin) => guarded(() async {
+    final row = await _client
+        .from('cabins')
+        .update({
+          'name': cabin.name,
+          'display_name': cabin.displayName,
+          'village': cabin.village,
+          'capacity': cabin.capacity,
+          'position': cabin.position,
+        })
+        .eq('id', cabin.id)
+        .select()
+        .single();
+    return Cabin.fromRow(row);
+  });
+
   Future<void> deleteCabin(String id) => guarded(() async {
     ensureAffected(await _client.from('cabins').delete().eq('id', id).select('id'), 1);
   });

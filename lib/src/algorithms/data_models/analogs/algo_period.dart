@@ -11,7 +11,11 @@ class AlgoPeriod {
   /// When the period starts. Periods are ordered chronologically by this value.
   final DateTime start;
 
-  const AlgoPeriod({required this.id, required this.dayId, required this.start});
+  const AlgoPeriod({
+    required this.id,
+    required this.dayId,
+    required this.start,
+  });
 
   @override
   String toString() => 'AlgoPeriod($id)';

@@ -69,18 +69,25 @@ class ResolveStalematesStep extends AlgorithmStep {
     }
 
     final remaining =
-        strategy == StalemateStrategy.randomize ? _unfilledSlots(state) : unfilled;
+        strategy == StalemateStrategy.randomize
+            ? _unfilledSlots(state)
+            : unfilled;
     final enforced =
-        strategy == StalemateStrategy.randomize ? relaxedConstraints : constraints;
+        strategy == StalemateStrategy.randomize
+            ? relaxedConstraints
+            : constraints;
     for (final slot in remaining) {
       final reason = _explain(slot, state, candidatesBySlot, enforced);
-      state.stalemates.add(Stalemate(
-        participantId: slot.participant.id,
-        periodId: slot.period.id,
-        reason: strategy == StalemateStrategy.randomize
-            ? 'Even with relaxed constraints nothing could be placed. $reason'
-            : reason,
-      ));
+      state.stalemates.add(
+        Stalemate(
+          participantId: slot.participant.id,
+          periodId: slot.period.id,
+          reason:
+              strategy == StalemateStrategy.randomize
+                  ? 'Even with relaxed constraints nothing could be placed. $reason'
+                  : reason,
+        ),
+      );
     }
 
     if (strategy == StalemateStrategy.fail && state.stalemates.isNotEmpty) {
@@ -88,10 +95,11 @@ class ResolveStalematesStep extends AlgorithmStep {
     }
 
     return StepOutcome(
-      summary: strategy == StalemateStrategy.randomize
-          ? 'Randomize fallback made $randomizedPlacements placements; '
-              '${state.stalemates.length} stalemates remain.'
-          : 'Recorded ${state.stalemates.length} stalemates.',
+      summary:
+          strategy == StalemateStrategy.randomize
+              ? 'Randomize fallback made $randomizedPlacements placements; '
+                  '${state.stalemates.length} stalemates remain.'
+              : 'Recorded ${state.stalemates.length} stalemates.',
       details: {
         'stalemateStrategy': strategyName,
         'randomizedPlacements': randomizedPlacements,
@@ -107,7 +115,10 @@ class ResolveStalematesStep extends AlgorithmStep {
     return [
       for (final participant in context.participants)
         for (final period in context.targetPeriods)
-          if (!state.ledger.isBusy(participant.id, context.periodIndex(period.id)))
+          if (!state.ledger.isBusy(
+            participant.id,
+            context.periodIndex(period.id),
+          ))
             (participant: participant, period: period),
     ];
   }
@@ -115,15 +126,20 @@ class ResolveStalematesStep extends AlgorithmStep {
   /// participantId -> periodId -> the candidates that START in that period, for
   /// slots that are still empty.
   Map<String, Map<String, List<PotentialAssignment>>> _indexCandidates(
-      PipelineState state) {
+    PipelineState state,
+  ) {
     final index = <String, Map<String, List<PotentialAssignment>>>{};
     for (final candidate in state.potentialAssignments) {
       final participantId = candidate.participant.id;
-      if (state.ledger
-          .isBusy(participantId, state.context.periodIndex(candidate.period.id))) {
+      if (state.ledger.isBusy(
+        participantId,
+        state.context.periodIndex(candidate.period.id),
+      )) {
         continue;
       }
-      ((index[participantId] ??= {})[candidate.period.id] ??= []).add(candidate);
+      ((index[participantId] ??= {})[candidate.period.id] ??= []).add(
+        candidate,
+      );
     }
     return index;
   }
@@ -149,7 +165,8 @@ class ResolveStalematesStep extends AlgorithmStep {
         ..shuffle(_random);
       for (final option in options) {
         if (!ledger.isFree(option)) continue;
-        if (relaxedConstraints.firstViolation(option, context, ledger) != null) {
+        if (relaxedConstraints.firstViolation(option, context, ledger) !=
+            null) {
           continue;
         }
         ledger.place(option);
@@ -179,7 +196,9 @@ class ResolveStalematesStep extends AlgorithmStep {
     }
 
     final candidateByScheduledId = {
-      for (final candidate in candidatesBySlot[participantId]?[slot.period.id] ?? const <PotentialAssignment>[])
+      for (final candidate
+          in candidatesBySlot[participantId]?[slot.period.id] ??
+              const <PotentialAssignment>[])
         candidate.scheduledActivity.id: candidate,
     };
 
@@ -187,22 +206,27 @@ class ResolveStalematesStep extends AlgorithmStep {
     final vetoed = <String>[];
     for (final scheduled in scheduledHere) {
       final activityId = scheduled.activityId;
-      if (context.preferenceOf(participantId, activityId) == PreferenceType.veto) {
+      if (context.preferenceOf(participantId, activityId) ==
+          PreferenceType.veto) {
         vetoed.add(activityId);
         continue;
       }
       final candidate = candidateByScheduledId[scheduled.id];
       if (candidate == null) {
-        parts.add('Activity $activityId is a double-schedule activity that cannot '
-            'be completed (the next period is on another day, does not offer it, '
-            'or the participant is busy then)');
+        parts.add(
+          'Activity $activityId is a double-schedule activity that cannot '
+          'be completed (the next period is on another day, does not offer it, '
+          'or the participant is busy then)',
+        );
         continue;
       }
       final violations = enforced.violations(candidate, context, ledger);
       if (violations.isNotEmpty) {
         parts.add('Activity $activityId violated: [${violations.join(', ')}]');
       } else if (!ledger.isFree(candidate)) {
-        parts.add('Activity $activityId: the participant is busy in the linked period');
+        parts.add(
+          'Activity $activityId: the participant is busy in the linked period',
+        );
       } else {
         parts.add('Activity $activityId was not chosen');
       }

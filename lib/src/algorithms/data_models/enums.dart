@@ -41,8 +41,8 @@ enum AssignmentStrategy {
 /// and evaluators: request = 1.0, veto = 0.0, neutral (`null`) = 0.5.
 extension PreferenceTypeValue on PreferenceType? {
   double get numericValue => switch (this) {
-        PreferenceType.request => 1.0,
-        PreferenceType.veto => 0.0,
-        null => SatisfactionConstants.neutralPreferencePoint,
-      };
+    PreferenceType.request => 1.0,
+    PreferenceType.veto => 0.0,
+    null => SatisfactionConstants.neutralPreferencePoint,
+  };
 }

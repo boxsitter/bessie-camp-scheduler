@@ -71,12 +71,14 @@ class AssignmentResult {
     List<Stalemate> stalemates = const [],
     List<ParticipantEvaluationReport> evaluationReports = const [],
     List<StepReport> stepReports = const [],
-  })  : newPlacements = List.unmodifiable(newPlacements),
-        satisfaction = Map.unmodifiable(satisfaction),
-        stalemates = List.unmodifiable(stalemates),
-        evaluationReports = List.unmodifiable(evaluationReports),
-        stepReports = List.unmodifiable(stepReports),
-        _stalematedParticipantIds = {for (final s in stalemates) s.participantId};
+  }) : newPlacements = List.unmodifiable(newPlacements),
+       satisfaction = Map.unmodifiable(satisfaction),
+       stalemates = List.unmodifiable(stalemates),
+       evaluationReports = List.unmodifiable(evaluationReports),
+       stepReports = List.unmodifiable(stepReports),
+       _stalematedParticipantIds = {
+         for (final s in stalemates) s.participantId,
+       };
 
   /// Whether any of the participant's slots is a stalemate. O(1).
   bool hasStalemate(String participantId) =>

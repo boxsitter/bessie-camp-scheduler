@@ -79,8 +79,10 @@ class RosterRepository {
             callback: (_) => scheduleRefresh(),
           );
         }
-        // Fetch only once the channel has joined (and again after any
-        // reconnect), so no change can slip between the fetch and the join.
+        // Fetch right away so the roster shows even if realtime is blocked, and
+        // again once the channel has joined (and after any reconnect) so no
+        // change can slip between the first fetch and the join.
+        refresh();
         channel = ch.subscribe((status, error) {
           switch (status) {
             case RealtimeSubscribeStatus.subscribed:

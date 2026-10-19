@@ -43,7 +43,12 @@ class AppException implements Exception {
       case '23505':
         return 'That already exists.';
       case '23503':
-        return 'That refers to something that no longer exists.';
+        // Postgres says "is still referenced from" when a delete is blocked,
+        // and "is not present in" when an insert points at nothing.
+        final detail = '${e.details ?? ''} ${e.message}'.toLowerCase();
+        return detail.contains('still referenced')
+            ? 'Something still depends on this, so it can\'t be deleted.'
+            : 'That refers to something that no longer exists.';
       case '23P01':
         return 'That overlaps with something that is already scheduled.';
       case 'P0002':

@@ -48,42 +48,48 @@ class GeneratePotentialAssignmentsStep extends AlgorithmStep {
           }
 
           if (!activity.doubleSchedule) {
-            candidates.add(PotentialAssignment(
-              participant: participant,
-              activity: activity,
-              scheduledActivity: scheduled,
-              period: period,
-              sequence: candidates.length,
-            ));
+            candidates.add(
+              PotentialAssignment(
+                participant: participant,
+                activity: activity,
+                scheduledActivity: scheduled,
+                period: period,
+                sequence: candidates.length,
+              ),
+            );
             continue;
           }
 
           final next = context.nextPeriod(period.id);
-          final linked = next == null || !context.isSameDay(period, next)
-              ? null
-              : context.scheduledActivityOf(activity.id, next.id);
+          final linked =
+              next == null || !context.isSameDay(period, next)
+                  ? null
+                  : context.scheduledActivityOf(activity.id, next.id);
           if (next == null ||
               linked == null ||
               ledger.isBusy(participant.id, context.periodIndex(next.id))) {
             unfinishableDoubles++;
             continue;
           }
-          candidates.add(PotentialAssignment(
-            participant: participant,
-            activity: activity,
-            scheduledActivity: scheduled,
-            period: period,
-            linkedScheduledActivity: linked,
-            linkedPeriod: next,
-            sequence: candidates.length,
-          ));
+          candidates.add(
+            PotentialAssignment(
+              participant: participant,
+              activity: activity,
+              scheduledActivity: scheduled,
+              period: period,
+              linkedScheduledActivity: linked,
+              linkedPeriod: next,
+              sequence: candidates.length,
+            ),
+          );
         }
       }
     }
     state.potentialAssignments = candidates;
 
     return StepOutcome(
-      summary: 'Generated ${candidates.length} potential assignments '
+      summary:
+          'Generated ${candidates.length} potential assignments '
           '(vetoes and hidden activities excluded, doubles merged).',
       details: {
         'count': candidates.length,

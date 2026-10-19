@@ -19,8 +19,8 @@ class GreedyScoringAlgorithm implements AssignmentAlgorithm {
 
   @override
   List<AlgorithmStep> get steps => buildStandardSteps(
-        scorer: const GreedyScorer(),
-        stalemateStrategy: stalemateStrategy,
-        random: _random,
-      );
+    scorer: const GreedyScorer(),
+    stalemateStrategy: stalemateStrategy,
+    random: _random,
+  );
 }

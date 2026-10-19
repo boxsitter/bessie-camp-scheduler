@@ -24,7 +24,9 @@ class AdjacentRepetitionConstraint implements Constraint {
     final index = context.periodIndex(assignment.period.id);
     final dayId = assignment.period.dayId;
     final held = ledger.periodIndicesOf(
-        assignment.participant.id, assignment.activity.id);
+      assignment.participant.id,
+      assignment.activity.id,
+    );
 
     for (final heldIndex in held) {
       if ((heldIndex - index).abs() == 1 &&

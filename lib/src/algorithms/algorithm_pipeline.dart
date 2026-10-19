@@ -16,7 +16,10 @@ class AlgorithmPipeline {
   AlgorithmPipeline(this.steps);
 
   AssignmentResult run(AssignmentContext context) {
-    final state = PipelineState(context: context, ledger: AssignmentLedger(context));
+    final state = PipelineState(
+      context: context,
+      ledger: AssignmentLedger(context),
+    );
     final reports = <StepReport>[];
     final stopwatch = Stopwatch();
 
@@ -27,12 +30,14 @@ class AlgorithmPipeline {
       final outcome = step.execute(state);
       stopwatch.stop();
 
-      reports.add(StepReport(
-        stepName: step.stepName,
-        summary: outcome.summary,
-        details: outcome.details,
-        duration: stopwatch.elapsed,
-      ));
+      reports.add(
+        StepReport(
+          stepName: step.stepName,
+          summary: outcome.summary,
+          details: outcome.details,
+          duration: stopwatch.elapsed,
+        ),
+      );
     }
 
     return AssignmentResult(

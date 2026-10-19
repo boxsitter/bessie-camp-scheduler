@@ -28,7 +28,10 @@ class SatisfactionCalculator {
 
     if (context.participantById(participantId) == null) {
       throw ArgumentError.value(
-          participantId, 'participantId', 'is not part of the context');
+        participantId,
+        'participantId',
+        'is not part of the context',
+      );
     }
 
     final activityIds = ledger.weekActivityIds(participantId).toList();
@@ -38,12 +41,17 @@ class SatisfactionCalculator {
       age: context.ageOf(participantId),
       settings: SatisfactionConstants.discouragementSettings,
     );
-    final preferenceScore =
-        calculatePreferenceScore(participantId, activityIds, context, multiplier);
+    final preferenceScore = calculatePreferenceScore(
+      participantId,
+      activityIds,
+      context,
+      multiplier,
+    );
     final noveltyScore = calculateNoveltyScore(activityIds);
 
     final weights = SatisfactionConstants.satisfactionWeights;
-    final index = preferenceScore * weights[SatisfactionFactor.preference]! +
+    final index =
+        preferenceScore * weights[SatisfactionFactor.preference]! +
         noveltyScore * weights[SatisfactionFactor.novelty]!;
 
     // Clamp to absorb floating point inaccuracies.
@@ -63,7 +71,8 @@ class SatisfactionCalculator {
 
     var totalAdjustedImpact = 0.0;
     for (final activityId in activityIds) {
-      final preference = context.preferenceOf(participantId, activityId).numericValue;
+      final preference =
+          context.preferenceOf(participantId, activityId).numericValue;
       final rawImpact = preference - neutral;
       totalAdjustedImpact +=
           rawImpact < 0 ? rawImpact * discouragementMultiplier : rawImpact;

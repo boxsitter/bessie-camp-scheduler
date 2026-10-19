@@ -49,20 +49,27 @@ class ScoringTerms {
     AssignmentLedger ledger,
   ) {
     final held = ledger.periodIndicesOf(
-        candidate.participant.id, candidate.activity.id);
+      candidate.participant.id,
+      candidate.activity.id,
+    );
     if (held.isEmpty) return 0.0;
 
     final dayId = candidate.period.dayId;
     final firstIndex = context.periodIndex(candidate.period.id);
     final linked = candidate.linkedPeriod;
-    final secondIndex = linked == null ? firstIndex : context.periodIndex(linked.id);
+    final secondIndex =
+        linked == null ? firstIndex : context.periodIndex(linked.id);
 
     var penalty = 0.0;
     for (final heldIndex in held) {
       if (context.periods[heldIndex].dayId != dayId) continue;
-      final gap = min((heldIndex - firstIndex).abs(), (heldIndex - secondIndex).abs());
+      final gap = min(
+        (heldIndex - firstIndex).abs(),
+        (heldIndex - secondIndex).abs(),
+      );
       final distance = max(0, gap - 1);
-      penalty += baseRepetitionPenalty * pow(repetitionPenaltyDecayFactor, distance);
+      penalty +=
+          baseRepetitionPenalty * pow(repetitionPenaltyDecayFactor, distance);
     }
     return penalty;
   }

@@ -22,18 +22,20 @@ class GenerateEvaluationReportStep extends AlgorithmStep {
     for (final participant in state.context.participants) {
       final participantId = participant.id;
 
-      reports.add(ParticipantEvaluationReport(
-        participantId: participantId,
-        preferencesSatisfied: satisfactionEvaluator.isSatisfied(
+      reports.add(
+        ParticipantEvaluationReport(
           participantId: participantId,
-          context: state.context,
-          ledger: state.ledger,
+          preferencesSatisfied: satisfactionEvaluator.isSatisfied(
+            participantId: participantId,
+            context: state.context,
+            ledger: state.ledger,
+          ),
+          noveltyScore: noveltyEvaluator.calculateNoveltyPercentage(
+            participantId: participantId,
+            ledger: state.ledger,
+          ),
         ),
-        noveltyScore: noveltyEvaluator.calculateNoveltyPercentage(
-          participantId: participantId,
-          ledger: state.ledger,
-        ),
-      ));
+      );
 
       final satisfaction = satisfactionCalculator.calculate(
         participantId: participantId,
@@ -41,13 +43,15 @@ class GenerateEvaluationReportStep extends AlgorithmStep {
         ledger: state.ledger,
         stalemates: state.stalemates,
       );
-      if (satisfaction != null) state.satisfaction[participantId] = satisfaction;
+      if (satisfaction != null)
+        state.satisfaction[participantId] = satisfaction;
     }
 
     state.evaluationReports = reports;
 
     return StepOutcome(
-      summary: 'Evaluated ${reports.length} participants; '
+      summary:
+          'Evaluated ${reports.length} participants; '
           '${state.satisfaction.length} have a satisfaction index.',
       details: {
         'count': reports.length,

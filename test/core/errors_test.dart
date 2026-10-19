@@ -19,6 +19,15 @@ void main() {
       expect(messageFor(PostgrestException(message: 'x', code: '42501')), contains('permission'));
       expect(messageFor(PostgrestException(message: 'x', code: '23505')), contains('already exists'));
       expect(messageFor(PostgrestException(message: 'x', code: '23503')), contains('no longer exists'));
+      expect(
+        messageFor(PostgrestException(
+          message: 'update or delete on table "activities" violates foreign key constraint',
+          code: '23503',
+          details: 'Key (id)=(1) is still referenced from table "scheduled_activities".',
+        )),
+        contains('still depends'),
+        reason: 'a blocked delete is not a dangling reference',
+      );
       expect(messageFor(PostgrestException(message: 'x', code: '23P01')), contains('overlaps'));
       expect(messageFor(PostgrestException(message: 'x', code: 'P0002')), contains('could not be found'));
       expect(messageFor(PostgrestException(message: 'JWT expired', code: 'PGRST301')), contains('expired'));

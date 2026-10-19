@@ -27,6 +27,8 @@ void main() {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    // Let a pending autosave run, so no timer outlives the test.
+    addTearDown(() => tester.pump(const Duration(seconds: 2)));
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -145,7 +147,8 @@ void main() {
 
       await dragTo(tester, 'Drama', 'Activity Library (I\'d Be Open To Trying It)');
       expect(controller.board!.kindOf(env.drama), isNull);
-      expect(find.text('2 remaining'), findsNWidgets(2));
+      expect(find.text('3 remaining'), findsOneWidget);
+      expect(find.text('2 remaining'), findsOneWidget);
     });
 
     testWidgets('refuses a request beyond the limit', (tester) async {

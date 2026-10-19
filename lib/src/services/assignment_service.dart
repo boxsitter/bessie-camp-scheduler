@@ -60,7 +60,10 @@ class AssignmentService extends GetxService {
     if (participants.isEmpty) throw AppException('There are no campers to assign.');
     if (schedule.isEmpty) throw AppException('This session has no schedule yet.');
 
-    final targets = blockIds ?? schedule.blocks.map((b) => b.id).toSet();
+    // A block nobody can be assigned in would only produce a stalemate per camper.
+    final fillable = assignableBlockIds(schedule);
+    final targets = (blockIds ?? schedule.blocks.map((b) => b.id).toSet()).intersection(fillable);
+    if (targets.isEmpty) throw AppException('None of those blocks have activities scheduled yet.');
     final context = buildContext(participants: participants, everyone: everyone, schedule: schedule, targetBlockIds: targets);
 
     final stopwatch = Stopwatch()..start();
@@ -143,6 +146,13 @@ class AssignmentService extends GetxService {
       now: now ?? DateTime.now(),
     );
   }
+
+  /// Blocks with at least one activity that can actually be assigned (hidden
+  /// activities keep campers busy but are never handed out).
+  static Set<String> assignableBlockIds(Schedule schedule) => {
+    for (final scheduled in schedule.scheduledActivities)
+      if (schedule.activitiesById[scheduled.activityId]?.isHidden == false) scheduled.blockId,
+  };
 
   /// Campers who haven't had their preferences saved yet. Auto-assignment
   /// treats them as having no preferences.

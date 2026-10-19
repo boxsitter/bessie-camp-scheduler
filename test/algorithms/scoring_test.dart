@@ -205,6 +205,23 @@ void main() {
       expect(penalty(context, ledger, 'mon3', activity: 'canoe', linked: 'mon4'),
           closeTo(-50.0 - 30.0, 1e-9));
     });
+
+    test('measures a double block from its nearest period when the held periods come after it',
+        () {
+      // Held: mon4+mon5. Here the block's SECOND period is the nearer one, so
+      // measuring from the first period only would give a smaller penalty.
+      final context = fiveInARow();
+      final ledger = AssignmentLedger(context)
+        ..place(candidateOf(context, 'amy', 'canoe', 'mon4', linkedPeriodId: 'mon5'));
+
+      // Block mon1+mon2: vs mon4 the nearest is mon2 (distance 1, -30); vs mon5
+      // it is mon2 too (distance 2, -18).
+      expect(penalty(context, ledger, 'mon1', activity: 'canoe', linked: 'mon2'),
+          closeTo(-30.0 - 18.0, 1e-9));
+      // Block mon2+mon3 touches mon4 (distance 0, -50); vs mon5 distance 1 (-30).
+      expect(penalty(context, ledger, 'mon2', activity: 'canoe', linked: 'mon3'),
+          closeTo(-50.0 - 30.0, 1e-9));
+    });
   });
 
   group('GreedyScorer', () {

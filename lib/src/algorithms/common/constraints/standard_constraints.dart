@@ -6,16 +6,16 @@ import 'reassignment_constraint.dart';
 
 /// Every hard rule, enforced by the main selection pass. Cheap checks first.
 List<Constraint> standardConstraints() => [
-      DoubleScheduleConstraint(),
-      CapacityConstraint(),
-      ReassignmentConstraint(),
-      AdjacentRepetitionConstraint(),
-    ];
+  DoubleScheduleConstraint(),
+  CapacityConstraint(),
+  ReassignmentConstraint(),
+  AdjacentRepetitionConstraint(),
+];
 
 /// The rules that are still enforced by the `randomize` stalemate fallback:
 /// seats are real and a double block must be well-formed. Everything else
 /// (assignment caps, adjacent repetition) is relaxed.
 List<Constraint> essentialConstraints() => [
-      DoubleScheduleConstraint(),
-      CapacityConstraint(),
-    ];
+  DoubleScheduleConstraint(),
+  CapacityConstraint(),
+];

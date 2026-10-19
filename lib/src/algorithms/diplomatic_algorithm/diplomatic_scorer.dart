@@ -41,14 +41,17 @@ class DiplomaticScorer implements AssignmentScorer {
   static const double youngerParticipantMaxBonus = 0.0;
 
   /// The age at which the bonus starts to apply.
-  static const int youngerParticipantMinAge = ScoringTerms.youngerParticipantMinAge;
+  static const int youngerParticipantMinAge =
+      ScoringTerms.youngerParticipantMinAge;
 
   /// The age at which the bonus becomes zero.
-  static const int youngerParticipantMaxAge = ScoringTerms.youngerParticipantMaxAge;
+  static const int youngerParticipantMaxAge =
+      ScoringTerms.youngerParticipantMaxAge;
 
   // --- REPETITION PENALTY ---
   /// The base penalty for repeating an activity on the same day.
-  static const double baseRepetitionPenalty = ScoringTerms.baseRepetitionPenalty;
+  static const double baseRepetitionPenalty =
+      ScoringTerms.baseRepetitionPenalty;
 
   /// How quickly the repetition penalty fades with each period of separation.
   static const double repetitionPenaltyDecayFactor =
@@ -68,7 +71,8 @@ class DiplomaticScorer implements AssignmentScorer {
 
     final alreadyHolds = ledger.holds(participantId, activityId);
     final isRequest =
-        context.preferenceOf(participantId, activityId) == PreferenceType.request;
+        context.preferenceOf(participantId, activityId) ==
+        PreferenceType.request;
 
     final double baseScore;
     if (!alreadyHolds && isRequest) {
@@ -83,8 +87,11 @@ class DiplomaticScorer implements AssignmentScorer {
       context.ageOf(participantId),
       maxBonus: youngerParticipantMaxBonus,
     );
-    final repetitionPenalty =
-        ScoringTerms.sameDayRepetitionPenalty(candidate, context, ledger);
+    final repetitionPenalty = ScoringTerms.sameDayRepetitionPenalty(
+      candidate,
+      context,
+      ledger,
+    );
 
     return baseScore + ageBonus + repetitionPenalty;
   }

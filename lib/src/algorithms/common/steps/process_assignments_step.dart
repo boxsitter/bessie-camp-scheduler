@@ -1,11 +1,11 @@
 import 'package:collection/collection.dart';
 
 import '../../data_models/interfaces/algorithm_step.dart';
-import '../constraints/constraint_checks.dart';
 import '../../data_models/interfaces/assignment_scorer.dart';
 import '../../data_models/interfaces/constraint.dart';
 import '../../data_models/pipeline_state.dart';
 import '../../data_models/potential_assignment.dart';
+import '../constraints/constraint_checks.dart';
 
 /// The main selection pass: a lazy-greedy loop over a priority queue.
 ///
@@ -44,8 +44,9 @@ class ProcessAssignmentsStep extends AlgorithmStep {
     final context = state.context;
     final ledger = state.ledger;
 
-    final queue = HeapPriorityQueue<PotentialAssignment>(PotentialAssignment.byPriority)
-      ..addAll(state.potentialAssignments);
+    final queue = HeapPriorityQueue<PotentialAssignment>(
+      PotentialAssignment.byPriority,
+    )..addAll(state.potentialAssignments);
 
     var accepted = 0;
     var placements = 0;
@@ -89,7 +90,8 @@ class ProcessAssignmentsStep extends AlgorithmStep {
     }
 
     return StepOutcome(
-      summary: 'Accepted $accepted assignments ($placements placements); '
+      summary:
+          'Accepted $accepted assignments ($placements placements); '
           'dropped $droppedByConstraint on constraints and $skippedBusy '
           'because the participant was already busy.',
       details: {

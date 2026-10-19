@@ -57,7 +57,7 @@ class AssignmentContext {
   late final Map<String, AlgoScheduledActivity> _scheduledById;
   late final Map<String, List<AlgoScheduledActivity>> _scheduledByPeriod;
   late final Map<String, Map<String, AlgoScheduledActivity>>
-      _scheduledByPeriodAndActivity;
+  _scheduledByPeriodAndActivity;
   late final Map<String, int> _ageById;
   late final List<AlgoPeriod> _targetPeriods;
 
@@ -71,21 +71,25 @@ class AssignmentContext {
     required Map<String, Set<String>> existingAssignments,
     Map<String, int> externalEnrollment = const {},
     required this.now,
-  })  : participants = List.unmodifiable(participants),
-        preferences = Map.unmodifiable({
-          for (final entry in preferences.entries)
-            entry.key: Map<String, PreferenceType>.unmodifiable(entry.value),
-        }),
-        periods = List.unmodifiable(_sortChronologically(periods)),
-        targetPeriodIds = Set.unmodifiable(targetPeriodIds),
-        activities = List.unmodifiable(activities),
-        scheduledActivities = List.unmodifiable(scheduledActivities),
-        existingAssignments = Map.unmodifiable({
-          for (final entry in existingAssignments.entries)
-            entry.key: Set<String>.unmodifiable(entry.value),
-        }),
-        externalEnrollment = Map.unmodifiable(externalEnrollment) {
-    _participantById = _indexById(this.participants, (p) => p.id, 'participant');
+  }) : participants = List.unmodifiable(participants),
+       preferences = Map.unmodifiable({
+         for (final entry in preferences.entries)
+           entry.key: Map<String, PreferenceType>.unmodifiable(entry.value),
+       }),
+       periods = List.unmodifiable(_sortChronologically(periods)),
+       targetPeriodIds = Set.unmodifiable(targetPeriodIds),
+       activities = List.unmodifiable(activities),
+       scheduledActivities = List.unmodifiable(scheduledActivities),
+       existingAssignments = Map.unmodifiable({
+         for (final entry in existingAssignments.entries)
+           entry.key: Set<String>.unmodifiable(entry.value),
+       }),
+       externalEnrollment = Map.unmodifiable(externalEnrollment) {
+    _participantById = _indexById(
+      this.participants,
+      (p) => p.id,
+      'participant',
+    );
     _activityById = _indexById(this.activities, (a) => a.id, 'activity');
     _periodById = _indexById(this.periods, (p) => p.id, 'period');
     _periodIndexById = {
@@ -93,7 +97,10 @@ class AssignmentContext {
     };
 
     final scheduledById = _indexById(
-        this.scheduledActivities, (s) => s.id, 'scheduled activity');
+      this.scheduledActivities,
+      (s) => s.id,
+      'scheduled activity',
+    );
     _scheduledById = {
       for (final entry in scheduledById.entries)
         if (_activityById.containsKey(entry.value.activityId) &&
@@ -106,18 +113,25 @@ class AssignmentContext {
     for (final scheduled in this.scheduledActivities) {
       if (!_scheduledById.containsKey(scheduled.id)) continue;
       (_scheduledByPeriod[scheduled.periodId] ??= []).add(scheduled);
-      (_scheduledByPeriodAndActivity[scheduled.periodId] ??= {})
-          .putIfAbsent(scheduled.activityId, () => scheduled);
+      (_scheduledByPeriodAndActivity[scheduled.periodId] ??= {}).putIfAbsent(
+        scheduled.activityId,
+        () => scheduled,
+      );
     }
 
     for (final periodId in this.targetPeriodIds) {
       if (!_periodById.containsKey(periodId)) {
         throw ArgumentError.value(
-            periodId, 'targetPeriodIds', 'is not one of the context periods');
+          periodId,
+          'targetPeriodIds',
+          'is not one of the context periods',
+        );
       }
     }
-    _targetPeriods = List.unmodifiable(
-        [for (final p in this.periods) if (this.targetPeriodIds.contains(p.id)) p]);
+    _targetPeriods = List.unmodifiable([
+      for (final p in this.periods)
+        if (this.targetPeriodIds.contains(p.id)) p,
+    ]);
 
     _ageById = {for (final p in this.participants) p.id: p.ageOn(now)};
   }
@@ -159,8 +173,10 @@ class AssignmentContext {
 
   /// The scheduled instance of [activityId] in [periodId], if it is offered
   /// there.
-  AlgoScheduledActivity? scheduledActivityOf(String activityId, String periodId) =>
-      _scheduledByPeriodAndActivity[periodId]?[activityId];
+  AlgoScheduledActivity? scheduledActivityOf(
+    String activityId,
+    String periodId,
+  ) => _scheduledByPeriodAndActivity[periodId]?[activityId];
 
   /// What [participantId] thinks of [activityId]; `null` means neutral.
   PreferenceType? preferenceOf(String participantId, String activityId) =>
@@ -174,13 +190,16 @@ class AssignmentContext {
 
   static List<AlgoPeriod> _sortChronologically(List<AlgoPeriod> periods) {
     return [...periods]..sort((a, b) {
-        final byStart = a.start.compareTo(b.start);
-        return byStart != 0 ? byStart : a.id.compareTo(b.id);
-      });
+      final byStart = a.start.compareTo(b.start);
+      return byStart != 0 ? byStart : a.id.compareTo(b.id);
+    });
   }
 
   static Map<String, T> _indexById<T>(
-      Iterable<T> items, String Function(T) idOf, String what) {
+    Iterable<T> items,
+    String Function(T) idOf,
+    String what,
+  ) {
     final index = <String, T>{};
     for (final item in items) {
       final id = idOf(item);

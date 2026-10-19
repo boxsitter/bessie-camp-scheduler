@@ -21,10 +21,7 @@ class SatisfactionConstants {
 }
 
 /// The factors that make up a satisfaction index.
-enum SatisfactionFactor {
-  preference,
-  novelty,
-}
+enum SatisfactionFactor { preference, novelty }
 
 /// Settings for the age-based discouragement model.
 class DiscouragementSettings {

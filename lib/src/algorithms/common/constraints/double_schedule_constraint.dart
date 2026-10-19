@@ -37,8 +37,10 @@ class DoubleScheduleConstraint implements Constraint {
     if (!context.isSameDay(assignment.period, nextPeriod)) return true;
 
     // ...where the same activity is offered.
-    final expected =
-        context.scheduledActivityOf(assignment.activity.id, nextPeriod.id);
+    final expected = context.scheduledActivityOf(
+      assignment.activity.id,
+      nextPeriod.id,
+    );
     return expected == null || expected.id != linkedScheduled.id;
   }
 }

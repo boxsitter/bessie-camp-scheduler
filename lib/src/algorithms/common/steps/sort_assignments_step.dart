@@ -31,7 +31,8 @@ class SortAssignmentsStep extends AlgorithmStep {
     candidates.sort(PotentialAssignment.byPriority);
 
     return StepOutcome(
-      summary: 'Sorted ${candidates.length} assignments by score '
+      summary:
+          'Sorted ${candidates.length} assignments by score '
           '(random tiebreak keys).',
       details: {'count': candidates.length},
     );

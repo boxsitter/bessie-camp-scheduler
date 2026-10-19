@@ -32,7 +32,8 @@ class AssignmentLedger {
 
     // Seats held by campers who are not part of this run.
     context.externalEnrollment.forEach((scheduledActivityId, seats) {
-      if (context.scheduledActivityById(scheduledActivityId) != null && seats > 0) {
+      if (context.scheduledActivityById(scheduledActivityId) != null &&
+          seats > 0) {
         _seatsTaken[scheduledActivityId] = seats;
       }
     });
@@ -40,7 +41,8 @@ class AssignmentLedger {
     // Existing assignments of the run's participants.
     for (final entry in context.existingAssignments.entries) {
       final book = _books[entry.key];
-      if (book == null) continue; // Not part of this run; see externalEnrollment.
+      if (book == null)
+        continue; // Not part of this run; see externalEnrollment.
       for (final scheduledActivityId in entry.value) {
         final scheduled = context.scheduledActivityById(scheduledActivityId);
         if (scheduled == null) continue;
@@ -51,8 +53,12 @@ class AssignmentLedger {
         book.slots[periodIndex] ??= scheduled;
         _seatsTaken[scheduled.id] = (_seatsTaken[scheduled.id] ?? 0) + 1;
         _insertSorted(
-            book.periodIndicesByActivity.putIfAbsent(scheduled.activityId, () => []),
-            periodIndex);
+          book.periodIndicesByActivity.putIfAbsent(
+            scheduled.activityId,
+            () => [],
+          ),
+          periodIndex,
+        );
       }
     }
     for (final book in _books.values) {
@@ -96,7 +102,9 @@ class AssignmentLedger {
   /// Whether the participant holds the activity at least once (existing or
   /// new).
   bool holds(String participantId, String activityId) =>
-      (_books[participantId]?.periodIndicesByActivity[activityId]?.isNotEmpty) ??
+      (_books[participantId]
+          ?.periodIndicesByActivity[activityId]
+          ?.isNotEmpty) ??
       false;
 
   /// The chronological indexes of the periods in which the participant holds
@@ -130,8 +138,10 @@ class AssignmentLedger {
     final indices = [for (final p in periods) context.periodIndex(p.id)];
     for (var i = 0; i < indices.length; i++) {
       if (book.slots[indices[i]] != null) {
-        throw StateError('Participant $participantId is already busy in '
-            'period ${periods[i].id}.');
+        throw StateError(
+          'Participant $participantId is already busy in '
+          'period ${periods[i].id}.',
+        );
       }
     }
     final activityId = candidate.activity.id;
@@ -141,8 +151,12 @@ class AssignmentLedger {
       book.slots[indices[i]] = scheduled;
       _seatsTaken[scheduled.id] = (_seatsTaken[scheduled.id] ?? 0) + 1;
       _insertSorted(held, indices[i]);
-      _newPlacements.add(NewPlacement(
-          participantId: participantId, scheduledActivityId: scheduled.id));
+      _newPlacements.add(
+        NewPlacement(
+          participantId: participantId,
+          scheduledActivityId: scheduled.id,
+        ),
+      );
     }
     book.occurrences[activityId] = (book.occurrences[activityId] ?? 0) + 1;
   }
@@ -155,9 +169,11 @@ class AssignmentLedger {
     var i = 0;
     while (i < indices.length) {
       blocks++;
-      final pairs = i + 1 < indices.length &&
+      final pairs =
+          i + 1 < indices.length &&
           indices[i + 1] == indices[i] + 1 &&
-          context.periods[indices[i]].dayId == context.periods[indices[i + 1]].dayId;
+          context.periods[indices[i]].dayId ==
+              context.periods[indices[i + 1]].dayId;
       i += pairs ? 2 : 1;
     }
     return blocks;

@@ -19,8 +19,8 @@ class DiplomaticAlgorithm implements AssignmentAlgorithm {
 
   @override
   List<AlgorithmStep> get steps => buildStandardSteps(
-        scorer: const DiplomaticScorer(),
-        stalemateStrategy: stalemateStrategy,
-        random: _random,
-      );
+    scorer: const DiplomaticScorer(),
+    stalemateStrategy: stalemateStrategy,
+    random: _random,
+  );
 }

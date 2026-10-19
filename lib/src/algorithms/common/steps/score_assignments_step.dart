@@ -22,9 +22,13 @@ class ScoreAssignmentsStep extends AlgorithmStep {
       candidate.score = scorer.score(candidate, state.context, state.ledger);
     }
     return StepOutcome(
-      summary: 'Scored ${state.potentialAssignments.length} assignments '
+      summary:
+          'Scored ${state.potentialAssignments.length} assignments '
           'with the ${scorer.name} scorer.',
-      details: {'count': state.potentialAssignments.length, 'scorer': scorer.name},
+      details: {
+        'count': state.potentialAssignments.length,
+        'scorer': scorer.name,
+      },
     );
   }
 }
