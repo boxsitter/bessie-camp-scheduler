@@ -96,10 +96,7 @@ class BessDataTable extends StatelessWidget {
             if (isGrouped && isExpanded) ...[for (var i = 0; i < group.campers.length; i++) _row(i, outlineColor)],
             if (!isGrouped)
               Expanded(
-                child: ListView.builder(
-                  itemCount: group.campers.length,
-                  itemBuilder: (context, index) => _row(index, outlineColor),
-                ),
+                child: ListView.builder(itemCount: group.campers.length, itemBuilder: (context, index) => _row(index, outlineColor)),
               ),
           ],
         ),

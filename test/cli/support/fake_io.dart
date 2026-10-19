@@ -34,7 +34,12 @@ class FakeIo implements UserInput, UserOutput {
   // UserInput -----------------------------------------------------------------
 
   @override
-  FutureOr<String> prompt(String message, {String? defaultValue, bool allowEmpty = false, FutureOr<bool> Function(String)? validator}) async {
+  FutureOr<String> prompt(
+    String message, {
+    String? defaultValue,
+    bool allowEmpty = false,
+    FutureOr<bool> Function(String)? validator,
+  }) async {
     prompts.add(message);
     if (_promptAnswers.isEmpty) throw StateError('Unexpected prompt: $message');
     final answer = _promptAnswers.removeFirst();
@@ -56,7 +61,8 @@ class FakeIo implements UserInput, UserOutput {
   FutureOr<String> select(String message, {required List<String> options, String? defaultValue}) => throw UnimplementedError();
 
   @override
-  FutureOr<List<String>> multiSelect(String message, {required List<String> options, List<String>? defaultSelection}) => throw UnimplementedError();
+  FutureOr<List<String>> multiSelect(String message, {required List<String> options, List<String>? defaultSelection}) =>
+      throw UnimplementedError();
 
   @override
   Future<T> withSpinner<T>({required String inProgressMessage, String? completionMessage, required Future<T> Function() task}) => task();

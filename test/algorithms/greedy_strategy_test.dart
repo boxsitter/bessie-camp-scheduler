@@ -110,7 +110,6 @@ void main() {
         for (var i = 1; i < swims.length; i++) {
           expect(swims[i] - swims[i - 1], greaterThan(1), reason: 'seed $seed');
         }
-        // Greedy takes swim before anything else: more swims than a diplomatic run.
         expect(result.placedFor('amy').length, greaterThanOrEqualTo(3), reason: 'seed $seed');
       }
     });

@@ -96,7 +96,15 @@ void main() {
     });
 
     test('skips empty groups', () {
-      expect(RosterCsvExporter.export(groups: const [RosterGroup(key: 'k', title: 'Empty', heading: 'Empty', campers: [])], columns: [name], view: view, grouped: true), '');
+      expect(
+        RosterCsvExporter.export(
+          groups: const [RosterGroup(key: 'k', title: 'Empty', heading: 'Empty', campers: [])],
+          columns: [name],
+          view: view,
+          grouped: true,
+        ),
+        '',
+      );
     });
   });
 

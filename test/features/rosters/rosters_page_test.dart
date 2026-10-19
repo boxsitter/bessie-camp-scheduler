@@ -1,8 +1,9 @@
 import 'package:bessie/src/features/rosters/models/roster_column.dart';
-import 'package:bessie/src/features/rosters/rosters.dart';
+import 'package:bessie/src/features/rosters/widgets/roster_body.dart';
 import 'package:bessie/src/features/rosters/widgets/activity_switcher.dart';
 import 'package:bessie/src/features/rosters/widgets/column_config.dart';
 import 'package:bessie/src/features/rosters/widgets/header_builders.dart';
+import 'package:bessie/src/models/camper.dart';
 import 'package:bessie/src/models/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,20 +22,22 @@ void main() {
   setUp(() => h = RostersHarness());
   tearDown(() => h.dispose());
 
-  Future<void> show(WidgetTester tester, Widget Function(RostersHarness) body) async {
-    tester.view.physicalSize = const Size(1600, 1000);
+  /// The harness uses real asynchrony (streams, futures), which only runs
+  /// outside the widget tester's fake clock.
+  Future<void> start(WidgetTester tester, {StaffRole role = StaffRole.director, required List<Camper> campers}) async {
+    await tester.runAsync(() => h.start(role: role, campers: campers));
+  }
+
+  Future<void> show(WidgetTester tester, Widget Function(RostersHarness) body, {Size size = const Size(1600, 1000)}) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      GetMaterialApp(
-        home: Scaffold(body: GetBuilder(init: h.controller, builder: (_) => body(h))),
-      ),
-    );
+    await tester.pumpWidget(GetMaterialApp(home: Scaffold(body: GetBuilder(init: h.controller, builder: (_) => body(h)))));
     await tester.pump();
   }
 
   testWidgets('shows the campers in the sorted order and selects a row on tap', (tester) async {
-    await h.start(campers: [ada, bo, cy]);
+    await start(tester, campers: [ada, bo, cy]);
     await show(tester, (h) => RostersBody(controller: h.controller));
 
     expect(find.text('Ada Lovelace'), findsOneWidget);
@@ -54,25 +57,40 @@ void main() {
     h.auth.profile.value = fakeProfile(StaffRole.director);
     h.context.session.value = fakeSession('s1');
     h.controller.onNavigateTo('/', null);
+    await tester.runAsync(pumpEventQueue);
     await show(tester, (h) => RostersBody(controller: h.controller));
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
     h.roster.latest.add([ada]);
-    await tester.pump();
+    await tester.runAsync(pumpEventQueue);
     await tester.pump();
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.text('Ada Lovelace'), findsOneWidget);
   });
 
-  testWidgets('says so when a search matches nobody or the roster is empty', (tester) async {
-    await h.start(role: StaffRole.counselor, campers: []);
+  testWidgets('says so when the roster is empty, without an import button for counselors', (tester) async {
+    await start(tester, role: StaffRole.counselor, campers: []);
     await show(tester, (h) => RostersBody(controller: h.controller));
     expect(find.text('There are no campers in this session yet.'), findsOneWidget);
     expect(find.text('Import From UltraCamp'), findsNothing, reason: 'counselors cannot import');
   });
 
+  testWidgets('says so when a search matches nobody', (tester) async {
+    await start(tester, campers: [ada, bo, cy]);
+    await show(tester, (h) => RostersBody(controller: h.controller));
+    h.controller.setSearchQuery('zzz');
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('No campers match "zzz".'), findsOneWidget);
+    expect(find.text('Ada Lovelace'), findsNothing);
+
+    h.controller.setSearchQuery('ada');
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Ada Lovelace'), findsOneWidget);
+    expect(find.text('Bo Brown'), findsNothing);
+  });
+
   testWidgets('grouped by cabin it shows a collapsible table per cabin', (tester) async {
-    await h.start(campers: [ada, bo, cy]);
+    await start(tester, campers: [ada, bo, cy]);
     h.controller.setGroupBy(const FieldColumn(RosterField.cabin));
     await show(tester, (h) => RostersBody(controller: h.controller));
 
@@ -89,7 +107,7 @@ void main() {
   });
 
   testWidgets('the column settings list visible and hidden columns, including blocks', (tester) async {
-    await h.start(campers: [ada]);
+    await start(tester, campers: [ada]);
     await show(tester, (h) => ColumnConfig(controller: h.controller));
 
     expect(find.text('Visible Columns'), findsOneWidget);
@@ -100,8 +118,11 @@ void main() {
   });
 
   testWidgets('the activity switcher lists the blocks and the activities with their seats', (tester) async {
-    await h.start(
-      campers: [makeCamper(first: 'Ada', last: 'Lovelace', assignments: {'s1-b1': 's1-b1-a1'})],
+    await start(
+      tester,
+      campers: [
+        makeCamper(first: 'Ada', last: 'Lovelace', assignments: {'s1-b1': 's1-b1-a1'}),
+      ],
     );
     h.controller.toggleSelection(h.controller.campers.single);
     h.controller.selectBlock(h.controller.schedule.blocks.single);
@@ -111,6 +132,29 @@ void main() {
     expect(find.text('Archery'), findsWidgets);
     expect(find.text('1/10'), findsOneWidget);
     expect(find.text('Ada L'), findsOneWidget);
+  });
+
+  testWidgets('every panel lays out in the smallest window the app allows', (tester) async {
+    await start(tester, campers: [ada, bo, cy]);
+    h.controller.selectBlock(h.controller.schedule.blocks.single);
+    h.controller.toggleSelection(ada);
+    const small = Size(770, 500);
+
+    await show(tester, (h) => RostersBody(controller: h.controller), size: small);
+    expect(find.text('Ada Lovelace'), findsOneWidget);
+
+    h.controller.setGroupBy(const FieldColumn(RosterField.cabin));
+    h.controller.toggleExpandedByDefault();
+    await tester.pump();
+    expect(find.text('Cabin - Eagles'), findsOneWidget);
+    expect(find.text('Ada Lovelace'), findsOneWidget);
+
+    await show(tester, (h) => ColumnConfig(controller: h.controller), size: small);
+    expect(find.text('Visible Columns'), findsOneWidget);
+
+    await show(tester, (h) => ActivitySwitcher(controller: h.controller), size: small);
+    expect(find.text('Select Activity'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   group('toolbar', () {

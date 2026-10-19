@@ -26,11 +26,13 @@ ImportSummary summarizeImport(ParsedRoster parsed, CamperImportResult result) {
   final skipped = result.duplicates + parsed.duplicatesInFile;
   final String message;
   if (result.inserted > 0) {
-    message = skipped > 0
-        ? 'Added ${countOf(result.inserted, 'camper')}. Skipped ${countOf(skipped, 'duplicate')} already on the roster.'
-        : 'Added ${countOf(result.inserted, 'camper')}.';
+    message =
+        skipped > 0
+            ? 'Added ${countOf(result.inserted, 'camper')}. Skipped ${countOf(skipped, 'duplicate')} already on the roster.'
+            : 'Added ${countOf(result.inserted, 'camper')}.';
   } else if (skipped > 0) {
-    message = 'No new campers: ${skipped == 1 ? 'the camper in the file is' : 'all $skipped campers in the file are'} already on the roster.';
+    message =
+        'No new campers: ${skipped == 1 ? 'the camper in the file is' : 'all $skipped campers in the file are'} already on the roster.';
   } else {
     message = 'The file didn\'t contain any campers to add.';
   }
@@ -39,8 +41,9 @@ ImportSummary summarizeImport(ParsedRoster parsed, CamperImportResult result) {
   return ImportSummary(
     message: message,
     imported: result.inserted > 0,
-    cabinWarning: cabins.isEmpty
-        ? null
-        : 'These cabins are not part of this session, so their campers were added without a cabin: ${cabins.join(', ')}.',
+    cabinWarning:
+        cabins.isEmpty
+            ? null
+            : 'These cabins are not part of this session, so their campers were added without a cabin: ${cabins.join(', ')}.',
   );
 }

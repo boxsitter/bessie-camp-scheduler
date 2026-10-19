@@ -39,13 +39,9 @@ DateTime? parseSessionDate(String input, {required int defaultYear}) {
 
 /// `mksesh`: create a session in the current season and switch to it.
 class MakeSession extends EmberCommand<void> {
-  MakeSession({
-    required super.userInput,
-    required super.userOutput,
-    required ContextService context,
-    required SessionRepository sessions,
-  }) : _context = context,
-       _sessions = sessions;
+  MakeSession({required super.userInput, required super.userOutput, required ContextService context, required SessionRepository sessions})
+    : _context = context,
+      _sessions = sessions;
 
   final ContextService _context;
   final SessionRepository _sessions;
@@ -83,9 +79,13 @@ class MakeSession extends EmberCommand<void> {
     }
 
     final year = season.startsOn.year;
-    final dateText = given.length > 1
-        ? given[1]
-        : await userInput.prompt('Start date (YYYY-MM-DD or MM/DD):', validator: (text) => parseSessionDate(text, defaultYear: year) != null);
+    final dateText =
+        given.length > 1
+            ? given[1]
+            : await userInput.prompt(
+              'Start date (YYYY-MM-DD or MM/DD):',
+              validator: (text) => parseSessionDate(text, defaultYear: year) != null,
+            );
     final startsOn = parseSessionDate(dateText, defaultYear: year);
     if (startsOn == null) {
       userOutput.error('"$dateText" is not a date I understand. Use YYYY-MM-DD or MM/DD.');
@@ -143,10 +143,11 @@ class AddActivities extends EmberCommand<void> {
 
     final alreadyOffered = schedule.scheduledIn(block.id).map((s) => s.activityId).toSet();
     final activities = (await _catalog.listActivities(_context.branchId)).where((a) => !alreadyOffered.contains(a.id)).toList();
-    final groups = <(String, List<Activity>)>[
-      ('Standard choice activities', activities.where((a) => !a.isSkillsRec).toList()),
-      ('Skills recs', activities.where((a) => a.isSkillsRec).toList()),
-    ].where((group) => group.$2.isNotEmpty).toList();
+    final groups =
+        <(String, List<Activity>)>[
+          ('Standard choice activities', activities.where((a) => !a.isSkillsRec).toList()),
+          ('Skills recs', activities.where((a) => a.isSkillsRec).toList()),
+        ].where((group) => group.$2.isNotEmpty).toList();
     if (groups.isEmpty) {
       userOutput.info('Every activity is already offered during ${block.displayTitle}.');
       return;
@@ -192,9 +193,13 @@ class AddActivities extends EmberCommand<void> {
 
 /// `rmact`: stop offering activities during a block.
 class RemoveActivities extends EmberCommand<void> {
-  RemoveActivities({required super.userInput, required super.userOutput, required ContextService context, required SessionRepository sessions})
-    : _context = context,
-      _sessions = sessions;
+  RemoveActivities({
+    required super.userInput,
+    required super.userOutput,
+    required ContextService context,
+    required SessionRepository sessions,
+  }) : _context = context,
+       _sessions = sessions;
 
   final ContextService _context;
   final SessionRepository _sessions;

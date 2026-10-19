@@ -17,22 +17,25 @@ void main() {
 
   group('cabinSwapProblem', () {
     test('accepts campers spread over exactly two cabins', () {
-      final campers = [
-        makeCamper(first: 'A', cabinId: 'c1'),
-        makeCamper(first: 'B', cabinId: 'c1'),
-        makeCamper(first: 'C', cabinId: 'c2'),
-      ];
+      final campers = [makeCamper(first: 'A', cabinId: 'c1'), makeCamper(first: 'B', cabinId: 'c1'), makeCamper(first: 'C', cabinId: 'c2')];
       expect(RosterSelection.cabinSwapProblem(campers), isNull);
     });
 
     test('rejects one cabin, three cabins, nobody, and campers without a cabin', () {
       expect(RosterSelection.cabinSwapProblem([makeCamper(cabinId: 'c1'), makeCamper(first: 'B', cabinId: 'c1')]), isNotNull);
       expect(
-        RosterSelection.cabinSwapProblem([makeCamper(cabinId: 'c1'), makeCamper(first: 'B', cabinId: 'c2'), makeCamper(first: 'C', cabinId: 'c3')]),
+        RosterSelection.cabinSwapProblem([
+          makeCamper(cabinId: 'c1'),
+          makeCamper(first: 'B', cabinId: 'c2'),
+          makeCamper(first: 'C', cabinId: 'c3'),
+        ]),
         isNotNull,
       );
       expect(RosterSelection.cabinSwapProblem([]), isNotNull);
-      expect(RosterSelection.cabinSwapProblem([makeCamper(cabinId: 'c1'), makeCamper(first: 'B', cabinId: 'c2'), makeCamper(first: 'C')]), isNotNull);
+      expect(
+        RosterSelection.cabinSwapProblem([makeCamper(cabinId: 'c1'), makeCamper(first: 'B', cabinId: 'c2'), makeCamper(first: 'C')]),
+        isNotNull,
+      );
     });
   });
 

@@ -26,6 +26,17 @@ void main() {
     expect(h.roster.watched, isEmpty);
   });
 
+  test('starts as soon as a session becomes available if the page was opened before one was selected', () async {
+    controller().activate();
+    await pumpEventQueue();
+    expect(h.roster.watched, isEmpty);
+
+    h.auth.profile.value = fakeProfile(StaffRole.director);
+    h.context.session.value = fakeSession('s1');
+    await pumpEventQueue();
+    expect(h.roster.watched, ['s1']);
+  });
+
   test('loads the schedule and cabins and watches the live roster of the session', () async {
     h.auth.profile.value = fakeProfile(StaffRole.director);
     h.context.session.value = fakeSession('s1');
@@ -58,6 +69,8 @@ void main() {
     controller().onNavigateTo('/', '/schedule-page');
     await pumpEventQueue();
     expect(h.roster.watched, ['s1', 's1']);
+    expect(controller().loading, isFalse, reason: 'the roster stays on screen while it is refreshed');
+    expect(controller().campers, hasLength(3));
   });
 
   test('stops watching when the controller is closed', () async {

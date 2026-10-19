@@ -20,16 +20,16 @@ class BessSidebar extends StatelessWidget {
       child: Container(
         width: width,
         padding: const EdgeInsets.all(BessSizes.md),
-        decoration: BoxDecoration(
-          color: BessColors.core,
-          border: Border(right: BorderSide(color: BessColors.semiLow)),
-        ),
+        decoration: BoxDecoration(color: BessColors.core, border: Border(right: BorderSide(color: BessColors.semiLow))),
         child: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
                 child: Obx(
-                  () => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [for (final item in sidebar.items) BessMenuItem(item: item)]),
+                  () => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [for (final item in sidebar.items) BessMenuItem(item: item)],
+                  ),
                 ),
               ),
             ),

@@ -1,4 +1,3 @@
-
 import 'ember_command.dart';
 
 /// What [CommandParser.parseCommand] made of a line typed in the console.

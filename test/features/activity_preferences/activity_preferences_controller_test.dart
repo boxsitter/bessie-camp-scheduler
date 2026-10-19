@@ -1,137 +1,26 @@
-import 'dart:async';
-
 import 'package:bessie/src/core/errors.dart';
-import 'package:bessie/src/data/auth_repository.dart';
-import 'package:bessie/src/data/catalog_repository.dart';
-import 'package:bessie/src/data/profile_repository.dart';
-import 'package:bessie/src/data/roster_repository.dart';
 import 'package:bessie/src/data/session_repository.dart';
 import 'package:bessie/src/features/activity_preferences/controllers/activity_preferences_controller.dart';
 import 'package:bessie/src/models/cabin.dart';
-import 'package:bessie/src/models/camper.dart';
 import 'package:bessie/src/models/enums.dart';
 import 'package:bessie/src/models/schedule.dart';
-import 'package:bessie/src/services/auth_service.dart';
 import 'package:bessie/src/services/context_service.dart';
-import 'package:bessie/src/shared/services/popup_service.dart';
-import 'package:bessie/src/shared/widgets/header/controllers/menu_bar_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'environment.dart';
+import 'fakes.dart';
 import 'fixtures.dart';
 
-/// A save as the roster repository received it.
-class SavedPreferences {
-  SavedPreferences(this.camperId, this.requested, this.vetoed, this.gate);
-
-  final String camperId;
-  final Set<String> requested;
-  final Set<String> vetoed;
-
-  /// Complete it to let the save finish; complete with an error to fail it.
-  final Completer<void> gate;
-}
-
-class FakeRosterRepository extends RosterRepository {
-  FakeRosterRepository(super.client);
-
-  List<Camper> campers = [];
-  final updates = StreamController<List<Camper>>.broadcast(sync: true);
-  final saves = <SavedPreferences>[];
-  final watched = <String>[];
-
-  /// When true, saves finish by themselves; otherwise the test completes each gate.
-  bool autoComplete = true;
-
-  /// Campers whose saves are refused, with the error thrown for them.
-  final failing = <String, Object>{};
-
-  @override
-  Stream<List<Camper>> watchCampers(String sessionId) {
-    watched.add(sessionId);
-    return Stream.multi((controller) {
-      controller.add(campers);
-      final subscription = updates.stream.listen(controller.add);
-      controller.onCancel = subscription.cancel;
-    });
-  }
-
-  @override
-  Future<void> setPreferences({
-    required String camperId,
-    required Iterable<String> requestedActivityIds,
-    required Iterable<String> vetoedActivityIds,
-  }) async {
-    final save = SavedPreferences(camperId, requestedActivityIds.toSet(), vetoedActivityIds.toSet(), Completer<void>());
-    saves.add(save);
-    final refusal = failing[camperId];
-    if (refusal != null) throw refusal;
-    if (autoComplete) save.gate.complete();
-    await save.gate.future;
-  }
-
-  Future<void> emit(List<Camper> next) async {
-    campers = next;
-    updates.add(next);
-    await pumpEventQueue();
-  }
-}
-
-class FakeSessionRepository extends SessionRepository {
-  FakeSessionRepository(super.client, {required this.cabins, required this.schedule});
-
-  final List<Cabin> cabins;
-  final Schedule schedule;
-  final scheduleRequests = <String>[];
-
-  @override
-  Future<List<Cabin>> listSessionCabins(String sessionId) async => cabins;
-
-  @override
-  Future<Schedule> fetchSchedule(String sessionId) async {
-    scheduleRequests.add(sessionId);
-    return schedule;
-  }
-}
-
-/// A client that is never used: the repositories under test are fakes.
-SupabaseClient newClient() =>
-    SupabaseClient('http://127.0.0.1:1', 'anon', authOptions: const AuthClientOptions(autoRefreshToken: false));
-
 void main() {
-  final archery = activity('archery', name: 'Archery', category: ActivityCategory.sportsAndAthletics);
-  final pottery = activity('pottery', name: 'Pottery');
-  final drama = activity('drama', name: 'Drama');
-  final tieDye = activity('tiedye', name: 'Tie-Dye');
-  final kayak = activity('kayak', name: 'Kayaking', category: ActivityCategory.waterfront);
-  final swimSkills = activity('swimskills', name: 'Swim Skills', skills: true);
-  final swimTest = activity('swimtest', name: 'Swim Test', hidden: true);
-  final teenSkills = activity('teen', name: 'Teen Skills', skills: true, preferenceRequired: false);
-
-  Schedule buildSchedule() {
-    final day = ScheduleDay(id: 'day', sessionId: 's1', dayIndex: 0, date: DateTime(2026, 7, 6));
-    final block = Block(
-      id: 'block',
-      sessionId: 's1',
-      dayId: 'day',
-      title: 'Choice',
-      date: day.date,
-      dayIndex: 0,
-      startTime: const Duration(hours: 10),
-      endTime: const Duration(hours: 11),
-      isSkillsRec: false,
-    );
-    final everything = [archery, pottery, drama, tieDye, kayak, swimSkills, swimTest, teenSkills];
-    return Schedule(
-      days: [day],
-      blocks: [block],
-      scheduledActivities: [
-        for (final a in everything) ScheduledActivity(id: 'sa-${a.id}', sessionId: 's1', blockId: 'block', activityId: a.id),
-      ],
-      activitiesById: {for (final a in everything) a.id: a},
-    );
-  }
+  final env = PreferencesEnvironment();
+  final archery = env.archery;
+  final pottery = env.pottery;
+  final drama = env.drama;
+  final tieDye = env.tieDye;
+  final kayak = env.kayak;
+  final swimSkills = env.swimSkills;
 
   late FakeRosterRepository roster;
   late FakeSessionRepository sessions;
@@ -139,30 +28,10 @@ void main() {
   late ActivityPreferencesController controller;
 
   setUp(() {
-    Get.reset();
-    final client = newClient();
-    roster = FakeRosterRepository(client)
-      ..campers = [
-        camper('amy', first: 'Amy', last: 'Adams', cabinId: 'oak'),
-        camper('bo', first: 'Bo', last: 'Brown', cabinId: 'oak', preferences: {'pottery': PreferenceKind.request}, submittedAt: DateTime(2026, 7, 1)),
-        camper('cy', first: 'Cy', last: 'Clark', cabinId: 'fox'),
-      ];
-    sessions = FakeSessionRepository(
-      client,
-      cabins: [cabin('oak', name: 'Oak', position: 1), cabin('fox', name: 'Fox', position: 2)],
-      schedule: buildSchedule(),
-    );
-    context = ContextService(
-      CatalogRepository(client),
-      ProfileRepository(client),
-      AuthService(AuthRepository(client), ProfileRepository(client)),
-    )..session.value = campSession('s1');
-
-    Get.put<RosterRepository>(roster);
-    Get.put<SessionRepository>(sessions);
-    Get.put<ContextService>(context);
-    Get.put(PopupService());
-    Get.put(MenuBarController());
+    env.register();
+    roster = env.roster;
+    sessions = env.sessions;
+    context = env.context;
     controller = Get.put(ActivityPreferencesController());
   });
 
@@ -236,6 +105,32 @@ void main() {
       expect(controller.showingCabins, isTrue);
       expect(controller.selectedCamper, isNull);
       expect(controller.cabinGroups.map((g) => g.title), ['Fox']);
+    });
+
+    test('knows when the session offers nothing to rank', () async {
+      await openPage();
+      expect(controller.hasActivities, isTrue);
+
+      sessions.schedule = Schedule(days: const [], blocks: const [], scheduledActivities: const [], activitiesById: const {});
+      await controller.reload();
+      expect(controller.hasActivities, isFalse);
+    });
+
+    test('rebuilds the open camper\'s board from the new schedule when reloading', () async {
+      await openPage();
+      await openCabin('oak');
+      expect(controller.board!.activities.map((a) => a.id), contains('kayak'));
+
+      sessions.schedule = Schedule(
+        days: const [],
+        blocks: const [],
+        scheduledActivities: [ScheduledActivity(id: 'sa-1', sessionId: 's1', blockId: 'block', activityId: 'archery')],
+        activitiesById: {'archery': archery},
+      );
+      await controller.reload();
+
+      expect(controller.selectedCamper?.id, 'amy', reason: 'the selection is kept');
+      expect(controller.board!.activities.map((a) => a.id), ['archery']);
     });
 
     test('does not load while the page has never been opened', () async {

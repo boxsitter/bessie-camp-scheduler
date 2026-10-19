@@ -54,18 +54,12 @@ void main() {
     });
 
     test('is repeated when the camper already has the activity twice elsewhere, whatever they asked for', () {
-      final camper = makeCamper(
-        assignments: {'b2': 'b2-archery', 'b3': 'b3-archery'},
-        preferences: {'archery': PreferenceKind.request},
-      );
+      final camper = makeCamper(assignments: {'b2': 'b2-archery', 'b3': 'b3-archery'}, preferences: {'archery': PreferenceKind.request});
       expect(ActivityHints.preferenceHint(camper, scheduled('b1-archery'), schedule), PreferenceHint.repeated);
     });
 
     test('does not count the assignment the candidate would replace', () {
-      final camper = makeCamper(
-        assignments: {'b1': 'b1-archery', 'b2': 'b2-archery'},
-        preferences: {'archery': PreferenceKind.request},
-      );
+      final camper = makeCamper(assignments: {'b1': 'b1-archery', 'b2': 'b2-archery'}, preferences: {'archery': PreferenceKind.request});
       expect(ActivityHints.preferenceHint(camper, scheduled('b1-archery'), schedule), PreferenceHint.requested);
       // ...but a different block would be the third time.
       expect(ActivityHints.preferenceHint(camper, scheduled('b4-archery'), schedule), PreferenceHint.repeated);
@@ -88,13 +82,11 @@ void main() {
       expect(seats.enrolled, 1);
       expect(seats.incoming, 2);
       expect(seats.wouldOverflow, isTrue);
-      expect(seats.overflow, 1);
     });
 
     test('fits exactly up to capacity', () {
       final seats = ActivityHints.seats(scheduled: archery, capacity: 2, selected: [makeCamper()], enrollment: {'b1-archery': 1});
       expect(seats.wouldOverflow, isFalse);
-      expect(seats.overflow, 0);
     });
 
     test('an activity that is already over capacity overflows even with no one added', () {

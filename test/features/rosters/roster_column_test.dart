@@ -69,18 +69,20 @@ void main() {
     test('every header it advertises is understood by the roster parser', () {
       final fields = RosterField.values.where((f) => f.csvHeader != null).toList();
       final header = fields.map((f) => f.csvHeader).join(',');
-      final values = fields.map((f) {
-        switch (f) {
-          case RosterField.birthdate:
-            return '06/15/2014';
-          case RosterField.gender:
-            return 'Female';
-          case RosterField.cabin:
-            return 'Cabin 1';
-          default:
-            return 'x-${f.name}';
-        }
-      }).join(',');
+      final values = fields
+          .map((f) {
+            switch (f) {
+              case RosterField.birthdate:
+                return '06/15/2014';
+              case RosterField.gender:
+                return 'Female';
+              case RosterField.cabin:
+                return 'Cabin 1';
+              default:
+                return 'x-${f.name}';
+            }
+          })
+          .join(',');
 
       final parsed = const RosterCsvParser().parse('$header\n$values\n');
       final row = parsed.rows.single;

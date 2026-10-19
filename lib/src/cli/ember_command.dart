@@ -58,12 +58,13 @@ abstract class EmberCommand<T> {
 
   String get usage {
     final syntax = [name, if (argParser.options.length > 1) '[options]', if (positionalSyntax.isNotEmpty) positionalSyntax].join(' ');
-    final buffer = StringBuffer()
-      ..writeln(syntax)
-      ..writeln(description)
-      ..writeln()
-      ..writeln('Options:')
-      ..write(argParser.usage);
+    final buffer =
+        StringBuffer()
+          ..writeln(syntax)
+          ..writeln(description)
+          ..writeln()
+          ..writeln('Options:')
+          ..write(argParser.usage);
     if (examples.isNotEmpty) {
       buffer
         ..writeln()

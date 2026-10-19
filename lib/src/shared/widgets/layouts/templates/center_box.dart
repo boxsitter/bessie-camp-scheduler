@@ -6,10 +6,7 @@ import '../../../constants/sizes.dart';
 import '../../../utils/helpers/helper_functions.dart';
 
 class BessCenterBox extends StatelessWidget {
-  const BessCenterBox({
-    super.key,
-    required this.child,
-  });
+  const BessCenterBox({super.key, required this.child});
 
   final Widget child;
 
@@ -23,9 +20,7 @@ class BessCenterBox extends StatelessWidget {
             padding: BessSpacingStyle.paddingWithAppBarHeight,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(BessSizes.cardRadiusLg),
-              color: BessHelperFunctions.isDarkMode(context)
-                  ? BessColors.high
-                  : BessColors.low,
+              color: BessHelperFunctions.isDarkMode(context) ? BessColors.high : BessColors.low,
             ),
             child: child,
           ),

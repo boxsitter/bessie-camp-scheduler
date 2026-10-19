@@ -115,6 +115,9 @@ class ActivityPreferencesController extends GetxController with RouteAwareContro
   Camper? get selectedCamper => _selectedCamperId == null ? null : _campers[_selectedCamperId];
 
   bool get hasCampers => _campers.isNotEmpty;
+
+  /// Whether the session offers any activity for campers to rank.
+  bool get hasActivities => _rankable.isNotEmpty;
   bool get hasSession => _context.session.value != null;
 
   /// Whether the camper is being saved or about to be.
@@ -248,6 +251,9 @@ class ActivityPreferencesController extends GetxController with RouteAwareContro
       _groups = null;
       _loaded = true;
       isLoading = false;
+      // The activities and limits may have changed: build the board again.
+      board = null;
+      _boardCamperId = null;
       _reconcileSelection();
       _refreshUi();
     } catch (e, st) {
@@ -364,7 +370,7 @@ class ActivityPreferencesController extends GetxController with RouteAwareContro
   /// A dragged activity was picked up: show the tab it belongs to, so it can
   /// be dropped back where it came from.
   void onDragStarted(Activity activity) {
-    if (activity.isSkillsRec || activity.category == _selectedCategory) return;
+    if (activity.isSkillsRec || activity.category == selectedCategory) return;
     _selectedCategory = activity.category;
     update();
   }

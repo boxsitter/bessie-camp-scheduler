@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/sizes.dart';
 import '../../styles/text_styles.dart';
 import 'header_controller.dart';
 
@@ -31,37 +32,40 @@ class _UserMenuState extends State<UserMenu> {
 
   @override
   Widget build(BuildContext context) {
+    // The name makes way for the page's own header actions on narrower windows.
+    final compact = MediaQuery.sizeOf(context).width < BessSizes.desktopScreenSize;
     return ShadPopover(
       controller: _popover,
-      popover: (context) => SizedBox(
-        width: 220,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Obx(
-              () => Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_header.displayName, style: BessTextStyles.standardBold),
-                    Text(_header.roleTitle, style: BessTextStyles.subtle),
-                  ],
+      popover:
+          (context) => SizedBox(
+            width: 220,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Obx(
+                  () => Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_header.displayName, style: BessTextStyles.standardBold),
+                        Text(_header.roleTitle, style: BessTextStyles.subtle),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                const ShadSeparator.horizontal(margin: EdgeInsets.only(bottom: 4)),
+                ShadButton.ghost(
+                  onPressed: _signOut,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  width: double.infinity,
+                  leading: const Icon(LucideIcons.logOut, size: 16),
+                  child: const Text('Sign out'),
+                ),
+              ],
             ),
-            const ShadSeparator.horizontal(margin: EdgeInsets.only(bottom: 4)),
-            ShadButton.ghost(
-              onPressed: _signOut,
-              mainAxisAlignment: MainAxisAlignment.start,
-              width: double.infinity,
-              leading: const Icon(LucideIcons.logOut, size: 16),
-              child: const Text('Sign out'),
-            ),
-          ],
-        ),
-      ),
+          ),
       child: Obx(
         () => ShadButton.ghost(
           onPressed: _popover.toggle,
@@ -71,7 +75,7 @@ class _UserMenuState extends State<UserMenu> {
             child: Text(_header.initials, style: BessTextStyles.standardInverted.copyWith(fontSize: 12, fontWeight: FontWeight.w600)),
           ),
           trailing: const Icon(LucideIcons.chevronDown, size: 16),
-          child: Text(_header.displayName),
+          child: compact ? null : Text(_header.displayName),
         ),
       ),
     );

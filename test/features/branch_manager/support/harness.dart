@@ -20,6 +20,10 @@ Future<void> loadAppFonts() async {
   await loader.load();
 }
 
+/// Widget tests answer every HTTP request with a 400; the integration tests
+/// that drive a page against the local Supabase stack need the real thing.
+void allowRealHttp() => HttpOverrides.global = null;
+
 /// Pumps [child] inside the same app shell the real app uses (Shad theme over
 /// a GetMaterialApp), on a desktop sized window.
 Future<void> pumpApp(WidgetTester tester, Widget child, {Size size = const Size(1280, 1000)}) async {

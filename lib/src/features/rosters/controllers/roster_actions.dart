@@ -281,11 +281,7 @@ class RosterActions {
       () => _popups.executeWithSpinner(
         title: 'Smart assign',
         inProgressMessage: 'Assigning campers. This could take a moment...',
-        task: () => _assignment.run(
-          sessionId: sessionId,
-          camperIds: selected == null ? null : _ids(selected).toSet(),
-          blockIds: blockIds,
-        ),
+        task: () => _assignment.run(sessionId: sessionId, camperIds: selected == null ? null : _ids(selected).toSet(), blockIds: blockIds),
       ),
     );
     if (report == null) return null;

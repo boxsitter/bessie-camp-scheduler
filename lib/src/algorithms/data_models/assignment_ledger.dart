@@ -39,8 +39,7 @@ class AssignmentLedger {
 
     // Existing assignments of the run's participants.
     for (final entry in context.existingAssignments.entries) {
-      final book = _books[entry.key];
-      if (book == null) continue; // Not part of this run; see externalEnrollment.
+      final book = _books.putIfAbsent(entry.key, () => _ParticipantBook(context.periods.length));
       for (final scheduledActivityId in entry.value) {
         final scheduled = context.scheduledActivityById(scheduledActivityId);
         if (scheduled == null) continue;

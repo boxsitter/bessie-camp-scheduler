@@ -31,16 +31,22 @@ class ColumnConfig extends StatelessWidget {
             child: TitledContainer(
               title: 'Visible Columns',
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-              child: VerticalListReorderer<RosterColumn>(
-                items: controller.columns,
-                onReorder: controller.setColumnOrder,
-                titleBuilder: (column) => Text(column.displayTitle, style: BessTextStyles.standard),
-                trailingBuilder: (column) => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ...groupAndSortButtons(controller, column),
-                    BessIconButton(iconData: LucideIcons.circleChevronRight, onPressed: () => controller.removeColumn(column)),
-                  ],
+              // The list tiles paint on the nearest Material, which must sit
+              // inside the container's background.
+              child: Material(
+                type: MaterialType.transparency,
+                child: VerticalListReorderer<RosterColumn>(
+                  items: controller.columns,
+                  onReorder: controller.setColumnOrder,
+                  titleBuilder: (column) => Text(column.displayTitle, style: BessTextStyles.standard),
+                  trailingBuilder:
+                      (column) => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ...groupAndSortButtons(controller, column),
+                          BessIconButton(iconData: LucideIcons.circleChevronRight, onPressed: () => controller.removeColumn(column)),
+                        ],
+                      ),
                 ),
               ),
             ),
@@ -65,11 +71,7 @@ List<Widget> groupAndSortButtons(RostersController controller, RosterColumn colu
   final sorted = controller.sortBy == column;
   return [
     if (column.allowGrouping)
-      BessIconButton(
-        iconData: LucideIcons.group,
-        onPressed: () => controller.setGroupBy(column),
-        selected: controller.groupBy == column,
-      ),
+      BessIconButton(iconData: LucideIcons.group, onPressed: () => controller.setGroupBy(column), selected: controller.groupBy == column),
     BessIconButton(
       iconData: sorted && controller.sortDirection == SortDirection.desc ? LucideIcons.arrowDownZA : LucideIcons.arrowUpAZ,
       onPressed: () => controller.setSortBy(column),
@@ -91,21 +93,25 @@ class _HiddenColumns extends StatelessWidget {
       child: TitledContainer(
         title: title,
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        child: WidgetList<RosterColumn>(
-          items: columns,
-          itemBuilder: (context, column) => SizedBox(
-            height: 48,
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(LucideIcons.circleChevronLeft, size: 20),
-                  onPressed: () => controller.addColumn(column),
-                  splashRadius: 20,
+        child: Material(
+          type: MaterialType.transparency,
+          child: WidgetList<RosterColumn>(
+            items: columns,
+            itemBuilder:
+                (context, column) => SizedBox(
+                  height: 48,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(LucideIcons.circleChevronLeft, size: 20),
+                        onPressed: () => controller.addColumn(column),
+                        splashRadius: 20,
+                      ),
+                      Expanded(child: Text(column.displayTitle, style: BessTextStyles.standard, overflow: TextOverflow.ellipsis)),
+                      ...groupAndSortButtons(controller, column),
+                    ],
+                  ),
                 ),
-                Expanded(child: Text(column.displayTitle, style: BessTextStyles.standard, overflow: TextOverflow.ellipsis)),
-                ...groupAndSortButtons(controller, column),
-              ],
-            ),
           ),
         ),
       ),

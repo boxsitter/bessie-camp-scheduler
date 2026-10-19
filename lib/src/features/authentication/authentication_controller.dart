@@ -35,7 +35,12 @@ class AuthenticationController extends GetxController {
   /// `#`, where supabase_flutter picks it up. The address must be listed in
   /// `additional_redirect_urls` of the Supabase auth settings.
   static String passwordResetRedirect(Uri base) {
-    final location = Uri(scheme: base.scheme, host: base.host, port: base.hasPort ? base.port : null, path: base.path.isEmpty ? '/' : base.path);
+    final location = Uri(
+      scheme: base.scheme,
+      host: base.host,
+      port: base.hasPort ? base.port : null,
+      path: base.path.isEmpty ? '/' : base.path,
+    );
     return location.replace(fragment: BessRoutes.resetPassword).toString();
   }
 

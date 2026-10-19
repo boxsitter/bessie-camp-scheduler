@@ -14,11 +14,12 @@ Future<void> showContextSwitcher() async {
     actions: [
       Obx(
         () => ShadButton(
-          onPressed: controller.canSwitch
-              ? () async {
-                  if (await controller.switchToSelected()) Get.back();
-                }
-              : null,
+          onPressed:
+              controller.canSwitch
+                  ? () async {
+                    if (await controller.switchToSelected()) Get.back();
+                  }
+                  : null,
           child: const Text('Switch'),
         ),
       ),

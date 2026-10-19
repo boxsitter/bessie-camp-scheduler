@@ -11,7 +11,9 @@ class MobileLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(BessSizes.lg),
-      child: Center(child: Text('Bessie is not currently functional with a mobile or compact layout. Sorry :/', style: BessTextStyles.lightTitle)),
+      child: Center(
+        child: Text('Bessie is not currently functional with a mobile or compact layout. Sorry :/', style: BessTextStyles.lightTitle),
+      ),
     );
   }
 }

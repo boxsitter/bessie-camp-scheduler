@@ -55,10 +55,7 @@ enum RosterField implements Titled {
   String get displayTitle => title;
 
   /// Every header an import accepts for this field.
-  List<String> get csvHeaders => [
-    if (csvHeader != null) csvHeader!,
-    if (csvHeaderAlt != null) csvHeaderAlt!,
-  ];
+  List<String> get csvHeaders => [if (csvHeader != null) csvHeader!, if (csvHeaderAlt != null) csvHeaderAlt!];
 }
 
 /// One column of the roster table: either a camper field or a schedule block

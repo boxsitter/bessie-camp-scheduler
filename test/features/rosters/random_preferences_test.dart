@@ -44,7 +44,10 @@ void main() {
     final b = pickRandomPreferences(schedule: schedule, limits: limits, random: Random(7));
     expect(a.requests, b.requests);
     expect(a.vetoes, b.vetoes);
-    final others = {for (var seed = 0; seed < 10; seed++) pickRandomPreferences(schedule: schedule, limits: limits, random: Random(seed)).requests.join(',')};
+    final others = {
+      for (var seed = 0; seed < 10; seed++)
+        pickRandomPreferences(schedule: schedule, limits: limits, random: Random(seed)).requests.join(','),
+    };
     expect(others.length, greaterThan(1));
   });
 

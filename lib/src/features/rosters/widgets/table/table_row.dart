@@ -81,9 +81,17 @@ class BessTableRow extends StatelessWidget {
         color: toggleableRow ? null : color,
         border: showHorizontalSeparator ? BorderDirectional(bottom: BorderSide(color: separatorsColor ?? BessColors.borderPrimary)) : null,
       ),
-      child: toggleableRow
-          ? CardButton(onPressed: onToggle, padding: EdgeInsets.zero, radius: 0, showBorder: false, backgroundColor: color, child: dataRow)
-          : dataRow,
+      child:
+          toggleableRow
+              ? CardButton(
+                onPressed: onToggle,
+                padding: EdgeInsets.zero,
+                radius: 0,
+                showBorder: false,
+                backgroundColor: color,
+                child: dataRow,
+              )
+              : dataRow,
     );
   }
 }

@@ -20,11 +20,16 @@ List<String> formatTable(List<List<String>> rows, {List<String>? headers}) {
       final text = i == columnCount - 1 ? cell : cell.padRight(widths[i]);
       formatted.add(style == null ? text : style(text));
     }
-    return formatted.join('  ');
+    final joined = formatted.join('  ');
+    // Short rows leave empty columns behind; headers are styled, so left alone.
+    return style == null ? joined.trimRight() : joined;
   }
 
   return [
-    if (headers != null && headers.isNotEmpty) ...[line(headers, style: ConsoleStyle.emphasis), widths.map((width) => '-' * width).join('  ')],
+    if (headers != null && headers.isNotEmpty) ...[
+      line(headers, style: ConsoleStyle.emphasis),
+      widths.map((width) => '-' * width).join('  '),
+    ],
     for (final row in rows) line(row),
   ];
 }

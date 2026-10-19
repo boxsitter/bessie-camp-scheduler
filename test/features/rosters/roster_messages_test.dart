@@ -25,7 +25,10 @@ void main() {
     });
 
     test('adds up duplicates from the database and from the file', () {
-      final summary = summarizeImport(_parsed(duplicatesInFile: 2), const CamperImportResult(inserted: 1, duplicates: 3, unknownCabins: []));
+      final summary = summarizeImport(
+        _parsed(duplicatesInFile: 2),
+        const CamperImportResult(inserted: 1, duplicates: 3, unknownCabins: []),
+      );
       expect(summary.message, 'Added 1 camper. Skipped 5 duplicates already on the roster.');
     });
 

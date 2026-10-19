@@ -89,11 +89,10 @@ void main() {
 
     interactive.transformationController!.value = Matrix4.identity();
     await tester.pump();
-    await tester.pump(kDoubleTapMinTime);
     await tester.tap(find.byType(ScheduleViewer));
-    await tester.pump(kDoubleTapMinTime ~/ 2);
+    await tester.pump(kDoubleTapMinTime + const Duration(milliseconds: 10));
     await tester.tap(find.byType(ScheduleViewer));
-    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
     expect(interactive.transformationController!.value.getMaxScaleOnAxis(), closeTo(scale, 0.001));
   });
 }

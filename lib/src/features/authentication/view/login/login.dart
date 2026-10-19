@@ -9,8 +9,6 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AuthScaffold(
-      child: Column(children: [BessLoginHeader(), BessLoginForm()]),
-    );
+    return const AuthScaffold(child: Column(children: [BessLoginHeader(), BessLoginForm()]));
   }
 }

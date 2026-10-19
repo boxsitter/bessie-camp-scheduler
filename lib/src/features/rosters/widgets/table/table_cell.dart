@@ -67,9 +67,6 @@ class CheckboxCellContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.center,
-      child: BessCheckbox(onPressed: onChanged, tristate: true, value: value),
-    );
+    return Align(alignment: Alignment.center, child: BessCheckbox(onPressed: onChanged, tristate: true, value: value));
   }
 }

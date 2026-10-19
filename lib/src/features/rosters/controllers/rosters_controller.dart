@@ -217,12 +217,11 @@ class RostersController extends GetxController with RouteAwareControllerMixin {
     final sessionId = _context.sessionId;
     if (_rosterSubscription != null && _watchedSessionId == sessionId) return;
 
+    // Whatever was loaded before is shown until the fresh data arrives; it is
+    // only discarded when the session changes (see _onSessionChanged).
     _stopWatching();
     final generation = ++_generation;
     _watchedSessionId = sessionId;
-    _rosterLoaded = false;
-    _structureLoaded = false;
-    update();
 
     _rosterSubscription = _roster.watchCampers(sessionId).listen(_onCampers, onError: _onWatchError);
 
@@ -535,12 +534,7 @@ class RostersController extends GetxController with RouteAwareControllerMixin {
 
   Future<void> _smartAssign({required List<Camper>? selected}) async {
     if (!canEdit || !_context.isLoaded) return;
-    final report = await _actions.smartAssign(
-      sessionId: _context.sessionId,
-      schedule: schedule,
-      everyone: campers,
-      selected: selected,
-    );
+    final report = await _actions.smartAssign(sessionId: _context.sessionId, schedule: schedule, everyone: campers, selected: selected);
     if (report == null) return;
     lastRunReport = report;
     update();

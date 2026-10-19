@@ -188,7 +188,10 @@ class RosterView {
         camper.lastName.toLowerCase().contains(needle);
   }
 
-  List<Camper> filter(Iterable<Camper> campers, String query) => [for (final c in campers) if (matches(c, query)) c];
+  List<Camper> filter(Iterable<Camper> campers, String query) => [
+    for (final c in campers)
+      if (matches(c, query)) c,
+  ];
 
   // Grouping ------------------------------------------------------------------
 
@@ -219,13 +222,13 @@ class RosterView {
     for (final camper in ordered) {
       byTitle.putIfAbsent(groupTitle(camper, groupBy), () => []).add(camper);
     }
-    final titles = byTitle.keys.toList()
-      ..sort((a, b) {
-        final aPlaceholder = _isPlaceholder(a);
-        final bPlaceholder = _isPlaceholder(b);
-        if (aPlaceholder != bPlaceholder) return aPlaceholder ? 1 : -1;
-        return naturalCompare(a.toLowerCase(), b.toLowerCase());
-      });
+    final titles =
+        byTitle.keys.toList()..sort((a, b) {
+          final aPlaceholder = _isPlaceholder(a);
+          final bPlaceholder = _isPlaceholder(b);
+          if (aPlaceholder != bPlaceholder) return aPlaceholder ? 1 : -1;
+          return naturalCompare(a.toLowerCase(), b.toLowerCase());
+        });
 
     return [
       for (final title in titles)

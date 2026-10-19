@@ -19,13 +19,10 @@ class RandomPreferences {
 ///
 /// A testing aid: it fills each limit completely, so a run exercises the
 /// auto-assignment as hard as the data allows.
-RandomPreferences pickRandomPreferences({
-  required Schedule schedule,
-  required PreferenceLimits limits,
-  required Random random,
-}) {
-  final rankable = schedule.offeredActivities.where((a) => !a.isHidden && a.preferenceRequired).toList()
-    ..sort((a, b) => a.id.compareTo(b.id)); // a stable base for the shuffle
+RandomPreferences pickRandomPreferences({required Schedule schedule, required PreferenceLimits limits, required Random random}) {
+  final rankable =
+      schedule.offeredActivities.where((a) => !a.isHidden && a.preferenceRequired).toList()
+        ..sort((a, b) => a.id.compareTo(b.id)); // a stable base for the shuffle
 
   final requests = <String>[];
   final vetoes = <String>[];

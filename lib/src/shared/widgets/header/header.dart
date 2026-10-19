@@ -20,25 +20,18 @@ class BessHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: height,
-      decoration: BoxDecoration(
-        color: BessColors.core,
-        border: Border(bottom: BorderSide(color: BessColors.semiLow)),
-      ),
+      decoration: BoxDecoration(color: BessColors.core, border: Border(bottom: BorderSide(color: BessColors.semiLow))),
       child: Row(
         children: [
           Container(
             width: BessSidebar.width,
-            decoration: BoxDecoration(
-              border: Border(right: BorderSide(color: BessColors.semiLow)),
-            ),
+            decoration: BoxDecoration(border: Border(right: BorderSide(color: BessColors.semiLow))),
             child: menuBar,
           ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Row(
-                children: [...centerActions, const Spacer(), ...trailingWidgets, const SizedBox(width: 8), const UserMenu()],
-              ),
+              child: Row(children: [...centerActions, const Spacer(), ...trailingWidgets, const SizedBox(width: 8), const UserMenu()]),
             ),
           ),
         ],

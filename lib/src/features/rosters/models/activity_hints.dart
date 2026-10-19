@@ -20,9 +20,6 @@ class Seats {
   final int incoming;
 
   bool get wouldOverflow => enrolled + incoming > capacity;
-
-  /// How many campers beyond [capacity] the activity would hold.
-  int get overflow => enrolled + incoming > capacity ? enrolled + incoming - capacity : 0;
 }
 
 /// Statistics about activities, computed from the roster.

@@ -49,10 +49,13 @@ class _PendingInput {
 /// While a command runs no prompt is shown; the prompt comes back when it
 /// finishes.
 class ConsoleController extends GetxController implements UserOutput, UserInput {
-  ConsoleController({PopupService? popups, Map<String, EmberCommand> Function(ConsoleController console)? commandsBuilder, bool Function()? canUseConsole})
-    : _popupsOverride = popups,
-      _commandsBuilder = commandsBuilder ?? _defaultCommands,
-      _canUseConsole = canUseConsole ?? _signedInUserCanEdit;
+  ConsoleController({
+    PopupService? popups,
+    Map<String, EmberCommand> Function(ConsoleController console)? commandsBuilder,
+    bool Function()? canUseConsole,
+  }) : _popupsOverride = popups,
+       _commandsBuilder = commandsBuilder ?? _defaultCommands,
+       _canUseConsole = canUseConsole ?? _signedInUserCanEdit;
 
   static const _mainPrompt = '> ';
 
@@ -322,7 +325,13 @@ class ConsoleController extends GetxController implements UserOutput, UserInput 
   @override
   Future<String> promptPassword(String message) => _ask(message, masked: true);
 
-  Future<String> _ask(String message, {String? defaultValue, bool allowEmpty = false, bool masked = false, FutureOr<bool> Function(String)? validator}) {
+  Future<String> _ask(
+    String message, {
+    String? defaultValue,
+    bool allowEmpty = false,
+    bool masked = false,
+    FutureOr<bool> Function(String)? validator,
+  }) {
     _pending?.completer.completeError(StateError('Another question was asked before this one was answered.'));
     if (_promptVisible) terminal.write('\r\x1B[2K');
 

@@ -25,7 +25,10 @@ class ViewContext extends EmberCommand<void> {
     userOutput
       ..printProperty('Organization', _context.organization.value?.name ?? 'none')
       ..printProperty('Branch', _context.branch.value?.name ?? 'none')
-      ..printProperty('Season', season == null ? 'none' : '${season.name} (${formatDbDate(season.startsOn)} to ${formatDbDate(season.endsOn)})')
+      ..printProperty(
+        'Season',
+        season == null ? 'none' : '${season.name} (${formatDbDate(season.startsOn)} to ${formatDbDate(season.endsOn)})',
+      )
       ..printProperty('Session', session == null ? 'none' : '${session.name} (starts ${formatDbDate(session.startsOn)})');
   }
 }
@@ -76,9 +79,12 @@ class ListBranches extends EmberCommand<void> {
   Future<void> run() async {
     final branches = await _catalog.listBranches();
     final currentId = _context.branch.value?.id;
-    userOutput.printTable([
-      for (final branch in branches) [branch.name, branch.id == currentId ? 'yes' : ''],
-    ], headers: ['Branch', 'Current']);
+    userOutput.printTable(
+      [
+        for (final branch in branches) [branch.name, branch.id == currentId ? 'yes' : ''],
+      ],
+      headers: ['Branch', 'Current'],
+    );
   }
 }
 
@@ -100,9 +106,13 @@ class ListSeasons extends EmberCommand<void> {
   Future<void> run() async {
     final seasons = await _catalog.listSeasons(_context.branchId);
     final currentId = _context.season.value?.id;
-    userOutput.printTable([
-      for (final season in seasons) [season.name, formatDbDate(season.startsOn), formatDbDate(season.endsOn), season.id == currentId ? 'yes' : ''],
-    ], headers: ['Season', 'Starts', 'Ends', 'Current']);
+    userOutput.printTable(
+      [
+        for (final season in seasons)
+          [season.name, formatDbDate(season.startsOn), formatDbDate(season.endsOn), season.id == currentId ? 'yes' : ''],
+      ],
+      headers: ['Season', 'Starts', 'Ends', 'Current'],
+    );
   }
 }
 
@@ -125,9 +135,12 @@ class ListSessions extends EmberCommand<void> {
       return;
     }
     final currentId = _context.session.value?.id;
-    userOutput.printTable([
-      for (final session in sessions) [session.name, formatDbDate(session.startsOn), session.id == currentId ? 'yes' : ''],
-    ], headers: ['Session', 'Starts', 'Current']);
+    userOutput.printTable(
+      [
+        for (final session in sessions) [session.name, formatDbDate(session.startsOn), session.id == currentId ? 'yes' : ''],
+      ],
+      headers: ['Session', 'Starts', 'Current'],
+    );
   }
 }
 

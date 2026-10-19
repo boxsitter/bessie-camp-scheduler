@@ -49,10 +49,11 @@ class RostersHarness {
     Get.testMode = true;
     client = SupabaseClient('http://127.0.0.1:1', 'anon-key', authOptions: const AuthClientOptions(autoRefreshToken: false));
     roster = FakeRosterRepository(client);
-    sessions = FakeSessionRepository(client)
-      ..schedules['s1'] = singleBlockSchedule('s1-b1')
-      ..schedules['s2'] = singleBlockSchedule('s2-b1')
-      ..cabins['s1'] = [makeCabin('c1', 'Cabin 1', displayName: 'Eagles')];
+    sessions =
+        FakeSessionRepository(client)
+          ..schedules['s1'] = singleBlockSchedule('s1-b1')
+          ..schedules['s2'] = singleBlockSchedule('s2-b1')
+          ..cabins['s1'] = [makeCabin('c1', 'Cabin 1', displayName: 'Eagles')];
     auth = AuthService(AuthRepository(client), ProfileRepository(client));
     context = ContextService(CatalogRepository(client), ProfileRepository(client), auth);
 

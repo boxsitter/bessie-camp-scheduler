@@ -94,11 +94,12 @@ class BackupActivityAssignments extends EmberCommand<void> {
 
     final campers = await _roster.fetchCampers(session.id);
     final now = _clock();
-    final batches = separate
-        ? [
-            for (final block in blocks) [block],
-          ]
-        : [blocks];
+    final batches =
+        separate
+            ? [
+              for (final block in blocks) [block],
+            ]
+            : [blocks];
     for (final batch in batches) {
       final contents = _backup.assignmentsBackup(
         sessionId: session.id,

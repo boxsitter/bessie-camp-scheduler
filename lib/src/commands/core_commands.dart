@@ -42,7 +42,15 @@ class CoreCommands {
       MakeSession(userInput: input, userOutput: output, context: context, sessions: sessions),
       AddActivities(userInput: input, userOutput: output, context: context, sessions: sessions, catalog: catalog),
       RemoveActivities(userInput: input, userOutput: output, context: context, sessions: sessions),
-      BackupActivityAssignments(userInput: input, userOutput: output, context: context, sessions: sessions, roster: roster, backup: backup, files: files),
+      BackupActivityAssignments(
+        userInput: input,
+        userOutput: output,
+        context: context,
+        sessions: sessions,
+        roster: roster,
+        backup: backup,
+        files: files,
+      ),
       ResetActivityAssignments(userInput: input, userOutput: output, context: context, roster: roster),
       ClearScreen(userInput: input, userOutput: output, clearScreen: clearScreen),
     ]);
@@ -98,9 +106,12 @@ class HelpCommand extends EmberCommand<void> {
     }
 
     final commands = _registry.values.toSet().toList()..sort((a, b) => a.name.compareTo(b.name));
-    userOutput.printTable([
-      for (final command in commands) [command.name, command.aliases.join(', '), command.summary],
-    ], headers: ['Command', 'Also', 'What it does']);
+    userOutput.printTable(
+      [
+        for (final command in commands) [command.name, command.aliases.join(', '), command.summary],
+      ],
+      headers: ['Command', 'Also', 'What it does'],
+    );
     userOutput.printDim('Type "help <command>" for details, or "<command> --help".');
   }
 }

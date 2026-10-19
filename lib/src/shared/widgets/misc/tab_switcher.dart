@@ -1,5 +1,5 @@
 import 'package:bessie/src/shared/styles/text_styles.dart';
-import 'package:bessie/src/ember_core.dart';
+import 'package:bessie/src/models/titled.dart';
 import 'package:flutter/material.dart';
 
 // Assuming card_button.dart is in a path accessible from this file.

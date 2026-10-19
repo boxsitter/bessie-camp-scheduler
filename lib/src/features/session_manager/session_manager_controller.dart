@@ -241,11 +241,17 @@ class SessionManagerController extends GetxController with RouteAwareControllerM
 
     final chosen = await showFormDialog<List<String>>(AddActivitiesDialog(block: block, groups: groups));
     if (chosen == null || chosen.isEmpty) return;
+    await scheduleActivities(block, chosen);
+  }
 
+  /// Offers the activities [activityIds] during [block].
+  Future<void> scheduleActivities(Block block, List<String> activityIds) async {
+    final current = setup.value;
+    if (current == null || !_ensureCanEdit()) return;
     await _write(() async {
-      await _sessions.scheduleActivities(sessionId: current.session.id, blockId: block.id, activityIds: chosen);
+      await _sessions.scheduleActivities(sessionId: current.session.id, blockId: block.id, activityIds: activityIds);
       await reload();
-      Toast.success('Added ${pluralize(chosen.length, 'activity', 'activities')} to ${block.displayTitle}.');
+      Toast.success('Added ${pluralize(activityIds.length, 'activity', 'activities')} to ${block.displayTitle}.');
     });
   }
 

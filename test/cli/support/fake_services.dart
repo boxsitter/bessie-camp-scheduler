@@ -14,6 +14,7 @@ import 'package:bessie/src/services/auth_service.dart';
 import 'package:bessie/src/services/context_service.dart';
 import 'package:bessie/src/services/file_service.dart';
 import 'package:file_saver/file_saver.dart' show MimeType;
+import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// A Supabase client that never connects anywhere; the fakes below override
@@ -26,16 +27,17 @@ const limits = PreferenceLimits(maxRequests: 3, maxVetoes: 2, maxSkillsRequests:
 CampSession campSession(String id, String name, DateTime startsOn, {String seasonId = 'season-1'}) =>
     CampSession(id: id, seasonId: seasonId, name: name, startsOn: startsOn, limits: limits);
 
-StaffProfile staffProfile({StaffRole role = StaffRole.admin, String first = 'Ada', String last = 'Lovelace', String? preferred}) => StaffProfile(
-  id: 'user-1',
-  organizationId: 'org-1',
-  firstName: first,
-  lastName: last,
-  preferredName: preferred,
-  role: role,
-  active: true,
-  preferences: {},
-);
+StaffProfile staffProfile({StaffRole role = StaffRole.admin, String first = 'Ada', String last = 'Lovelace', String? preferred}) =>
+    StaffProfile(
+      id: 'user-1',
+      organizationId: 'org-1',
+      firstName: first,
+      lastName: last,
+      preferredName: preferred,
+      role: role,
+      active: true,
+      preferences: {},
+    );
 
 Camper camper(String id, String first, {Map<String, String> assignments = const {}}) => Camper(
   id: id,
@@ -83,7 +85,8 @@ Block block(String id, String title, DateTime date, {int dayIndex = 0, int start
 );
 
 class FakeCatalogRepository extends CatalogRepository {
-  FakeCatalogRepository({this.sessions = const [], this.activities = const [], this.seasons = const [], this.branches = const []}) : super(unconnectedClient());
+  FakeCatalogRepository({this.sessions = const [], this.activities = const [], this.seasons = const [], this.branches = const []})
+    : super(unconnectedClient());
 
   List<CampSession> sessions;
   List<Activity> activities;
@@ -133,7 +136,8 @@ class FakeSessionRepository extends SessionRepository {
   }
 
   @override
-  Future<Schedule> fetchSchedule(String sessionId) async => schedule ?? Schedule(days: [], blocks: [], scheduledActivities: [], activitiesById: {});
+  Future<Schedule> fetchSchedule(String sessionId) async =>
+      schedule ?? Schedule(days: [], blocks: [], scheduledActivities: [], activitiesById: {});
 
   @override
   Future<void> scheduleActivities({required String sessionId, required String blockId, required Iterable<String> activityIds}) async {

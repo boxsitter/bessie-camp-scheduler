@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../shared/constants/sizes.dart';
-import '../../../shared/widgets/loaders/circular_loader.dart';
 import '../../../shared/styles/text_styles.dart';
+import '../../../shared/widgets/loaders/circular_loader.dart';
 
 /// The body of a setup page: a heading and then [children], scrolling, with a
 /// comfortable maximum width.

@@ -72,7 +72,10 @@ void main() {
       expect(view.text(camper, const FieldColumn(RosterField.gender)), '');
       expect(view.text(camper, const FieldColumn(RosterField.ultracampId)), '');
       expect(view.text(camper, _asi), 'N/A');
-      expect(view.text(makeCamper(gender: Gender.nonBinary, ultracampId: '42', satisfaction: 0.5), const FieldColumn(RosterField.gender)), 'NB');
+      expect(
+        view.text(makeCamper(gender: Gender.nonBinary, ultracampId: '42', satisfaction: 0.5), const FieldColumn(RosterField.gender)),
+        'NB',
+      );
       expect(view.text(makeCamper(satisfaction: 0.5), _asi), '0.50');
     });
 
@@ -104,20 +107,12 @@ void main() {
     });
 
     test('is case-insensitive and natural for text', () {
-      final campers = [
-        makeCamper(last: 'zimmer'),
-        makeCamper(last: 'Adams'),
-        makeCamper(last: 'baker'),
-      ];
+      final campers = [makeCamper(last: 'zimmer'), makeCamper(last: 'Adams'), makeCamper(last: 'baker')];
       expect(view.sorted(campers, _last, SortDirection.asc).map((c) => c.lastName), ['Adams', 'baker', 'zimmer']);
     });
 
     test('sorts cabins naturally and campers without a cabin last, in both directions', () {
-      final campers = [
-        makeCamper(first: 'A', cabinId: 'cab10'),
-        makeCamper(first: 'B'),
-        makeCamper(first: 'C', cabinId: 'cab2'),
-      ];
+      final campers = [makeCamper(first: 'A', cabinId: 'cab10'), makeCamper(first: 'B'), makeCamper(first: 'C', cabinId: 'cab2')];
       expect(view.sorted(campers, _cabin, SortDirection.asc).map((c) => c.firstName), ['C', 'A', 'B']);
       expect(view.sorted(campers, _cabin, SortDirection.desc).map((c) => c.firstName), ['A', 'C', 'B']);
     });
@@ -144,20 +139,14 @@ void main() {
     });
 
     test('breaks ties by name and does not mutate its input', () {
-      final campers = [
-        makeCamper(first: 'Zed', last: 'Same'),
-        makeCamper(first: 'Amy', last: 'Same'),
-      ];
+      final campers = [makeCamper(first: 'Zed', last: 'Same'), makeCamper(first: 'Amy', last: 'Same')];
       expect(view.sorted(campers, _last, SortDirection.desc).map((c) => c.firstName), ['Amy', 'Zed']);
       expect(campers.first.firstName, 'Zed');
     });
   });
 
   group('searching', () {
-    final campers = [
-      makeCamper(first: 'Katherine', preferred: 'Kate', last: 'Johnson'),
-      makeCamper(first: 'Alan', last: 'Turing'),
-    ];
+    final campers = [makeCamper(first: 'Katherine', preferred: 'Kate', last: 'Johnson'), makeCamper(first: 'Alan', last: 'Turing')];
 
     test('matches first, preferred, last and full names, ignoring case', () {
       expect(view.filter(campers, 'kat').map((c) => c.firstName), ['Katherine']);
@@ -210,13 +199,21 @@ void main() {
     });
 
     test('blank values form an "Unspecified" group', () {
-      final groups = view.arrange([makeCamper(first: 'A'), makeCamper(first: 'B', gender: Gender.male)], sortBy: _name, groupBy: const FieldColumn(RosterField.gender));
+      final groups = view.arrange(
+        [makeCamper(first: 'A'), makeCamper(first: 'B', gender: Gender.male)],
+        sortBy: _name,
+        groupBy: const FieldColumn(RosterField.gender),
+      );
       expect(groups.map((g) => g.title), ['M', 'Unspecified']);
     });
 
     test('applies the search before grouping and sorts within groups', () {
       final groups = view.arrange(
-        [makeCamper(first: 'Bo', last: 'Z', cabinId: 'cab2'), makeCamper(first: 'Al', last: 'Y', cabinId: 'cab2'), makeCamper(first: 'Cy', last: 'Quinn', cabinId: 'cab10')],
+        [
+          makeCamper(first: 'Bo', last: 'Z', cabinId: 'cab2'),
+          makeCamper(first: 'Al', last: 'Y', cabinId: 'cab2'),
+          makeCamper(first: 'Cy', last: 'Quinn', cabinId: 'cab10'),
+        ],
         query: 'o',
         sortBy: _last,
         groupBy: _cabin,

@@ -38,7 +38,8 @@ class BessTableHeader extends StatelessWidget {
       height: 70,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: isSelected == true && !isExpanded ? BessHelperFunctions.blendColors(BessColors.core, BessColors.primary, 30) : BessColors.core,
+        color:
+            isSelected == true && !isExpanded ? BessHelperFunctions.blendColors(BessColors.core, BessColors.primary, 30) : BessColors.core,
       ),
       child: Row(
         children: [

@@ -134,7 +134,11 @@ BessMenuBar<RostersController> buildRostersMenuBar({required RostersController c
       ShadContextMenuItem(child: const Text('Invert Selection'), onPressed: controller.invertSelection, enabled: hasSelection),
       if (canEdit) ...[
         _divider(),
-        ShadContextMenuItem(child: const Text('Clear Preferences'), onPressed: controller.clearPreferencesOfSelected, enabled: hasSelection),
+        ShadContextMenuItem(
+          child: const Text('Clear Preferences'),
+          onPressed: controller.clearPreferencesOfSelected,
+          enabled: hasSelection,
+        ),
         ShadContextMenuItem(
           leading: const Icon(LucideIcons.flaskConical),
           child: const Text('Rank Random (testing only)'),
@@ -169,7 +173,11 @@ BessMenuBar<RostersController> buildRostersMenuBar({required RostersController c
         ShadContextMenuItem(child: const Text('Set Cabin Of Campers'), onPressed: controller.setCabin, enabled: hasSelection),
         ShadContextMenuItem(child: const Text('Swap Cabins Of Campers'), onPressed: controller.swapCabinsOfSelected, enabled: hasSelection),
         _divider(),
-        ShadContextMenuItem(child: _destructiveLabel('Delete', enabled: hasSelection), onPressed: controller.deleteSelected, enabled: hasSelection),
+        ShadContextMenuItem(
+          child: _destructiveLabel('Delete', enabled: hasSelection),
+          onPressed: controller.deleteSelected,
+          enabled: hasSelection,
+        ),
       ],
     ],
   );

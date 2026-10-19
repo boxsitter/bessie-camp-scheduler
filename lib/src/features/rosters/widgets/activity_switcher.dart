@@ -37,17 +37,18 @@ class ActivitySwitcher extends StatelessWidget {
                 items: controller.schedule.blocks,
                 onSelectItem: controller.selectBlock,
                 selectedItem: controller.selectedBlock,
-                childBuilder: (context, block) => SizedBox(
-                  height: 25,
-                  child: Center(
-                    child: Text(
-                      block.displayTitle,
-                      style: BessTextStyles.standardBold.copyWith(color: Tint.of(context)?.foregroundColor),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                childBuilder:
+                    (context, block) => SizedBox(
+                      height: 25,
+                      child: Center(
+                        child: Text(
+                          block.displayTitle,
+                          style: BessTextStyles.standardBold.copyWith(color: Tint.of(context)?.foregroundColor),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
               ),
             ),
           ),
@@ -58,20 +59,22 @@ class ActivitySwitcher extends StatelessWidget {
                 Expanded(
                   child: TitledContainer(
                     title: 'Select Activity',
-                    child: controller.selectedBlock == null
-                        ? Center(child: Text('Select an activity period first!', style: BessTextStyles.tableHeaderSecondary))
-                        : _ActivityList(controller: controller),
+                    child:
+                        controller.selectedBlock == null
+                            ? Center(child: Text('Select an activity period first!', style: BessTextStyles.tableHeaderSecondary))
+                            : _ActivityList(controller: controller),
                   ),
                 ),
                 Expanded(
                   child: TitledContainer(
                     title: 'Summary',
-                    child: controller.hasSelection
-                        ? WidgetList<Camper>(
-                            items: controller.selectedCampers,
-                            itemBuilder: (context, camper) => _SummaryRow(camper: camper, controller: controller),
-                          )
-                        : Center(child: Text('Select some campers first!', style: BessTextStyles.tableHeaderSecondary)),
+                    child:
+                        controller.hasSelection
+                            ? WidgetList<Camper>(
+                              items: controller.selectedCampers,
+                              itemBuilder: (context, camper) => _SummaryRow(camper: camper, controller: controller),
+                            )
+                            : Center(child: Text('Select some campers first!', style: BessTextStyles.tableHeaderSecondary)),
                   ),
                 ),
                 const SizedBox(height: BessSizes.spaceBtwItems),
@@ -79,7 +82,8 @@ class ActivitySwitcher extends StatelessWidget {
                   onPressed: controller.assignSelected,
                   disabled: !controller.canAssignToSelectedActivity,
                   awaiting: controller.assigning,
-                  enabledText: 'Assign ${controller.selectedCampers.length == 1 ? 'camper' : '${controller.selectedCampers.length} campers'}',
+                  enabledText:
+                      'Assign ${controller.selectedCampers.length == 1 ? 'camper' : '${controller.selectedCampers.length} campers'}',
                   disabledText: 'Nothing to assign yet',
                   awaitingText: 'One moment...',
                   width: double.infinity,
@@ -107,10 +111,11 @@ class _ActivityList extends StatelessWidget {
     return ListView.builder(
       clipBehavior: Clip.none,
       itemCount: activities.length,
-      itemBuilder: (context, index) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4.0),
-        child: _ActivityCard(scheduled: activities[index], controller: controller),
-      ),
+      itemBuilder:
+          (context, index) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: _ActivityCard(scheduled: activities[index], controller: controller),
+          ),
     );
   }
 }
@@ -140,9 +145,7 @@ class _ActivityCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Text(controller.activityName(scheduled), style: BessTextStyles.boldCardTitle, overflow: TextOverflow.ellipsis),
-          ),
+          Expanded(child: Text(controller.activityName(scheduled), style: BessTextStyles.boldCardTitle, overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 16),
           if (seats.incoming > 0)
             Text(
@@ -188,10 +191,7 @@ class _SummaryRow extends StatelessWidget {
       padding: const EdgeInsets.all(8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(child: Text(camper.displayTitle, style: BessTextStyles.standard)),
-          trailing,
-        ],
+        children: [Expanded(child: Text(camper.displayTitle, style: BessTextStyles.standard)), trailing],
       ),
     );
   }

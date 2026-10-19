@@ -33,7 +33,11 @@ class BessMenuItem extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: BessSizes.lg, top: BessSizes.md, bottom: BessSizes.md, right: BessSizes.md),
-                  child: Icon(item.icon, size: 22, color: active ? BessColors.low : (highlighted ? BessColors.textInverted : BessColors.textPrimary)),
+                  child: Icon(
+                    item.icon,
+                    size: 22,
+                    color: active ? BessColors.low : (highlighted ? BessColors.textInverted : BessColors.textPrimary),
+                  ),
                 ),
                 Flexible(
                   child: Text(
