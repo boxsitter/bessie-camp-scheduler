@@ -1,0 +1,4 @@
+tags:
+  integration:
+    # Needs the local Supabase stack (`supabase start`); tests skip themselves when it isn't running.
+    description: Runs against a local Supabase stack

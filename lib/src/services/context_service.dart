@@ -1,100 +1,126 @@
-import 'dart:async';
-
-import 'package:bessie/src/services/database_repair_service.dart';
 import 'package:get/get.dart';
 
-import '../ember_core.dart';
+import '../core/errors.dart';
+import '../core/logging.dart';
+import '../data/catalog_repository.dart';
+import '../data/profile_repository.dart';
+import '../models/camp_session.dart';
+import '../models/organization.dart';
+import 'auth_service.dart';
 
-typedef OrganizationId = String;
-typedef BranchId = String;
-typedef SeasonId = String;
-typedef SessionId = String;
-
-class ClientContext extends GetxService {
-  // Replace Completers with simple, late-initialized fields
-  late OrganizationId organizationId;
-  late BranchId branchId;
-  late SeasonId seasonId;
-  late SessionId sessionId;
-
-  // For any services that relied on the Future, you can keep
-  // these methods for compatibility. They now return an already-completed Future.
-  Future<OrganizationId> getOrganizationId() => Future.value(organizationId);
-  Future<BranchId> getBranchId() => Future.value(branchId);
-  Future<SeasonId> getSeasonId() => Future.value(seasonId);
-  Future<SessionId> getSessionId() => Future.value(sessionId);
-
-  bool justMigrated = false;
-}
-
+/// Where the user is working: which organization, branch, season and session.
+///
+/// Everything session-scoped (rosters, schedule, preferences) reads
+/// [session]; screens react to [session] changing to reload.
 class ContextService extends GetxService {
-  PullRepository pullRepo = Get.find<PullRepository>();
-  CommitRepository commitRepo = Get.find<CommitRepository>();
-  final ClientContext clientContext = Get.find<ClientContext>();
+  ContextService(this._catalog, this._profiles, this._auth);
 
-  Future<Session> get session async => pullRepo.getObject(await clientContext.getSessionId());
-  Future<Schedule> get schedule async => (await pullRepo.getObjectsInCollection<Schedule>('schedule', 'ses')).values.first;
-  Future<String> get sessionName async => await pullRepo.getFieldValue(clientContext.sessionId, 'name');
-  Future<String> get seasonName async => await pullRepo.getFieldValue(clientContext.seasonId, 'name');
+  final CatalogRepository _catalog;
+  final ProfileRepository _profiles;
+  final AuthService _auth;
 
-  /// Resolves the organization, branch, season, and session the client starts in.
+  static const _lastSessionKey = 'last_session_id';
+
+  final Rxn<Organization> organization = Rxn<Organization>();
+  final Rxn<Branch> branch = Rxn<Branch>();
+  final Rxn<Season> season = Rxn<Season>();
+  final Rxn<CampSession> session = Rxn<CampSession>();
+
+  /// The sessions of the current season, oldest first.
+  final RxList<CampSession> sessions = <CampSession>[].obs;
+
+  bool get isLoaded => session.value != null;
+
+  String get sessionId => _require(session.value, 'session').id;
+  String get branchId => _require(branch.value, 'branch').id;
+  String get seasonId => _require(season.value, 'season').id;
+  CampSession get currentSession => _require(session.value, 'session');
+
+  T _require<T>(T? value, String what) {
+    if (value == null) throw StateError('No $what is selected yet. Has the context been loaded?');
+    return value;
+  }
+
+  /// Resolves the organization, branch, season and session to start in.
   ///
-  /// Bessie runs one deployment per camp, so the active organization, branch,
-  /// and season are the records held in the backend, and the starting session
-  /// is the one closest to the current date.
-  Future<void> setDefaultContext() async {
-    if (clientContext.justMigrated) {
-      clientContext.justMigrated = false;
+  /// Bessie runs one camp per deployment, so the organization and branch are
+  /// the first ones visible to the user. The season is the one containing
+  /// today (or the most recent), and the session is the one the user used last
+  /// or, failing that, the one closest to today.
+  Future<void> load({DateTime? today}) async {
+    final now = today ?? DateTime.now();
+    final org = await _catalog.fetchOrganization();
+    if (org == null) throw AppException('Your organization could not be found.');
+    final branches = await _catalog.listBranches();
+    if (branches.isEmpty) throw AppException('Your organization has no branches yet.');
+    final seasons = await _catalog.listSeasons(branches.first.id);
+    if (seasons.isEmpty) throw AppException('This branch has no seasons yet. Create one to get started.');
+
+    organization.value = org;
+    branch.value = branches.first;
+    season.value = pickSeason(seasons, now);
+    await _loadSessions(preferredId: _auth.profile.value?.preferences[_lastSessionKey] as String?, today: now);
+  }
+
+  Future<void> _loadSessions({String? preferredId, DateTime? today}) async {
+    final loaded = await _catalog.listSessions(seasonId);
+    sessions.assignAll(loaded);
+    if (loaded.isEmpty) {
+      session.value = null;
       return;
     }
+    session.value = loaded.firstWhereOrNull((s) => s.id == preferredId) ?? pickSession(loaded, today ?? DateTime.now());
+  }
 
-    clientContext.organizationId = await _activeDomainId('organization', 'rot');
-    clientContext.branchId = await _activeDomainId('branch', 'org');
-    clientContext.seasonId = await _activeDomainId('season', 'brn');
+  /// Re-reads the sessions of the season (e.g. after creating one).
+  Future<void> refreshSessions() => _loadSessions(preferredId: session.value?.id);
 
-    final Set<Session> sessions = (await pullRepo.getObjectsInCollection<Session>('session', 'sea')).values.toSet();
-    if (sessions.isEmpty) {
-      throw StateError('The active season has no sessions.');
+  Future<void> switchSession(String sessionId) async {
+    final target = sessions.firstWhereOrNull((s) => s.id == sessionId);
+    if (target == null) throw AppException('That session no longer exists.');
+    session.value = target;
+    await _rememberSession(target.id);
+  }
+
+  /// Selects a session that was just created and remembers it.
+  Future<void> adoptNewSession(CampSession created) async {
+    await _loadSessions(preferredId: created.id);
+    await _rememberSession(created.id);
+  }
+
+  Future<void> _rememberSession(String id) async {
+    final profile = _auth.profile.value;
+    if (profile == null) return;
+    try {
+      await _profiles.updatePreferences(profile.preferences, {_lastSessionKey: id});
+      profile.preferences[_lastSessionKey] = id;
+    } catch (e, st) {
+      log.w('Could not remember the selected session', error: e, stackTrace: st);
     }
-    clientContext.sessionId = DateTimeHelpers.findClosest<Session>(
-      items: sessions,
-      getDateTime: (item) => item.start,
-      roundDown: true,
-    ).id;
   }
 
-  /// Returns the id of the active [collection] record for the current deployment.
-  Future<String> _activeDomainId(String collection, String prefix) async {
-    final Map<String, dynamic> records = await pullRepo.getFieldFromCollection(collection, prefix, 'name');
-    if (records.isEmpty) {
-      throw StateError('No $collection is configured for this deployment.');
-    }
-    return records.keys.first;
+  void clear() {
+    organization.value = null;
+    branch.value = null;
+    season.value = null;
+    session.value = null;
+    sessions.clear();
   }
 
-  Future<void> basicDomainCreate(Domain domain) async {
-    Commit commit = Commit(disarmRequirementsLevel: 0);
-    commit.addObjectToPush(domain);
-    await commitRepo.commit(commit);
+  /// The season containing [today], else the latest one that has started,
+  /// else the earliest upcoming one. [seasons] must be newest first.
+  static Season pickSeason(List<Season> seasons, DateTime today) {
+    final day = DateTime(today.year, today.month, today.day);
+    return seasons.firstWhereOrNull((s) => s.contains(day)) ??
+        seasons.firstWhereOrNull((s) => !s.startsOn.isAfter(day)) ??
+        seasons.last;
   }
 
-  Future<void> migrateContext(SessionId sessionId) async {
-    Session? session = await pullRepo.getObject(sessionId);
-    if (session != null) {
-      clientContext.sessionId = sessionId;
-    } else {
-      throw StateError('Attempted to migrate to a context that doesn\'t exist');
-    }
-    clientContext.justMigrated = true;
-    FrontendManager.instance.onNewContext();
-    await EmberCore.onNewContext(Get.find<DatabaseRepairService>(), Get.find<CommitRepository>());
-    Get.offAllNamed('/');
-  }
-
-  Future<Map<String, String>> getSessionNames() async {
-    final dynamicMap = await pullRepo.getFieldFromCollection('session', 'sea', 'name');
-    return dynamicMap.map((key, value) {
-      return MapEntry(key, value.toString());
-    });
+  /// The most recent session that has started, else the soonest upcoming one.
+  static CampSession pickSession(List<CampSession> sessions, DateTime today) {
+    final day = DateTime(today.year, today.month, today.day);
+    final started = sessions.where((s) => !s.startsOn.isAfter(day)).toList();
+    if (started.isNotEmpty) return started.reduce((a, b) => a.startsOn.isAfter(b.startsOn) ? a : b);
+    return sessions.reduce((a, b) => a.startsOn.isBefore(b.startsOn) ? a : b);
   }
 }

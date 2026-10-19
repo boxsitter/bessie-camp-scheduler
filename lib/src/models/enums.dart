@@ -1,95 +1,73 @@
+import 'titled.dart';
 
-import 'interfaces/titled.dart';
+enum StaffRole {
+  root,
+  director,
+  admin,
+  counselor;
 
-enum AnsiColor {
-  // Standard colors
-  black('\x1B[30m'),
-  red('\x1B[31m'),
-  green('\x1B[32m'),
-  yellow('\x1B[33m'),
-  blue('\x1B[34m'),
-  magenta('\x1B[35m'),
-  cyan('\x1B[36m'),
-  white('\x1B[37m'),
+  static StaffRole fromDb(String value) => StaffRole.values.byName(value);
 
-  // Bright colors (often includes gray for bright black)
-  gray('\x1B[90m'), // Often displayed as Gray
-  brightRed('\x1B[91m'),
-  brightGreen('\x1B[92m'),
-  brightYellow('\x1B[93m'),
-  brightBlue('\x1B[94m'),
-  brightMagenta('\x1B[95m'),
-  brightCyan('\x1B[96m'),
-  brightWhite('\x1B[97m'),
+  /// Root and directors manage the organization's structure and its people.
+  bool get canManageStructure => this == root || this == director;
 
-  reset('\x1B[0m'), // Reset code
-  none('');
+  /// Everyone but counselors may edit session data.
+  bool get canEditSessionData => this != counselor;
 
-  final String code;
-  const AnsiColor(this.code);
+  String get title => switch (this) {
+    root => 'Root',
+    director => 'Director',
+    admin => 'Admin',
+    counselor => 'Counselor',
+  };
 }
 
-enum LogType {
-  failure('Failure', 'Oops', AnsiColor.yellow, Duration(milliseconds: 3500)),
+enum ActivityCategory implements Titled {
+  creative('creative', 'Creative'),
+  sportsAndAthletics('sports_and_athletics', 'Sports & Athletics'),
+  waterfront('waterfront', 'Waterfront'),
+  campClassics('camp_classics', 'Camp Classics'),
+  silly('silly', 'Silly & Unconventional'),
+  skills('skills', 'Skills Recs'),
+  other('other', 'Other');
 
-  unknownError('Undefined Error', 'Something went wrong', AnsiColor.brightRed, Duration(milliseconds: 4000)),
+  const ActivityCategory(this.dbValue, this.title);
 
-  error('Error', 'Error', AnsiColor.brightRed, Duration(milliseconds: 4000)),
-
-  critical('Critical Error', 'Critical error', AnsiColor.red, Duration(milliseconds: 5000)),
-
-  info('Info', 'Info', AnsiColor.none, Duration(milliseconds: 2000)),
-
-  success('Success', 'Success!', AnsiColor.brightGreen, Duration(milliseconds: 2000)),
-
-  warning('Warning', 'Warning', AnsiColor.brightYellow, Duration(milliseconds: 3000));
-
-  final String devString;
-  final String userString;
-  final AnsiColor ansiColor;
-  final Duration toastDuration;
-  const LogType(this.devString, this.userString, this.ansiColor, this.toastDuration);
-}
-
-enum Module {
-  bessie('BESSIE'),
-  core('CORE'),
-  fire('FIRE'),
-  quickLog('LOG'),
-  unknown('UNKNOWN');
-
-  final String name;
-  const Module(this.name);
-}
-
-enum Role { root, director, admin, counselor, nullRole }
-
-enum Verbosity {
-  none(0, 'None'),
-  essential(1, 'Essential'),
-  verbose(2, 'Verbose'),
-  excessive(3, 'Excessive');
-
-  final int level;
-  final String name;
-  const Verbosity(this.level, this.name);
-}
-
-enum SortDirection { asc, desc }
-
-enum ActivityCategory implements Titled{
-  creative('Creative'),
-  sportsAndAthletics('Sports & Athletics'),
-  waterfront('Waterfront'),
-  campClassics('Camp Classics'),
-  silly('Silly & Unconventional'),
-  skills('Skills Recs'),
-  hidden('Hidden');
-
+  final String dbValue;
   @override
   final String title;
-  const ActivityCategory(this.title);
 
   @override
   String get displayTitle => title;
+
+  static ActivityCategory fromDb(String value) => ActivityCategory.values.firstWhere((c) => c.dbValue == value);
 }
+
+/// What a camper asked for. Being flexible is the absence of a preference.
+enum PreferenceKind {
+  request,
+  veto;
+
+  static PreferenceKind fromDb(String value) => PreferenceKind.values.byName(value);
+}
+
+enum Gender {
+  male('M', 'Male'),
+  female('F', 'Female'),
+  nonBinary('NB', 'Non-binary');
+
+  const Gender(this.code, this.title);
+
+  final String code;
+  final String title;
+
+  static Gender? fromDb(String? code) {
+    if (code == null) return null;
+    for (final gender in Gender.values) {
+      if (gender.code == code) return gender;
+    }
+    return null;
+  }
+}
+
+enum SortDirection { asc, desc }

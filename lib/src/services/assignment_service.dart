@@ -1,186 +1,150 @@
+import 'dart:math';
+
 import 'package:get/get.dart';
 
-import '../ember_core.dart';
-import '../algorithms/algorithm_pipeline.dart';
-import '../algorithms/data_models/analogs/algo_activity.dart';
-import '../algorithms/data_models/analogs/algo_participant.dart';
-import '../algorithms/data_models/analogs/algo_period.dart';
-import '../algorithms/data_models/analogs/algo_scheduled_activity.dart';
-import '../algorithms/data_models/assignment_context.dart';
-import '../algorithms/data_models/assignment_result.dart';
-import '../algorithms/data_models/enums.dart';
-import '../algorithms/diplomatic_algorithm/diplomatic_algorithm.dart';
-import '../algorithms/evaluation/satisfaction_calculator.dart';
+import '../algorithms/assignment_engine.dart';
+import '../core/errors.dart';
+import '../core/logging.dart';
+import '../data/roster_repository.dart';
+import '../data/session_repository.dart';
+import '../models/camper.dart';
+import '../models/enums.dart';
+import '../models/schedule.dart';
 
+/// What an auto-assignment run did.
+class AssignmentRunReport {
+  const AssignmentRunReport({
+    required this.assignedCount,
+    required this.placementCount,
+    required this.stalemates,
+    required this.evaluationReports,
+    required this.stepReports,
+  });
+
+  /// Slots the run filled (a double-block activity fills two).
+  final int placementCount;
+
+  /// Assignments actually stored (differs from [placementCount] only if
+  /// someone changed the roster while the run was in progress).
+  final int assignedCount;
+  final List<Stalemate> stalemates;
+  final List<ParticipantEvaluationReport> evaluationReports;
+  final List<StepReport> stepReports;
+
+  bool get hasStalemates => stalemates.isNotEmpty;
+}
+
+/// Runs the assignment engine against a session's real data and stores the result.
 class AssignmentService extends GetxService {
-  // --- DEPENDENCIES ---
-  // Services needed to fetch data from your backend.
-  final ScheduleService scheduleService = Get.find<ScheduleService>();
-  final RosterService rosterService = Get.find<RosterService>();
-  final PullRepository pullRepo = Get.find<PullRepository>();
-  final IOService iOService = Get.find<IOService>();
+  AssignmentService(this._sessions, this._roster);
 
-  // --- ADD THIS HELPER METHOD ---
-  /// Normalizes a raw preference value to one of the three diplomatic states.
-  double _normalizePreference(double? pref) {
-    if (pref == 1.0) {
-      return 1.0; // Request
-    }
-    if (pref == 0.0) {
-      return 0.0; // Veto
-    }
-    // All other values (null, 0.1-0.9) are treated as flexible.
-    return 0.5;
-  }
+  final SessionRepository _sessions;
+  final RosterRepository _roster;
 
-  /// Runs the assignment algorithm for a given set of campers and time blocks.
-  Future<void> runAlgorithm(
-    Commit commit,
-    Set<CamperId> camperIds,
-    Set<AMABlockId> blockIds, {
+  /// Fills [blockIds] (default: every block) for [camperIds] (default: every
+  /// camper in the session). Campers outside [camperIds] keep their
+  /// assignments and still occupy seats.
+  Future<AssignmentRunReport> run({
+    required String sessionId,
+    Set<String>? camperIds,
+    Set<String>? blockIds,
+    AssignmentStrategy strategy = AssignmentStrategy.diplomatic,
     StalemateStrategy stalemateStrategy = StalemateStrategy.leaveUnassigned,
+    int? seed,
   }) async {
-    // 1. CONFIGURE ALGORITHM
-    // The pipeline now uses the DiplomaticAlgorithm with a configurable stalemate strategy.
-    final AlgorithmPipeline pipeline = AlgorithmPipeline(DiplomaticAlgorithm(stalemateStrategy: stalemateStrategy).steps);
+    final loaded = await Future.wait<Object>([_sessions.fetchSchedule(sessionId), _roster.fetchCampers(sessionId)]);
+    final schedule = loaded[0] as Schedule;
+    final everyone = loaded[1] as List<Camper>;
 
-    // 2. FETCH DATA
-    // Fetch all raw data concurrently for efficiency.
-    final fetchedData = await Future.wait([
-      pullRepo.getObjects<Camper>(camperIds),
-      scheduleService.getScheduleBlocks(),
-      scheduleService.principalActivities,
-      scheduleService.activityDependents,
-    ]);
+    final participants = camperIds == null ? everyone : everyone.where((c) => camperIds.contains(c.id)).toList();
+    if (participants.isEmpty) throw AppException('There are no campers to assign.');
+    if (schedule.isEmpty) throw AppException('This session has no schedule yet.');
 
-    final fetchedCampers = fetchedData[0] as Set<Camper>;
-    final allScheduleBlocks = fetchedData[1] as Map<String, ScheduleBlock>;
-    final principalActivities = fetchedData[2] as Map<String, PrincipalActivity>;
-    final activityDependents = fetchedData[3] as Set<ActivityDependent>;
+    final targets = blockIds ?? schedule.blocks.map((b) => b.id).toSet();
+    final context = buildContext(participants: participants, everyone: everyone, schedule: schedule, targetBlockIds: targets);
 
-    // --- LOGIC SEPARATION ---
-    // A. Create a map of ALL scheduled activities to their period.
-    // This is used ONLY to check if a camper is busy in any way (including hidden).
-    final allScheduledActivityToPeriodMap = {
-      for (var dep in activityDependents) dep.id: dep.blockRef
-    };
-
-    // B. Create a filtered list of activities and scheduled instances that are NOT hidden.
-    // This is what the algorithm will actually try to assign.
-    final nonHiddenActivities = Map.fromEntries(
-      principalActivities.entries.where((e) => e.value.category != ActivityCategory.hidden),
-    );
-
-    final allActivities = Map.fromEntries(
-      nonHiddenActivities.entries.map(
-        (entry) => MapEntry(
-          entry.key,
-          AlgoActivity(
-            id: entry.value.id,
-            capacity: entry.value.capacity,
-            maxAssignments: entry.value.maxAssignments,
-            doubleSchedule: entry.value.doubleSchedule,
-          ),
-        ),
-      ),
-    );
-
-    final allScheduledActivities = {
-      for (var dep in activityDependents)
-        // Ensure we only consider scheduled activities that are not hidden
-        if (nonHiddenActivities.containsKey(dep.principalPar))
-          dep.id: AlgoScheduledActivity(id: dep.id, activityId: dep.principalPar, periodId: dep.blockRef),
-    };
-
-    // Create maps for efficient lookups later.
-    final camperMap = {for (var c in fetchedCampers) c.id: c};
-    final activityDepMap = {for (var ad in activityDependents) ad.id: ad};
-
-    // This provides the complete, unfiltered list of existing assignment IDs.
-    final existingAssignments = {
-      for (var c in fetchedCampers)
-        c.id: c.activityAssignmentRefs.values.whereType<String>().toList()
-    };
-
-    for (final blockId in blockIds) {
-      final scheduledInPeriod = allScheduledActivities.values.where((sa) => sa.periodId == blockId);
-      scheduledInPeriod.fold<int>(0, (sum, scheduled) {
-        final activity = allActivities[scheduled.activityId];
-        return sum + (activity?.capacity ?? 0);
-      });
-
-      // ignore: unused_local_variable
-      int unassignedCampersCount = 0;
-      for (final camper in fetchedCampers) {
-        final assignments = existingAssignments[camper.id] ?? [];
-        final isAssigned =
-            assignments.any((id) => allScheduledActivityToPeriodMap[id] == blockId);
-        if (!isAssigned) {
-          unassignedCampersCount++;
-        }
-      }
-
-      // if (totalCapacity < unassignedCampersCount) {
-      //   throw Exception('Insufficient capacity in period $blockId. Required: $unassignedCampersCount, Available: $totalCapacity');
-      // }
-    }
-
-    final allAmaBlocks = Map.fromEntries(
-      allScheduleBlocks.entries
-          .where((e) => e.value is AMABlock)
-          .map((entry) => MapEntry(entry.key, AlgoPeriod(id: entry.value.id, start: entry.value.start))),
-    );
-
-    final participants = {for (var c in fetchedCampers) c.id: AlgoParticipant(id: c.id, birthdate: c.birthdate)};
-
-    // --- NORMALIZE PREFERENCES DURING CONTEXT CREATION ---
-    final context = AssignmentContext(
-      participants: participants,
-      participantPreferences: {
-        for (var c in fetchedCampers)
-          c.id: c.preferenceRefs.map((key, value) => MapEntry(key, _normalizePreference(value)))
-      },
-      targetPeriods: {for (var id in blockIds) id: allAmaBlocks[id]!},
-      allActivities: allActivities,
-      allScheduledActivities: allScheduledActivities,
-      existingAssignments: existingAssignments,
-      weeklyPeriodsSorted: allAmaBlocks.values.toList()
-        ..sort((a, b) => a.start.toUtc().compareTo(b.start.toUtc())),
-      allScheduledActivityToPeriodMap: allScheduledActivityToPeriodMap,
-    );
-
-    // 4. RUN ALGORITHM
-    final AssignmentResult result = pipeline.run(context);
-
-    // 5. PROCESS & COMMIT RESULTS
-    // --- NEW: Commit the successful assignments ---
-    for (final assignment in result.successfulAssignments) {
-      final camper = camperMap[assignment.participant.id];
-      final activityDep = activityDepMap[assignment.scheduledActivity.id];
-
-      if (camper != null && activityDep != null) {
-        await rosterService.assignCamperToActivityEfficient(commit, camper, activityDep, activityDependents, true);
-      }
-    }
-
-    final satisfactionCalculator = SatisfactionCalculator();
-    for (final camperId in context.participants.keys) {
-      final score = satisfactionCalculator.calculate(participantId: camperId, context: context, result: result);
-      // Use the camperMap to get the camper object instantly
-      final camper = camperMap[camperId];
-      if (camper != null && score != null) {
-        camper.activitySatisfactionIndex = score;
-        commit.addObjectToPush(camper);
-      }
-    }
-
-    // --- ADD THIS SECTION ---
-    // 6. EXPORT THE EVALUATION REPORT
-    if (result.evaluationReports.isNotEmpty) {
-      await iOService.exportEvaluationReportAsCsv(
-        reports: result.evaluationReports,
-        fileName: 'assignment_evaluation_report.csv',
+    final stopwatch = Stopwatch()..start();
+    final AssignmentResult result;
+    try {
+      result = AssignmentEngine.run(
+        context,
+        strategy: strategy,
+        stalemateStrategy: stalemateStrategy,
+        random: Random(seed ?? DateTime.now().microsecondsSinceEpoch),
       );
+    } on AssignmentStalemateException catch (e) {
+      throw AppException('${e.stalemates.length} campers could not be given an activity. Nothing was saved.', cause: e);
     }
+    log.i('Assignment engine finished in ${stopwatch.elapsedMilliseconds}ms: ${result.newPlacements.length} placements');
+
+    final stored = await _roster.applyAssignments(
+      sessionId: sessionId,
+      assignments: [
+        for (final p in result.newPlacements) NewAssignment(camperId: p.participantId, scheduledActivityId: p.scheduledActivityId),
+      ],
+      satisfaction: result.satisfaction,
+    );
+
+    return AssignmentRunReport(
+      assignedCount: stored,
+      placementCount: result.newPlacements.length,
+      stalemates: result.stalemates,
+      evaluationReports: result.evaluationReports,
+      stepReports: result.stepReports,
+    );
   }
+
+  /// Translates the session's data into the engine's plain input. Pure, so it
+  /// can be tested without a database.
+  static AssignmentContext buildContext({
+    required List<Camper> participants,
+    required List<Camper> everyone,
+    required Schedule schedule,
+    required Set<String> targetBlockIds,
+    DateTime? now,
+  }) {
+    final participantIds = participants.map((c) => c.id).toSet();
+
+    // Seats held by campers who are not part of this run.
+    final externalEnrollment = <String, int>{};
+    for (final camper in everyone) {
+      if (participantIds.contains(camper.id)) continue;
+      for (final scheduledId in camper.assignments.values) {
+        externalEnrollment[scheduledId] = (externalEnrollment[scheduledId] ?? 0) + 1;
+      }
+    }
+
+    return AssignmentContext(
+      participants: [for (final c in participants) AlgoParticipant(id: c.id, birthdate: c.birthdate)],
+      preferences: {
+        for (final c in participants)
+          c.id: {
+            for (final entry in c.preferences.entries)
+              entry.key: entry.value == PreferenceKind.request ? PreferenceType.request : PreferenceType.veto,
+          },
+      },
+      periods: [for (final b in schedule.blocks) AlgoPeriod(id: b.id, dayId: b.dayId, start: b.start)],
+      targetPeriodIds: targetBlockIds,
+      activities: [
+        for (final a in schedule.activitiesById.values)
+          AlgoActivity(
+            id: a.id,
+            capacity: a.capacity,
+            maxAssignments: a.maxAssignments,
+            doubleSchedule: a.doubleSchedule,
+            assignable: !a.isHidden,
+          ),
+      ],
+      scheduledActivities: [
+        for (final s in schedule.scheduledActivities) AlgoScheduledActivity(id: s.id, activityId: s.activityId, periodId: s.blockId),
+      ],
+      existingAssignments: {for (final c in participants) c.id: c.assignments.values.toSet()},
+      externalEnrollment: externalEnrollment,
+      now: now ?? DateTime.now(),
+    );
+  }
+
+  /// Campers who haven't had their preferences saved yet. Auto-assignment
+  /// treats them as having no preferences.
+  static List<Camper> withoutPreferences(Iterable<Camper> campers) => campers.where((c) => !c.preferencesSubmitted).toList();
 }
