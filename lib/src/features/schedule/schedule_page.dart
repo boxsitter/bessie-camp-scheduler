@@ -1,144 +1,116 @@
-import 'package:bessie/src/shared/widgets/containers/rounded_container.dart';
-import 'package:bessie/src/features/schedule/schedule_page_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../shared/constants/colors.dart';
-import '../../shared/constants/sizes.dart';
+import '../../shared/styles/text_styles.dart';
+import '../../shared/widgets/buttons/card_button.dart';
+import '../../shared/widgets/buttons/icon_button.dart';
 import '../../shared/widgets/header/menu_bar.dart';
 import '../../shared/widgets/layouts/templates/site_layout.dart';
+import '../../shared/widgets/loaders/circular_loader.dart';
+import 'schedule_page_controller.dart';
+import 'widgets/schedule_viewer.dart';
 
+/// The current session's weekly schedule, read-only and laid out to be
+/// printed (landscape letter): one column per day, each block listing its
+/// activities and how full they are.
 class SchedulePage extends StatelessWidget {
   const SchedulePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BessSiteTemplate(desktop: SchedulePageDesktop(), desktopPadding: false, menuBar: BessMenuBar(),);
+    return GetBuilder<SchedulePageController>(
+      initState: (state) => state.controller?.ensureLoaded(),
+      builder: (controller) => BessSiteTemplate(
+        desktop: SchedulePageDesktop(controller: controller),
+        desktopPadding: false,
+        menuBar: BessMenuBar<SchedulePageController>(externalPageController: controller),
+        centerActions: [
+          BessIconButton(
+            iconData: LucideIcons.rotateCw500,
+            onPressed: controller.reload,
+            enabled: !controller.isLoading,
+            isLoading: controller.isLoading,
+            radius: 8,
+          ),
+        ],
+      ),
+    );
   }
 }
 
 class SchedulePageDesktop extends StatelessWidget {
-  SchedulePageDesktop({super.key});
+  const SchedulePageDesktop({super.key, required this.controller});
 
-  final List<String> columns = ["Name", "Preferred Name", "Gender", "Age", "Cabin"];
+  final SchedulePageController controller;
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> rowChildren = [];
-    rowChildren.add(
-      SizedBox(
-        width: SchedulePageController.columnWidth,
-        height: SchedulePageController.totalHeight,
-        child: Column(
-          children: [
-            BessRoundedContainer(
-              width: SchedulePageController.columnWidth,
-              height: SchedulePageController.miniHeight,
-              showShadow: false,
-              showBorder: true,
-              radius: BessSizes.cardRadiusSm,
-              borderThickness: BessSizes.borderThicknessMd,
-              backgroundColor: BessColors.core,
-              padding: EdgeInsets.zero,
-              clipContent: true,
-            ),
+    if (controller.isLoading) return const BessCircularLoader();
 
-            SizedBox(
-              height: SchedulePageController.columnSpacing,
-            ),
-
-            Expanded(
-              child: BessRoundedContainer(
-                width: SchedulePageController.columnWidth,
-                showShadow: false,
-                showBorder: true,
-                radius: BessSizes.cardRadiusSm,
-                borderThickness: BessSizes.borderThicknessMd,
-                backgroundColor: BessColors.core,
-                padding: EdgeInsets.zero,
-                clipContent: true,
-              ),
-            ),
-          ]
-        ),
-      )
-    );
-
-    rowChildren.add(SizedBox(width: SchedulePageController.columnSpacing));
-
-
-    for (int i = 0; i < 3; i++) {
-      rowChildren.add(
-        BessRoundedContainer(
-          width: SchedulePageController.columnWidth,
-          height: SchedulePageController.totalHeight,
-          showShadow: false,
-          showBorder: true,
-          radius: BessSizes.cardRadiusSm,
-          borderThickness: BessSizes.borderThicknessMd,
-          backgroundColor: BessColors.core,
-          padding: EdgeInsets.zero,
-          clipContent: true,
-        ),
+    final error = controller.loadError;
+    if (error != null) {
+      return _StatusMessage(
+        icon: LucideIcons.triangleAlert,
+        title: 'Couldn\'t load the schedule',
+        message: error,
+        actionLabel: 'Try again',
+        onAction: controller.reload,
       );
-
-      if (i < 3) {
-        rowChildren.add(SizedBox(width: SchedulePageController.columnSpacing));
-      }
     }
+    if (!controller.hasSession) {
+      return const _StatusMessage(
+        icon: LucideIcons.calendarX,
+        title: 'No session selected',
+        message: 'Create or select a session to see its schedule.',
+      );
+    }
+    final grid = controller.grid;
+    if (grid == null) return const BessCircularLoader();
+    if (grid.isEmpty) {
+      return const _StatusMessage(
+        icon: LucideIcons.calendarDays,
+        title: 'Nothing scheduled yet',
+        message: 'This session has no blocks. Add blocks and activities in the session manager.',
+      );
+    }
+    return ScheduleViewer(grid: grid, title: controller.sessionName);
+  }
+}
 
-    rowChildren.add(
-      SizedBox(
-        width: SchedulePageController.columnWidth,
-        height: SchedulePageController.totalHeight,
+class _StatusMessage extends StatelessWidget {
+  const _StatusMessage({required this.icon, required this.title, required this.message, this.actionLabel, this.onAction});
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
         child: Column(
-            children: [
-
-              Expanded(
-                child: BessRoundedContainer(
-                  width: SchedulePageController.columnWidth,
-                  showShadow: false,
-                  showBorder: true,
-                  radius: BessSizes.cardRadiusSm,
-                  borderThickness: BessSizes.borderThicknessMd,
-                  backgroundColor: BessColors.core,
-                  padding: EdgeInsets.zero,
-                  clipContent: true,
-                ),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 40, color: BessColors.textSubtle),
+            const SizedBox(height: 16),
+            Text(title, style: BessTextStyles.boldCardTitle, textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(message, style: BessTextStyles.largerLabel, textAlign: TextAlign.center),
+            if (onAction != null) ...[
+              const SizedBox(height: 24),
+              CardButton(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                onPressed: onAction,
+                child: Center(child: Text(actionLabel ?? 'Try again', style: BessTextStyles.standard)),
               ),
-
-              SizedBox(
-                height: SchedulePageController.columnSpacing,
-              ),
-
-              BessRoundedContainer(
-                width: SchedulePageController.columnWidth,
-                height: SchedulePageController.miniHeight,
-                showShadow: false,
-                showBorder: true,
-                radius: BessSizes.cardRadiusSm,
-                borderThickness: BessSizes.borderThicknessMd,
-                backgroundColor: BessColors.core,
-                padding: EdgeInsets.zero,
-                clipContent: true,
-              ),
-            ]
-        ),
-      )
-    );
-
-    return InteractiveViewer(
-      constrained: false,
-      scaleEnabled: true,
-      panEnabled: true,
-      boundaryMargin: const EdgeInsets.all(300),
-      scaleFactor: 800,
-      minScale: 0.50,
-      maxScale: 2,
-      alignment: Alignment.topLeft,
-      child: Padding(
-        padding: EdgeInsets.all(BessSizes.lg),
-        child: Row(
-          children: rowChildren,
+            ],
+          ],
         ),
       ),
     );

@@ -2,42 +2,38 @@ import 'dart:math';
 
 import '../../data_models/interfaces/algorithm_step.dart';
 import '../../data_models/pipeline_state.dart';
-import '../../evaluation/step_report.dart';
+import '../../data_models/potential_assignment.dart';
 
-/// The third step in the pipeline, responsible for sorting assignments.
+/// Puts the candidates into priority order: highest score first, ties broken
+/// by a random key.
 ///
-/// This step sorts the `potentialAssignments` list in place, based on the
-/// score calculated in the previous step. The sort is in descending order
-/// (highest score first).
+/// Every candidate receives ONE tiebreak key, drawn once from the injected
+/// [Random] in generation order, and the list is then sorted by
+/// (score descending, tiebreak ascending, generation sequence ascending). That
+/// is a strict total order, so the sort is deterministic for a seeded [Random]
+/// and always consistent (unlike a comparator that flips a coin per
+/// comparison). Ties are still resolved fairly, because the keys are random.
 class SortAssignmentsStep extends AlgorithmStep {
   final Random _random;
 
-  /// Creates a sorting step. An optional [Random] instance can be provided
-  /// for deterministic testing.
+  /// Creates a sorting step. Pass a seeded [Random] for reproducible output.
   SortAssignmentsStep({Random? random}) : _random = random ?? Random();
 
   @override
   String get stepName => 'Sort Assignments';
 
   @override
-  StepReport execute(PipelineState state) {
-    // Sort the list of potential assignments.
-    state.potentialAssignments.sort((a, b) {
-      // Compare b to a to get descending order (highest score first).
-      final scoreComparison = b.score.compareTo(a.score);
+  StepOutcome execute(PipelineState state) {
+    final candidates = state.potentialAssignments;
+    for (final candidate in candidates) {
+      candidate.tiebreak = _random.nextDouble();
+    }
+    candidates.sort(PotentialAssignment.byPriority);
 
-      // If scores are identical, don't just rely on the original list order.
-      // Randomly place one before the other to break ties fairly.
-      if (scoreComparison == 0) {
-        return _random.nextBool() ? 1 : -1;
-      }
-      return scoreComparison;
-    });
-
-    return StepReport(
-      stepName: stepName,
-      summary: 'Sorted ${state.potentialAssignments.length} assignments by score.',
-      details: {'count': state.potentialAssignments.length}, duration: Duration.zero,
+    return StepOutcome(
+      summary: 'Sorted ${candidates.length} assignments by score '
+          '(random tiebreak keys).',
+      details: {'count': candidates.length},
     );
   }
 }

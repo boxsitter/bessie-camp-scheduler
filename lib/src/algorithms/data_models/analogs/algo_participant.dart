@@ -1,17 +1,24 @@
-/// A lightweight, algorithm-specific representation of a participant.
-///
-/// This class contains the core information about a participant needed for
-/// the assignment process.
+/// A lightweight, engine-specific representation of a camper.
 class AlgoParticipant {
-  /// The unique identifier for the participant.
+  /// The unique identifier of the participant.
   final String id;
 
-  /// The participant's date of birth, which can be used for age-based constraints.
+  /// The participant's date of birth. Only used to derive an age on the
+  /// context's `now`; the engine never reads the system clock.
   final DateTime birthdate;
 
-  /// Creates an instance of [AlgoParticipant].
-  AlgoParticipant({
-    required this.id,
-    required this.birthdate,
-  });
+  const AlgoParticipant({required this.id, required this.birthdate});
+
+  /// The participant's age in whole years on [now].
+  int ageOn(DateTime now) {
+    var age = now.year - birthdate.year;
+    if (now.month < birthdate.month ||
+        (now.month == birthdate.month && now.day < birthdate.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  @override
+  String toString() => 'AlgoParticipant($id)';
 }

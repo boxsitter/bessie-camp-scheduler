@@ -1,58 +1,37 @@
-import 'package:intl/intl.dart';
-
-import '../../data_models/analogs/algo_period.dart';
 import '../../data_models/assignment_context.dart';
-import '../../data_models/assignment_result.dart';
-import '../../data_models/interfaces/Constraint.dart';
+import '../../data_models/assignment_ledger.dart';
+import '../../data_models/interfaces/constraint.dart';
 import '../../data_models/potential_assignment.dart';
 
-/// A constraint that prevents a participant from being assigned to the same
-/// activity in an adjacent period on the same day, unless it's a double schedule.
+/// A participant may not be given the same activity in two back-to-back
+/// periods of the same day, unless it is a double-schedule activity (whose
+/// blocks are back-to-back by definition).
+///
+/// O(number of periods in which the participant holds this activity).
 class AdjacentRepetitionConstraint implements Constraint {
   @override
   String get violationMessage =>
       'Participant is already assigned to this activity in an adjacent period.';
 
   @override
-  bool isViolated(PotentialAssignment assignment, AssignmentContext context, AssignmentResult result) {
+  bool isViolated(
+    PotentialAssignment assignment,
+    AssignmentContext context,
+    AssignmentLedger ledger,
+  ) {
     if (assignment.activity.doubleSchedule) return false;
 
-    final participantId = assignment.participant.id;
-    final activityId = assignment.activity.id;
+    final index = context.periodIndex(assignment.period.id);
+    final dayId = assignment.period.dayId;
+    final held = ledger.periodIndicesOf(
+        assignment.participant.id, assignment.activity.id);
 
-    // Combine existing and new assignments for a full view of the schedule.
-    final allAssignments = [
-      ...context.getAssignmentsForParticipant(participantId),
-      ...result.getAssignmentsForParticipant(participantId)
-    ];
-
-    for (final existingAssignment in allAssignments) {
-      if (existingAssignment.activity.id == activityId) {
-        if (_arePeriodsAdjacentOnSameDay(
-          assignment.period,
-          existingAssignment.period,
-          context.weeklyPeriodsSorted,
-        )) {
-          return true; // Violation found
-        }
+    for (final heldIndex in held) {
+      if ((heldIndex - index).abs() == 1 &&
+          context.periods[heldIndex].dayId == dayId) {
+        return true;
       }
     }
-
     return false;
-  }
-
-  bool _arePeriodsAdjacentOnSameDay(AlgoPeriod periodA, AlgoPeriod periodB, List<AlgoPeriod> weeklyPeriodsSorted) {
-    final DateFormat formatter = DateFormat('yyyy-MM-dd');
-    final dayA = formatter.format(periodA.start);
-    final dayB = formatter.format(periodB.start);
-
-    if (dayA != dayB) return false;
-
-    final indexA = weeklyPeriodsSorted.indexWhere((p) => p.id == periodA.id);
-    final indexB = weeklyPeriodsSorted.indexWhere((p) => p.id == periodB.id);
-
-    if (indexA == -1 || indexB == -1) return false;
-
-    return (indexA - indexB).abs() == 1;
   }
 }

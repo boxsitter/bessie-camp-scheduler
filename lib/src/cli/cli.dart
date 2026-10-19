@@ -1,12 +1,8 @@
-/// Support for doing something awesome.
-///
-/// More dartdocs go here.
+/// The in-app console's command framework: command base class, argument
+/// parser and the input/output abstractions commands talk to.
 library;
 
-export 'ember_command.dart';
-export 'io/cli_input.dart';
-export 'io/cli_output.dart';
-export 'io/io_interfaces.dart';
 export 'command_parser.dart';
+export 'ember_command.dart';
 export 'io/form_field_descriptors.dart';
-
+export 'io/io_interfaces.dart';

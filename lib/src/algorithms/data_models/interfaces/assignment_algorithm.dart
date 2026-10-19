@@ -1,7 +1,7 @@
 import 'algorithm_step.dart';
 
-/// Defines the contract for the main assignment algorithm.
+/// A scheduling strategy: an ordered combination of pipeline steps.
 abstract class AssignmentAlgorithm {
-  /// Holds the combination of steps comprising an algorithm.
+  /// The steps, in execution order.
   List<AlgorithmStep> get steps;
 }

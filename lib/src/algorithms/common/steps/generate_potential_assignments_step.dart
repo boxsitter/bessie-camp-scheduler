@@ -1,81 +1,95 @@
-
-
-import '../../data_models/analogs/algo_period.dart';
-import '../../data_models/analogs/algo_scheduled_activity.dart';
+import '../../data_models/enums.dart';
 import '../../data_models/interfaces/algorithm_step.dart';
 import '../../data_models/pipeline_state.dart';
 import '../../data_models/potential_assignment.dart';
-import '../../evaluation/step_report.dart';
 
-/// The first step in the assignment pipeline, updated to handle double-periods.
+/// The first step: generates every candidate assignment.
 ///
-/// This step generates a list of possible assignments. It now intelligently
-/// identifies and links double-period activities, creating a single
-/// `PotentialAssignment` to represent the two-period block. It also filters
-/// out any assignments that have been explicitly vetoed by the participant.
+/// For each participant and each target period in which the participant is
+/// still free, a candidate is produced for every *assignable* scheduled
+/// activity of that period, except:
+///  * activities the participant has vetoed;
+///  * hidden (non-assignable) activities, which only ever appear in existing
+///    assignments;
+///  * double-schedule activities that cannot be completed: the next
+///    chronological period must be on the same day, offer the same activity,
+///    and the participant must be free in it too.
+///
+/// A double-schedule activity yields ONE candidate that represents the whole
+/// two-period block (the second period does not have to be a target period).
+///
+/// Generation order is deterministic: participants in the supplied order,
+/// target periods chronologically, scheduled activities in the supplied order.
 class GeneratePotentialAssignmentsStep extends AlgorithmStep {
   @override
   String get stepName => 'Generate Potential Assignments';
 
   @override
-  StepReport execute(PipelineState state) {
-    final List <PotentialAssignment> potentialAssignments = [];
+  StepOutcome execute(PipelineState state) {
+    final context = state.context;
+    final ledger = state.ledger;
+    final candidates = <PotentialAssignment>[];
+    var vetoed = 0;
+    var unfinishableDoubles = 0;
 
-    for (final participant in state.context.participants.values) {
-      for (final period in state.context.targetPeriods.values) {
-        if (state.context.isParticipantAssignedInPeriod(participant.id, period.id)) {
-          continue;
-        }
+    for (final participant in context.participants) {
+      for (final period in context.targetPeriods) {
+        final periodIndex = context.periodIndex(period.id);
+        if (ledger.isBusy(participant.id, periodIndex)) continue;
 
-        for (final scheduledActivity in state.context.getScheduledActivitiesInPeriod(period.id)) {
-          final activity = state.context.allActivities[scheduledActivity.activityId];
-          if (activity == null) continue;
+        for (final scheduled in context.scheduledActivitiesIn(period.id)) {
+          final activity = context.activityById(scheduled.activityId)!;
+          if (!activity.assignable) continue;
 
-          // --- VETO CHECK ---
-          // Skip this potential assignment if the participant has vetoed the activity.
-          final preference = state.context.participantPreferences[participant.id]?[activity.id];
-          if (preference == 0.0) {
+          if (context.preferenceOf(participant.id, activity.id) ==
+              PreferenceType.veto) {
+            vetoed++;
             continue;
           }
 
-          if (activity.doubleSchedule) {
-            final AlgoPeriod? nextPeriod = state.context.getNextPeriod(period.id);
-
-            // --- DOUBLE SCHEDULE CHECKS ---
-            if (nextPeriod != null &&
-                state.context.isSameDay(period, nextPeriod) &&
-                !state.context.isParticipantAssignedInPeriod(participant.id, nextPeriod.id)) { // <-- ADDED CHECK
-              final AlgoScheduledActivity? linkedScheduled = state.context.getScheduledActivityInPeriod(activity.id, nextPeriod.id);
-
-              if (linkedScheduled != null) {
-                potentialAssignments.add(PotentialAssignment(
-                  participant: participant,
-                  activity: activity,
-                  scheduledActivity: scheduledActivity,
-                  period: period,
-                  linkedScheduledActivity: linkedScheduled,
-                  linkedPeriod: nextPeriod,
-                ));
-              }
-            }
-          } else {
-            potentialAssignments.add(PotentialAssignment(
+          if (!activity.doubleSchedule) {
+            candidates.add(PotentialAssignment(
               participant: participant,
-              scheduledActivity: scheduledActivity,
               activity: activity,
+              scheduledActivity: scheduled,
               period: period,
+              sequence: candidates.length,
             ));
+            continue;
           }
+
+          final next = context.nextPeriod(period.id);
+          final linked = next == null || !context.isSameDay(period, next)
+              ? null
+              : context.scheduledActivityOf(activity.id, next.id);
+          if (next == null ||
+              linked == null ||
+              ledger.isBusy(participant.id, context.periodIndex(next.id))) {
+            unfinishableDoubles++;
+            continue;
+          }
+          candidates.add(PotentialAssignment(
+            participant: participant,
+            activity: activity,
+            scheduledActivity: scheduled,
+            period: period,
+            linkedScheduledActivity: linked,
+            linkedPeriod: next,
+            sequence: candidates.length,
+          ));
         }
       }
     }
-    state.potentialAssignments = potentialAssignments;
+    state.potentialAssignments = candidates;
 
-    return StepReport(
-      stepName: stepName,
-      summary: 'Generated ${potentialAssignments.length} potential assignments (merged doubles, filtered vetoes).',
-      details: {'count': potentialAssignments.length},
-      duration: Duration.zero,
+    return StepOutcome(
+      summary: 'Generated ${candidates.length} potential assignments '
+          '(vetoes and hidden activities excluded, doubles merged).',
+      details: {
+        'count': candidates.length,
+        'skippedVetoed': vetoed,
+        'skippedUnfinishableDoubles': unfinishableDoubles,
+      },
     );
   }
 }

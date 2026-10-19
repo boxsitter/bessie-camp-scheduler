@@ -1,60 +1,47 @@
-import 'package:bessie/src/shared/widgets/buttons/icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../shared/widgets/buttons/icon_button.dart';
 import '../../../shared/widgets/header/menu_bar.dart';
-import '../controllers/activity_preferences_controller_diplomatic.dart';
+import '../controllers/activity_preferences_controller.dart';
 
-List<Widget> buildActivityPreferencesCenterActions({
-  required ActivityPreferencesControllerDiplomatic controller,
-}) {
+List<Widget> buildActivityPreferencesCenterActions({required ActivityPreferencesController controller}) {
+  const gap = SizedBox(width: 16);
   return [
     BessIconButton(
       iconData: LucideIcons.house500,
-      onPressed: () => controller.setCabinsOpened(!controller.cabinsOpened),
-      selected: controller.cabinsOpened,
-      enabled: controller.selectedCabin != null,
+      onPressed: controller.toggleCabins,
+      selected: controller.showingCabins,
+      enabled: controller.selectedGroup != null,
       radius: 8,
     ),
-
-    SizedBox(width: 16,),
-
+    gap,
     BessIconButton(
       iconData: LucideIcons.usersRound500,
-      onPressed: () => controller.setCampersOpened(!controller.campersOpened),
-      selected: controller.campersOpened,
-      enabled: !controller.cabinsOpened,
+      onPressed: controller.toggleCampersPane,
+      selected: controller.campersPaneOpen && !controller.showingCabins,
+      enabled: !controller.showingCabins,
       radius: 8,
     ),
-
-    SizedBox(width: 16,),
-
+    gap,
     BessIconButton(
       iconData: LucideIcons.save500,
       onPressed: controller.save,
-      enabled: controller.entriesToSave.isNotEmpty && controller.isSaving == false,
-      isLoading: controller.isSaving == true,
+      enabled: controller.hasUnsavedChanges && !controller.isSaving,
+      isLoading: controller.isSaving,
       radius: 8,
     ),
-
-    //if (controller.cabinsOpened == true)
-    SizedBox(width: 16,),
-
-    //if (controller.cabinsOpened == true)
+    gap,
     BessIconButton(
       iconData: LucideIcons.rotateCw500,
       onPressed: controller.reload,
-      enabled: controller.isLoading == false,
+      enabled: !controller.isLoading,
       isLoading: controller.isLoading,
       radius: 8,
     ),
   ];
 }
 
-BessMenuBar<ActivityPreferencesControllerDiplomatic> buildActivityPreferencesMenuBar({
-  required ActivityPreferencesControllerDiplomatic controller,
-}) {
-  return BessMenuBar<ActivityPreferencesControllerDiplomatic>(
-    externalPageController: controller,
-  );
+BessMenuBar<ActivityPreferencesController> buildActivityPreferencesMenuBar({required ActivityPreferencesController controller}) {
+  return BessMenuBar<ActivityPreferencesController>(externalPageController: controller);
 }

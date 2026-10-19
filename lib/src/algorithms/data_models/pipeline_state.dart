@@ -1,31 +1,31 @@
+import '../evaluation/participant_evaluation_report.dart';
 import 'assignment_context.dart';
-import 'assignment_result.dart';
+import 'assignment_ledger.dart';
 import 'potential_assignment.dart';
+import 'stalemate_log.dart';
 
-/// A container for the shared state that is passed through the algorithm pipeline.
+/// The shared, mutable state that flows through the pipeline.
 ///
-/// Each [AlgorithmStep] can read from and write to this state, allowing data
-/// to be built up and transformed progressively through the run.
+/// Steps read what earlier steps produced and add their own output. The only
+/// record of who holds what is the [ledger]; there is no second copy.
 class PipelineState {
   final AssignmentContext context;
-  final AssignmentResult result;
-  List<PotentialAssignment> potentialAssignments;
 
-  // --- ADD THESE LINES ---
-  /// A map of participant IDs to a set of activity IDs that they have requested
-  /// and have been fulfilled.
-  final Map<String, Set<String>> fulfilledRequests;
+  /// Who holds which seat: existing assignments plus everything placed so far.
+  final AssignmentLedger ledger;
 
-  /// A map of participant IDs to a set of all activity IDs they have been
-  /// assigned during this run.
-  final Map<String, Set<String>> assignedActivities;
+  /// The candidates produced by the generate step, then scored and sorted by
+  /// the following steps.
+  List<PotentialAssignment> potentialAssignments = [];
 
-  PipelineState({
-    required this.context,
-    required this.result,
-    this.potentialAssignments = const [],
-    // --- ADD THESE LINES ---
-    this.fulfilledRequests = const {},
-    this.assignedActivities = const {},
-  });
+  /// The slots that could not be filled.
+  final StalemateLog stalemates = StalemateLog();
+
+  /// participantId -> satisfaction, filled by the evaluation step.
+  final Map<String, double> satisfaction = {};
+
+  /// Per-participant evaluation reports, filled by the evaluation step.
+  List<ParticipantEvaluationReport> evaluationReports = [];
+
+  PipelineState({required this.context, required this.ledger});
 }

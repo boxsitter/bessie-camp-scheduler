@@ -1,53 +1,84 @@
 import '../evaluation/participant_evaluation_report.dart';
 import '../evaluation/step_report.dart';
-import 'potential_assignment.dart';
 
-/// Represents the final output of the assignment algorithm.
-///
-/// This class collects all successful assignments, as well as participants
-/// who could not be assigned (stalemates), providing a complete picture of
-/// the algorithm's outcome.
+/// One participant placed into one scheduled activity (hence one period).
+/// A double-schedule assignment yields two of these.
+class NewPlacement {
+  final String participantId;
+  final String scheduledActivityId;
+
+  const NewPlacement({
+    required this.participantId,
+    required this.scheduledActivityId,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      other is NewPlacement &&
+      other.participantId == participantId &&
+      other.scheduledActivityId == scheduledActivityId;
+
+  @override
+  int get hashCode => Object.hash(participantId, scheduledActivityId);
+
+  @override
+  String toString() => '$participantId -> $scheduledActivityId';
+}
+
+/// A (participant, period) slot the engine could not fill.
+class Stalemate {
+  final String participantId;
+  final String periodId;
+
+  /// A human-readable explanation of why every option was ruled out.
+  final String reason;
+
+  const Stalemate({
+    required this.participantId,
+    required this.periodId,
+    required this.reason,
+  });
+
+  @override
+  String toString() => '$participantId @ $periodId: $reason';
+}
+
+/// The immutable outcome of an engine run.
 class AssignmentResult {
-  /// A list of all the successful assignments made during the run.
-  final List<PotentialAssignment> successfulAssignments = [];
+  /// ONLY the placements this run added (never the existing assignments), in
+  /// the order they were made.
+  final List<NewPlacement> newPlacements;
 
-  /// A map of participants who could not be assigned, along with the reason.
-  /// The key is a string combination of "participantId-periodId" to uniquely
-  /// identify a stalemate for a participant in a specific period.
-  final Map<String, String> stalemates = {};
+  /// participantId -> satisfaction in 0..1 over the participant's whole week
+  /// (existing + new). Participants with a stalemate or no assignments at all
+  /// are omitted.
+  final Map<String, double> satisfaction;
 
-  /// A list of all assignments that existed *before* this algorithm run.
-  final List<PotentialAssignment> existingAssignments = [];
+  /// Every slot that could not be filled.
+  final List<Stalemate> stalemates;
 
-  /// A log of reports from each step of the assignment pipeline.
-  final List<StepReport> reports = [];
+  /// One evaluation report per participant of the run.
+  final List<ParticipantEvaluationReport> evaluationReports;
 
-  /// A list of evaluation reports for each participant after the run.
-  List<ParticipantEvaluationReport> evaluationReports = [];
+  /// One timed report per executed pipeline step.
+  final List<StepReport> stepReports;
 
-  /// Adds a step report to the result's log.
-  void addReport(StepReport report) {
-    reports.add(report);
-  }
+  final Set<String> _stalematedParticipantIds;
 
-  /// Adds a successful assignment to the results.
-  void addSuccess(PotentialAssignment assignment) {
-    successfulAssignments.add(assignment);
-  }
+  AssignmentResult({
+    required List<NewPlacement> newPlacements,
+    Map<String, double> satisfaction = const {},
+    List<Stalemate> stalemates = const [],
+    List<ParticipantEvaluationReport> evaluationReports = const [],
+    List<StepReport> stepReports = const [],
+  })  : newPlacements = List.unmodifiable(newPlacements),
+        satisfaction = Map.unmodifiable(satisfaction),
+        stalemates = List.unmodifiable(stalemates),
+        evaluationReports = List.unmodifiable(evaluationReports),
+        stepReports = List.unmodifiable(stepReports),
+        _stalematedParticipantIds = {for (final s in stalemates) s.participantId};
 
-  /// Records a stalemate for a participant in a specific period.
-  void addStalemate(String participantId, String periodId, String reason) {
-    final key = '$participantId-$periodId';
-    stalemates[key] = reason;
-  }
-
-  /// Returns all new assignments for a specific period.
-  Iterable<PotentialAssignment> getAssignmentsForPeriod(String periodId) {
-    return successfulAssignments.where((a) => a.period.id == periodId);
-  }
-
-  /// Returns all new assignments for a specific participant.
-  Iterable<PotentialAssignment> getAssignmentsForParticipant(String participantId) {
-    return successfulAssignments.where((a) => a.participant.id == participantId);
-  }
+  /// Whether any of the participant's slots is a stalemate. O(1).
+  bool hasStalemate(String participantId) =>
+      _stalematedParticipantIds.contains(participantId);
 }

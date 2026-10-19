@@ -1,156 +1,194 @@
-import 'package:intl/intl.dart';
-
 import 'analogs/algo_activity.dart';
 import 'analogs/algo_participant.dart';
 import 'analogs/algo_period.dart';
 import 'analogs/algo_scheduled_activity.dart';
-import 'potential_assignment.dart';
+import 'enums.dart';
 
-/// Holds all the data required for a single run of the assignment algorithm.
+/// Everything the engine needs for one run, plus the lookups derived from it.
 ///
-/// This class acts as a central data provider for the algorithm, decoupling it
-/// from external data sources and making it highly testable. It pre-computes
-/// certain lookups to ensure efficient data access during the run.
+/// The context is immutable: the collections passed in are copied, periods are
+/// sorted chronologically and all indexes are built once, up front. It is a
+/// pure data holder and never reads the system clock; ages are computed
+/// against [now].
+///
+/// Input conventions:
+///  * Ids must be unique within their kind, and every id in [targetPeriodIds]
+///    must name a period; otherwise the constructor throws an [ArgumentError].
+///  * Dangling references elsewhere are ignored rather than rejected: a
+///    scheduled activity pointing at an unknown activity or period is dropped,
+///    and existing assignments naming an unknown scheduled activity or a
+///    participant that is not part of the run are skipped (seats held by people
+///    outside the run must be reported through [externalEnrollment]).
 class AssignmentContext {
-  /// The participants to be assigned.
-  final Map<String, AlgoParticipant> participants;
+  /// The participants to be assigned, in the caller's order.
+  final List<AlgoParticipant> participants;
 
-  /// A map of participant IDs to their activity preferences, where the value
-  /// is a map of activity IDs to a preference score.
-  final Map<String, Map<String, double?>> participantPreferences;
+  /// participantId -> activityId -> preference. Neutral is the absence of an
+  /// entry.
+  final Map<String, Map<String, PreferenceType>> preferences;
 
-  /// The specific periods that the algorithm should attempt to fill.
-  final Map<String, AlgoPeriod> targetPeriods;
+  /// Every period of the session, sorted chronologically (by start, then id).
+  final List<AlgoPeriod> periods;
 
-  /// All available activities for the algorithm.
-  final Map<String, AlgoActivity> allActivities;
+  /// The ids of the periods this run must fill.
+  final Set<String> targetPeriodIds;
 
-  /// All instances of activities scheduled for the week.
-  final Map<String, AlgoScheduledActivity> allScheduledActivities;
+  /// All activities.
+  final List<AlgoActivity> activities;
 
-  /// All assignments that existed before this algorithm run, mapping a
-  /// participant ID to a list of their assigned scheduled activity IDs.
-  final Map<String, List<String>> existingAssignments;
+  /// All scheduled activities, including non-assignable (hidden) ones.
+  final List<AlgoScheduledActivity> scheduledActivities;
 
-  /// A chronologically sorted list of all periods for the week, used for
-  /// sequential checks.
-  final List<AlgoPeriod> weeklyPeriodsSorted;
+  /// participantId -> ids of the scheduled activities the participant already
+  /// holds (any period, hidden ones included).
+  final Map<String, Set<String>> existingAssignments;
 
-  // Caches for faster lookups.
-  final Map<String, AlgoPeriod> _allPeriodsById;
-  final Map<String, List<AlgoScheduledActivity>> _scheduledActivitiesByPeriodId;
+  /// scheduledActivityId -> seats already taken by campers who are NOT part of
+  /// [participants].
+  final Map<String, int> externalEnrollment;
 
-  // --- NEW ---
-  // A complete, unfiltered map of every scheduled activity ID to its period ID.
-  // This is used ONLY for the isParticipantAssignedInPeriod check.
-  final Map<String, String> _allScheduledActivityToPeriodMap;
+  /// The instant used to compute ages.
+  final DateTime now;
 
+  late final Map<String, AlgoParticipant> _participantById;
+  late final Map<String, AlgoActivity> _activityById;
+  late final Map<String, AlgoPeriod> _periodById;
+  late final Map<String, int> _periodIndexById;
+  late final Map<String, AlgoScheduledActivity> _scheduledById;
+  late final Map<String, List<AlgoScheduledActivity>> _scheduledByPeriod;
+  late final Map<String, Map<String, AlgoScheduledActivity>>
+      _scheduledByPeriodAndActivity;
+  late final Map<String, int> _ageById;
+  late final List<AlgoPeriod> _targetPeriods;
 
-  /// Creates an instance of the assignment context.
-  ///
-  /// This constructor initializes all the necessary data and builds lookup
-  /// caches to speed up the algorithm's execution.
   AssignmentContext({
-    required this.participants,
-    required this.participantPreferences,
-    required this.targetPeriods,
-    required this.allActivities,
-    required this.allScheduledActivities, // This remains the filtered (non-hidden) map
-    required this.existingAssignments, // This should be the unfiltered list of IDs
-    required this.weeklyPeriodsSorted,
-    // --- ADDED PARAMETER ---
-    required Map<String, String> allScheduledActivityToPeriodMap,
-  })  : _allPeriodsById = {for (var p in weeklyPeriodsSorted) p.id: p},
-        _scheduledActivitiesByPeriodId = _groupActivitiesByPeriod(allScheduledActivities.values),
-        // --- INITIALIZE NEW MAP ---
-        _allScheduledActivityToPeriodMap = allScheduledActivityToPeriodMap;
+    required List<AlgoParticipant> participants,
+    required Map<String, Map<String, PreferenceType>> preferences,
+    required List<AlgoPeriod> periods,
+    required Set<String> targetPeriodIds,
+    required List<AlgoActivity> activities,
+    required List<AlgoScheduledActivity> scheduledActivities,
+    required Map<String, Set<String>> existingAssignments,
+    Map<String, int> externalEnrollment = const {},
+    required this.now,
+  })  : participants = List.unmodifiable(participants),
+        preferences = Map.unmodifiable({
+          for (final entry in preferences.entries)
+            entry.key: Map<String, PreferenceType>.unmodifiable(entry.value),
+        }),
+        periods = List.unmodifiable(_sortChronologically(periods)),
+        targetPeriodIds = Set.unmodifiable(targetPeriodIds),
+        activities = List.unmodifiable(activities),
+        scheduledActivities = List.unmodifiable(scheduledActivities),
+        existingAssignments = Map.unmodifiable({
+          for (final entry in existingAssignments.entries)
+            entry.key: Set<String>.unmodifiable(entry.value),
+        }),
+        externalEnrollment = Map.unmodifiable(externalEnrollment) {
+    _participantById = _indexById(this.participants, (p) => p.id, 'participant');
+    _activityById = _indexById(this.activities, (a) => a.id, 'activity');
+    _periodById = _indexById(this.periods, (p) => p.id, 'period');
+    _periodIndexById = {
+      for (var i = 0; i < this.periods.length; i++) this.periods[i].id: i,
+    };
 
-  /// Groups scheduled activities by their period ID for efficient lookup.
-  static Map<String, List<AlgoScheduledActivity>> _groupActivitiesByPeriod(
-      Iterable<AlgoScheduledActivity> activities) {
-    final map = <String, List<AlgoScheduledActivity>>{};
-    for (final activity in activities) {
-      (map[activity.periodId] ??= []).add(activity);
+    final scheduledById = _indexById(
+        this.scheduledActivities, (s) => s.id, 'scheduled activity');
+    _scheduledById = {
+      for (final entry in scheduledById.entries)
+        if (_activityById.containsKey(entry.value.activityId) &&
+            _periodById.containsKey(entry.value.periodId))
+          entry.key: entry.value,
+    };
+
+    _scheduledByPeriod = {};
+    _scheduledByPeriodAndActivity = {};
+    for (final scheduled in this.scheduledActivities) {
+      if (!_scheduledById.containsKey(scheduled.id)) continue;
+      (_scheduledByPeriod[scheduled.periodId] ??= []).add(scheduled);
+      (_scheduledByPeriodAndActivity[scheduled.periodId] ??= {})
+          .putIfAbsent(scheduled.activityId, () => scheduled);
     }
-    return map;
-  }
 
-  /// Checks if a participant already has an assignment in a specific period.
-  /// This check is now robust and includes hidden activities.
-  bool isParticipantAssignedInPeriod(String participantId, String periodId) {
-    final assignedIds = existingAssignments[participantId];
-    if (assignedIds == null) return false;
-
-    for (final scheduledActivityId in assignedIds) {
-      // Use the new, complete map to check if the assignment falls in the target period.
-      if (_allScheduledActivityToPeriodMap[scheduledActivityId] == periodId) {
-        return true;
+    for (final periodId in this.targetPeriodIds) {
+      if (!_periodById.containsKey(periodId)) {
+        throw ArgumentError.value(
+            periodId, 'targetPeriodIds', 'is not one of the context periods');
       }
     }
-    return false;
+    _targetPeriods = List.unmodifiable(
+        [for (final p in this.periods) if (this.targetPeriodIds.contains(p.id)) p]);
+
+    _ageById = {for (final p in this.participants) p.id: p.ageOn(now)};
   }
 
-  /// Checks if two periods occur on the same calendar day.
+  /// The target periods, sorted chronologically.
+  List<AlgoPeriod> get targetPeriods => _targetPeriods;
+
+  AlgoParticipant? participantById(String id) => _participantById[id];
+
+  AlgoActivity? activityById(String id) => _activityById[id];
+
+  AlgoPeriod? periodById(String id) => _periodById[id];
+
+  /// The scheduled activity with this id, or `null` if it is unknown or refers
+  /// to an unknown activity or period.
+  AlgoScheduledActivity? scheduledActivityById(String id) => _scheduledById[id];
+
+  /// The position of the period in the chronologically sorted [periods].
   ///
-  /// [periodA] The first period to compare.
-  /// [periodB] The second period to compare.
-  ///
-  /// Returns `true` if they are on the same day, `false` otherwise.
-  bool isSameDay(AlgoPeriod periodA, AlgoPeriod periodB) {
-    final DateFormat formatter = DateFormat('yyyy-MM-dd');
-    return formatter.format(periodA.start) == formatter.format(periodB.start);
-  }
-
-  /// Retrieves all of a participant's existing assignments.
-  List<PotentialAssignment> getAssignmentsForParticipant(String participantId) {
-    final assignments = <PotentialAssignment>[];
-        final participant = participants[participantId];
-    if (participant == null) return assignments;
-
-    final scheduledIds = existingAssignments[participantId] ?? [];
-    for (final scheduledId in scheduledIds) {
-      final scheduled = allScheduledActivities[scheduledId];
-      if (scheduled == null) continue;
-
-      final activity = allActivities[scheduled.activityId];
-      final period = _allPeriodsById[scheduled.periodId];
-
-      if (activity != null && period != null) {
-          assignments.add(PotentialAssignment(
-            participant: participant,
-          scheduledActivity: scheduled,
-            activity: activity,
-          period: period,
-          ));
-        }
-      }
-    return assignments;
-  }
-
-  /// Gets the next chronological period in the week relative to the given one.
-  /// Returns `null` if the given period is the last one.
-  AlgoPeriod? getNextPeriod(String currentPeriodId) {
-    final index = weeklyPeriodsSorted.indexWhere((p) => p.id == currentPeriodId);
-    if (index == -1 || index + 1 >= weeklyPeriodsSorted.length) {
-      return null;
+  /// Throws an [ArgumentError] for an unknown id.
+  int periodIndex(String periodId) {
+    final index = _periodIndexById[periodId];
+    if (index == null) {
+      throw ArgumentError.value(periodId, 'periodId', 'Unknown period');
     }
-    return weeklyPeriodsSorted[index + 1];
+    return index;
   }
 
-  /// Retrieves a specific scheduled activity occurring in a specific period.
-  /// Returns `null` if no such activity is found.
-  AlgoScheduledActivity? getScheduledActivityInPeriod(String activityId, String periodId) {
-    final activitiesInPeriod = _scheduledActivitiesByPeriodId[periodId] ?? [];
-    for (final scheduled in activitiesInPeriod) {
-          if(scheduled.activityId == activityId) {
-              return scheduled;
+  /// The next chronological period after [periodId], or `null` for the last.
+  AlgoPeriod? nextPeriod(String periodId) {
+    final next = periodIndex(periodId) + 1;
+    return next < periods.length ? periods[next] : null;
+  }
+
+  /// All scheduled activities (hidden ones included) offered in [periodId], in
+  /// the order they were supplied.
+  List<AlgoScheduledActivity> scheduledActivitiesIn(String periodId) =>
+      _scheduledByPeriod[periodId] ?? const [];
+
+  /// The scheduled instance of [activityId] in [periodId], if it is offered
+  /// there.
+  AlgoScheduledActivity? scheduledActivityOf(String activityId, String periodId) =>
+      _scheduledByPeriodAndActivity[periodId]?[activityId];
+
+  /// What [participantId] thinks of [activityId]; `null` means neutral.
+  PreferenceType? preferenceOf(String participantId, String activityId) =>
+      preferences[participantId]?[activityId];
+
+  /// The participant's age in whole years on [now].
+  int ageOf(String participantId) => _ageById[participantId] ?? 0;
+
+  /// Whether two periods fall on the same day.
+  bool isSameDay(AlgoPeriod a, AlgoPeriod b) => a.dayId == b.dayId;
+
+  static List<AlgoPeriod> _sortChronologically(List<AlgoPeriod> periods) {
+    return [...periods]..sort((a, b) {
+        final byStart = a.start.compareTo(b.start);
+        return byStart != 0 ? byStart : a.id.compareTo(b.id);
+      });
+  }
+
+  static Map<String, T> _indexById<T>(
+      Iterable<T> items, String Function(T) idOf, String what) {
+    final index = <String, T>{};
+    for (final item in items) {
+      final id = idOf(item);
+      if (index.containsKey(id)) {
+        throw ArgumentError('Duplicate $what id "$id".');
       }
+      index[id] = item;
     }
-    return null;
+    return index;
   }
-
-  /// Retrieves all scheduled activities occurring in a specific period.
-  Iterable<AlgoScheduledActivity> getScheduledActivitiesInPeriod(String periodId) {
-    return _scheduledActivitiesByPeriodId[periodId] ?? [];
-}
 }

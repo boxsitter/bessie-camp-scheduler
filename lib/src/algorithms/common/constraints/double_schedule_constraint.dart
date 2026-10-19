@@ -1,40 +1,44 @@
-import 'package:intl/intl.dart';
-
 import '../../data_models/assignment_context.dart';
-import '../../data_models/assignment_result.dart';
-import '../../data_models/interfaces/Constraint.dart';
+import '../../data_models/assignment_ledger.dart';
+import '../../data_models/interfaces/constraint.dart';
 import '../../data_models/potential_assignment.dart';
 
-/// A constraint to handle the "double schedule" rule.
+/// A double-schedule activity must be placed as a well-formed two-period block:
+/// the second period is the NEXT chronological period, it is on the same day
+/// and it offers the same activity.
+///
+/// Non-double activities are never affected. The candidate generator only
+/// emits well-formed blocks; this constraint is the independent safety net
+/// (and the one that keeps the `randomize` fallback honest).
 class DoubleScheduleConstraint implements Constraint {
   @override
   String get violationMessage =>
       'Cannot fulfill double-schedule activity. The subsequent period is unavailable or unscheduled.';
 
   @override
-  bool isViolated(PotentialAssignment assignment, AssignmentContext context, AssignmentResult result) {
+  bool isViolated(
+    PotentialAssignment assignment,
+    AssignmentContext context,
+    AssignmentLedger ledger,
+  ) {
     if (!assignment.activity.doubleSchedule) return false;
 
-    final nextPeriod = context.getNextPeriod(assignment.period.id);
+    // A double activity placed as a single period is malformed.
+    final linkedPeriod = assignment.linkedPeriod;
+    final linkedScheduled = assignment.linkedScheduledActivity;
+    if (linkedPeriod == null || linkedScheduled == null) return true;
 
-    // Violation if there's no next period at all.
-    if (nextPeriod == null) return true;
+    final nextPeriod = context.nextPeriod(assignment.period.id);
 
-    // Violation if the next period is on a different day.
-    final formatter = DateFormat('yyyy-MM-dd');
-    if (formatter.format(assignment.period.start) !=
-        formatter.format(nextPeriod.start)) {
-      return true;
-    }
+    // The block must continue into the next chronological period...
+    if (nextPeriod == null || nextPeriod.id != linkedPeriod.id) return true;
 
-    // Violation if the same activity is not scheduled in the next period.
-    final linkedScheduledActivity =
-    context.getScheduledActivityInPeriod(assignment.activity.id, nextPeriod.id);
-    if (linkedScheduledActivity == null) {
-      return true;
-    }
+    // ...on the same day...
+    if (!context.isSameDay(assignment.period, nextPeriod)) return true;
 
-    // All checks passed, no violation.
-    return false;
+    // ...where the same activity is offered.
+    final expected =
+        context.scheduledActivityOf(assignment.activity.id, nextPeriod.id);
+    return expected == null || expected.id != linkedScheduled.id;
   }
 }

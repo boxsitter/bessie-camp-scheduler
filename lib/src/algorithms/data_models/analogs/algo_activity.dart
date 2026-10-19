@@ -1,28 +1,33 @@
-/// A lightweight, algorithm-specific representation of an activity.
-///
-/// This class holds the essential details about an activity that are required
-/// by the assignment algorithm, such as its capacity and assignment constraints.
+/// A lightweight, engine-specific representation of an activity.
 class AlgoActivity {
-  /// The unique identifier for the activity.
+  /// The unique identifier of the activity.
   final String id;
 
-  /// The maximum number of participants that can be assigned to this activity
-  /// in a single period.
+  /// The number of seats available in *each scheduled instance* of this
+  /// activity (that is, per period in which it is offered).
   final int capacity;
 
-  /// The total number of times a single participant can be assigned to this
-  /// activity across all periods. A `null` value signifies no limit.
+  /// The number of times one participant may be assigned to this activity in
+  /// the whole week. A double-schedule block counts as ONE occurrence.
+  /// `null` means unlimited.
   final int? maxAssignments;
 
-  /// A flag indicating whether this activity is part of a "double schedule,"
-  /// which may have special assignment rules.
+  /// Whether the activity occupies two consecutive periods on the same day.
   final bool doubleSchedule;
 
-  /// Creates an instance of [AlgoActivity].
-  AlgoActivity({
+  /// `false` marks a hidden activity: it keeps participants busy and holds
+  /// seats when it appears in existing assignments, but the engine never
+  /// proposes it as a new assignment.
+  final bool assignable;
+
+  const AlgoActivity({
     required this.id,
     required this.capacity,
-    required this.maxAssignments,
-    required this.doubleSchedule,
+    this.maxAssignments,
+    this.doubleSchedule = false,
+    this.assignable = true,
   });
+
+  @override
+  String toString() => 'AlgoActivity($id)';
 }

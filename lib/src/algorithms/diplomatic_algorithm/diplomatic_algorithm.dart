@@ -1,31 +1,26 @@
-import 'package:bessie/src/algorithms/diplomatic_algorithm/score_diplomatic_assignments_step.dart';
+import 'dart:math';
 
-import '../common/constraints/adjacent_repetition_constraint.dart';
-import '../common/constraints/capacity_constraint.dart';
-import '../common/constraints/double_schedule_constraint.dart';
-import '../common/constraints/reassignment_constraint.dart';
-import '../common/steps/generate_evaluation_report.dart';
-import '../common/steps/generate_potential_assignments_step.dart';
-import '../common/steps/process_assignments_step.dart';
-import '../common/steps/sort_assignments_step.dart';
+import '../common/steps/standard_steps.dart';
 import '../data_models/enums.dart';
 import '../data_models/interfaces/algorithm_step.dart';
 import '../data_models/interfaces/assignment_algorithm.dart';
+import 'diplomatic_scorer.dart';
 
+/// The production strategy: unfulfilled requests first, then novel activities,
+/// then repeats (see [DiplomaticScorer]).
 class DiplomaticAlgorithm implements AssignmentAlgorithm {
   final StalemateStrategy stalemateStrategy;
+  final Random _random;
 
-  DiplomaticAlgorithm({this.stalemateStrategy = StalemateStrategy.leaveUnassigned});
+  DiplomaticAlgorithm({
+    this.stalemateStrategy = StalemateStrategy.leaveUnassigned,
+    Random? random,
+  }) : _random = random ?? Random();
 
   @override
-  List<AlgorithmStep> get steps => [
-    GeneratePotentialAssignmentsStep(),
-    ScoreDiplomaticAssignmentsStep(),
-    SortAssignmentsStep(),
-    ProcessAssignmentsStep(
-      constraints: [CapacityConstraint(), ReassignmentConstraint(), AdjacentRepetitionConstraint(), DoubleScheduleConstraint()],
-      stalemateStrategy: stalemateStrategy,
-    ),
-    GenerateEvaluationReportStep(),
-  ];
+  List<AlgorithmStep> get steps => buildStandardSteps(
+        scorer: const DiplomaticScorer(),
+        stalemateStrategy: stalemateStrategy,
+        random: _random,
+      );
 }

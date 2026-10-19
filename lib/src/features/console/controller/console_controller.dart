@@ -1,435 +1,373 @@
 import 'dart:async';
 
-import 'package:ansicolor/ansicolor.dart';
-import 'package:bessie/src/shared/services/popup_service.dart';
-import 'package:bessie/src/cli/cli.dart';
-import 'package:bessie/src/ember_core.dart';
 import 'package:get/get.dart';
 import 'package:xterm/core.dart';
 
-// Constants for ANSI escape codes
-class _AnsiCodes {
-  static const String cursorUp = '\x1B[A';
-  static const String cursorDown = '\x1B[B';
-  static const String clearScreen = '\x1B[2J\x1B[H';
-  static const String backspace = '\b';
-  static const String delete = '\u007F';
-  static const String enter = '\r';
+import '../../../cli/cli.dart';
+import '../../../commands/core_commands.dart';
+import '../../../core/errors.dart';
+import '../../../core/logging.dart' as logging;
+import '../../../data/catalog_repository.dart';
+import '../../../data/roster_repository.dart';
+import '../../../data/session_repository.dart';
+import '../../../services/auth_service.dart';
+import '../../../services/backup_service.dart';
+import '../../../services/context_service.dart';
+import '../../../services/file_service.dart';
+import '../../../shared/services/popup_service.dart';
+import 'console_style.dart';
+import 'console_table.dart';
+
+/// Keys as the terminal reports them to [Terminal.onOutput].
+class _Keys {
+  static const escape = '\x1B';
+  static const cursorUp = ['\x1B[A', '\x1BOA'];
+  static const cursorDown = ['\x1B[B', '\x1BOB'];
+  static const enter = '\r';
+  static const backspace = '\b';
+  static const delete = '\u007F';
+  static const interrupt = '\x03';
+  static const clearScreen = '\x1B[2J\x1B[3J\x1B[H';
 }
 
+/// A question waiting for the user to type an answer into the terminal.
+class _PendingInput {
+  _PendingInput({required this.allowEmpty, required this.masked, this.validator});
+
+  final bool allowEmpty;
+  final bool masked;
+  final FutureOr<bool> Function(String)? validator;
+  final Completer<String> completer = Completer<String>();
+}
+
+/// The in-app console: an xterm terminal that runs [EmberCommand]s.
+///
+/// It is also the [UserInput]/[UserOutput] the commands talk to. Typed
+/// questions (`prompt`) are answered in the terminal itself; confirmations,
+/// choices and forms open dialogs.
+///
+/// While a command runs no prompt is shown; the prompt comes back when it
+/// finishes.
 class ConsoleController extends GetxController implements UserOutput, UserInput {
-  PopupService popupService = Get.find<PopupService>();
+  ConsoleController({PopupService? popups, Map<String, EmberCommand> Function(ConsoleController console)? commandsBuilder, bool Function()? canUseConsole})
+    : _popupsOverride = popups,
+      _commandsBuilder = commandsBuilder ?? _defaultCommands,
+      _canUseConsole = canUseConsole ?? _signedInUserCanEdit;
 
-  late final Terminal terminal;
+  static const _mainPrompt = '> ';
+
+  final PopupService? _popupsOverride;
+  final Map<String, EmberCommand> Function(ConsoleController console) _commandsBuilder;
+  final bool Function() _canUseConsole;
+
+  late final PopupService _popups = _popupsOverride ?? Get.find<PopupService>();
+  late final Map<String, EmberCommand> _commands;
+
+  final Terminal terminal = Terminal(maxLines: 10000);
+
+  /// Every command line entered, oldest first.
   final List<String> history = [];
-  int historyIndex = -1;
+  int _historyIndex = 0;
 
-  // Refined prompt text handling
-  final String _mainCommandPrompt = '> '; // Your default main command prompt
-  String _currentPromptText = '> ';      // Holds the text of the prompt currently visually forming the line
-  String? _activeInputPromptMessage;     // Stores the specific message for an active UserInput.prompt()
+  String _inputBuffer = '';
+  String _promptText = _mainPrompt;
+  bool _promptVisible = false;
+  bool _commandRunning = false;
+  _PendingInput? _pending;
 
-  String inputBuffer = '';
+  static Map<String, EmberCommand> _defaultCommands(ConsoleController console) => CoreCommands.build(
+    input: console,
+    output: console,
+    clearScreen: console._clearScreen,
+    auth: Get.find<AuthService>(),
+    context: Get.find<ContextService>(),
+    catalog: Get.find<CatalogRepository>(),
+    sessions: Get.find<SessionRepository>(),
+    roster: Get.find<RosterRepository>(),
+    backup: Get.find<BackupService>(),
+    files: Get.find<FileService>(),
+  );
 
-  bool _isAwaitingPromptInput = false;
-  Completer<String>? _promptCompleter;
-  FutureOr<bool> Function(String)? _currentPromptValidator;
-  bool _currentPromptAllowEmpty = false;
-
-  final AnsiPen _penError = AnsiPen()..red(bold: true);
-  final AnsiPen _penWarning = AnsiPen()..yellow();
-  final AnsiPen _penSuccess = AnsiPen()..green();
-  final AnsiPen _penInfo = AnsiPen()..blue();
-  final AnsiPen _penEmph = AnsiPen()..cyan(bold: true);
-  final AnsiPen _penDim = AnsiPen()..gray(level: 0.5);
+  static bool _signedInUserCanEdit() => Get.find<AuthService>().profile.value?.role.canEditSessionData ?? false;
 
   @override
   void onInit() {
     super.onInit();
-    _currentPromptText = _mainCommandPrompt; // Initialize with the main command prompt
-    terminal = Terminal(
-      maxLines: 10000,
-      onOutput: _handleKeyInput, // Unified input handler
-    );
-    writePrimaryPrompt();
+    _commands = _commandsBuilder(this);
+    terminal.onOutput = _handleKeyInput;
+    terminal.write('Bessie console. Type help to see what you can do.\r\n');
+    _showPrompt(_mainPrompt);
   }
 
-  void writePrimaryPrompt() {
-    terminal.write('\r\n$_mainCommandPrompt');
-    _currentPromptText = _mainCommandPrompt; // Update current visual prompt text
+  @override
+  void onClose() {
+    terminal.onOutput = null;
+    _pending?.completer.completeError(const InputCancelled());
+    _pending = null;
+    super.onClose();
   }
 
-  void _writeTemporaryPrompt(String message) {
-    terminal.write('\r${' ' * (_currentPromptText.length + inputBuffer.length)}\r');
-    terminal.write('$message ');
-    _currentPromptText = message + " "; // Update current visual prompt text to the temporary one
-  }
+  // Running commands ----------------------------------------------------------
 
-  Future<void> _executeCommand(String command) async {
-    if (command.isEmpty) return;
+  void _clearScreen() => terminal.write(_Keys.clearScreen);
 
-      history.add(command);
-      historyIndex = history.length;
+  Future<void> _executeCommand(String line) async {
+    final text = line.trim();
+    if (text.isEmpty) return;
+    if (history.isEmpty || history.last != text) history.add(text);
+    _historyIndex = history.length;
+
+    if (!_canUseConsole()) {
+      error('The console is only available to directors and admins.');
+      return;
+    }
+
+    final parsed = CommandParser.parseCommand(text, availableCommands: _commands);
+    final command = parsed.command;
+    if (parsed.isError || command == null) {
+      error(parsed.errorMessage ?? 'That command could not be understood.');
+      return;
+    }
+    if (parsed.helpRequested) {
+      log(command.usage);
+      return;
+    }
 
     try {
-      if (command == 'clear') {
-        terminal.write(_AnsiCodes.clearScreen);
-      } else {
-        void handleError(String message) {
-          error(message);
-        }
-
-        ParsedCommandResult result = CommandParser.parseCommand(
-            command,
-            availableCommands: CoreCommands.list,
-            setErrorMessage: handleError,
-            initialArgs: [],
-            initialFlagsAndOptions: {},
-        );
-
-        if (result.command != null) {
-          await result.command!.run();
-        }
-      }
-    } catch (e) {
-      error('Failed to execute command: $command', details: e.toString());
-      throw(e);
+      await command.execute(parsed.results!);
+    } on InputCancelled {
+      info('Cancelled.');
+    } on AppException catch (e, st) {
+      logging.log.w('Console command "$text" failed', error: e.cause ?? e, stackTrace: st);
+      error(e.message);
+    } catch (e, st) {
+      logging.log.e('Console command "$text" failed', error: e, stackTrace: st);
+      error('"${command.name}" failed.', details: e.toString());
     }
   }
 
-  // Unified Key Input Handler
-  void _handleKeyInput(String data) async {
-    // First, check for multi-character sequences that should be treated as a single command
-    if (data == _AnsiCodes.cursorUp) {
-      _navigateHistory(true);
-      return;
-    }
-    if (data == _AnsiCodes.cursorDown) {
-      _navigateHistory(false);
+  // Keyboard ------------------------------------------------------------------
+
+  Future<void> _handleKeyInput(String data) async {
+    // Terminal replies (cursor position, device attributes) and keys we don't
+    // use (arrows left/right, home, ...) arrive as escape sequences.
+    if (data.startsWith(_Keys.escape)) {
+      if (_pending == null && !_commandRunning) {
+        if (_Keys.cursorUp.contains(data)) _navigateHistory(older: true);
+        if (_Keys.cursorDown.contains(data)) _navigateHistory(older: false);
+      }
       return;
     }
 
-    // If not a special sequence, process character by character
-    for (var charRune in data.runes) {
-      final char = String.fromCharCode(charRune);
+    for (final rune in data.runes) {
+      final char = String.fromCharCode(rune);
       switch (char) {
-        case _AnsiCodes.enter:
-          if (_isAwaitingPromptInput) {
-            await _handlePromptEnter();
-          } else {
-            await _handleCommandEnter();
-          }
-          break;
-        case _AnsiCodes.backspace:
-        case _AnsiCodes.delete:
+        case _Keys.enter:
+          await _handleEnter();
+        case _Keys.backspace || _Keys.delete:
           _handleBackspace();
-          break;
+        case _Keys.interrupt:
+          _handleInterrupt();
         default:
-          // Handle all other characters, including space
-          if (charRune >= 32 && charRune != 127) { // Printable characters
-            inputBuffer += char;
-            terminal.write(char);
-          }
+          if (rune >= 32 && rune != 127) _handleCharacter(char);
       }
     }
   }
 
-  void _navigateHistory(bool up) {
-    if (history.isEmpty) return;
-    if (up) {
-      if (historyIndex > 0) {
-        historyIndex--;
-      } else {
-        historyIndex = 0; // Stay at the first item
-         }
-    } else { // Down
-      if (historyIndex < history.length - 1) {
-        historyIndex++;
-      } else {
-        historyIndex = history.length; // Go to the "new" line buffer
-        _replaceInputBuffer('');
-        return;
-      }
-    }
-    _replaceInputBuffer(history[historyIndex]);
-      }
+  bool get _acceptingInput => _pending != null || !_commandRunning;
 
-  Future<void> _handleCommandEnter() async {
-    terminal.write('\r\n');
-            String commandToExecute = inputBuffer;
-            inputBuffer = '';
-            await _executeCommand(commandToExecute);
-            if (commandToExecute != 'clear') {
-            writePrimaryPrompt();
-    }
-  }
-
-  Future<void> _handlePromptEnter() async {
-          final currentValue = inputBuffer;
-          final String messageForReprompt = _activeInputPromptMessage ?? _mainCommandPrompt;
-
-          if (!_currentPromptAllowEmpty && currentValue.trim().isEmpty) {
-            _writeWithNewlineAndPromptFix(_penError('Input cannot be empty.'));
-      _writeTemporaryPrompt(messageForReprompt);
-      inputBuffer = ''; // Clear buffer for re-entry
-            return;
-          }
-
-          bool isValid = true;
-          if (_currentPromptValidator != null) {
-            final validationResult = _currentPromptValidator!(currentValue);
-      isValid = (validationResult is Future<bool>) ? await validationResult : validationResult;
-          }
-
-          if (isValid) {
-            _isAwaitingPromptInput = false;
-            terminal.write('\r\n');
-            _promptCompleter?.complete(currentValue);
-            _promptCompleter = null;
-            inputBuffer = '';
-      _activeInputPromptMessage = null;
-            writePrimaryPrompt();
-          } else {
-            _writeWithNewlineAndPromptFix(_penError('Invalid input. Please try again.'));
-      _writeTemporaryPrompt(messageForReprompt);
-      inputBuffer = ''; // Clear buffer for re-entry
-          }
+  void _handleCharacter(String char) {
+    if (!_acceptingInput) return;
+    _inputBuffer += char;
+    terminal.write(_pending?.masked == true ? '*' : char);
   }
 
   void _handleBackspace() {
-          if (inputBuffer.isNotEmpty) {
-            inputBuffer = inputBuffer.substring(0, inputBuffer.length - 1);
-            terminal.write('\b \b');
-          }
-      }
-
-  void _replaceInputBuffer(String newInput) {
-    // Visually clear current inputBuffer
-    for (int i = 0; i < inputBuffer.length; i++) {
-        terminal.write('\b \b');
-    }
-    inputBuffer = newInput;
-    terminal.write(newInput);
+    if (!_acceptingInput || _inputBuffer.isEmpty) return;
+    _inputBuffer = _inputBuffer.substring(0, _inputBuffer.length - 1);
+    terminal.write('\b \b');
   }
 
-  void _writeWithNewlineAndPromptFix(String text) {
-    terminal.write('\r${' ' * (_currentPromptText.length + inputBuffer.length)}\r');
-    terminal.write(text.replaceAll('\n', '\r\n'));
-    terminal.write('\r\n');
-    if (!_isAwaitingPromptInput) {
-      // Restore the main command prompt and current input buffer
-      terminal.write('$_mainCommandPrompt$inputBuffer');
-      _currentPromptText = _mainCommandPrompt; // Ensure current visual prompt is main prompt
+  void _handleInterrupt() {
+    if (_commandRunning && _pending == null) return;
+    _inputBuffer = '';
+    _promptVisible = false;
+    terminal.write('^C\r\n');
+    final pending = _pending;
+    if (pending != null) {
+      _pending = null;
+      pending.completer.completeError(const InputCancelled());
     } else {
-      // If awaiting input, restore the temporary input prompt and current input buffer
-      final promptToDisplay = (_activeInputPromptMessage ?? _currentPromptText);
-      terminal.write('$promptToDisplay$inputBuffer');
+      _showPrompt(_mainPrompt);
     }
+  }
+
+  Future<void> _handleEnter() async {
+    final pending = _pending;
+    if (pending != null) return _submitAnswer(pending);
+    if (_commandRunning) return;
+
+    final line = _inputBuffer;
+    _inputBuffer = '';
+    _promptVisible = false;
+    terminal.write('\r\n');
+    _commandRunning = true;
+    try {
+      await _executeCommand(line);
+    } finally {
+      _commandRunning = false;
+      _showPrompt(_mainPrompt);
+    }
+  }
+
+  Future<void> _submitAnswer(_PendingInput pending) async {
+    final answer = _inputBuffer;
+    String? problem;
+    if (!pending.allowEmpty && answer.trim().isEmpty) {
+      problem = 'Input cannot be empty.';
+    } else if (pending.validator != null && !await pending.validator!(answer)) {
+      problem = 'That is not valid. Please try again.';
+    }
+    if (problem != null) {
+      _inputBuffer = '';
+      _emit(ConsoleStyle.error(problem));
+      return;
+    }
+
+    _pending = null;
+    _inputBuffer = '';
+    _promptVisible = false;
+    terminal.write('\r\n');
+    pending.completer.complete(answer);
+  }
+
+  void _navigateHistory({required bool older}) {
+    if (history.isEmpty) return;
+    _historyIndex = (_historyIndex + (older ? -1 : 1)).clamp(0, history.length);
+    _replaceInputBuffer(_historyIndex < history.length ? history[_historyIndex] : '');
+  }
+
+  void _replaceInputBuffer(String text) {
+    _inputBuffer = text;
+    terminal.write('\r\x1B[2K$_promptText$text');
+  }
+
+  // Terminal output -----------------------------------------------------------
+
+  /// Shows [prompt] and whatever has been typed so far on the current line.
+  void _showPrompt(String prompt) {
+    _promptText = prompt;
+    _promptVisible = true;
+    terminal.write('$prompt${_pending?.masked == true ? '*' * _inputBuffer.length : _inputBuffer}');
+  }
+
+  /// Writes [text] on its own line(s), keeping a visible prompt (and what is
+  /// typed after it) at the bottom.
+  void _emit(String text) {
+    if (_promptVisible) terminal.write('\r\x1B[2K');
+    terminal.write('${text.replaceAll(RegExp(r'\r?\n'), '\r\n')}\r\n');
+    if (_promptVisible) _showPrompt(_promptText);
   }
 
   @override
-  void log(String message) {
-    _writeWithNewlineAndPromptFix(message);
-  }
+  void log(String message) => _emit(message);
 
   @override
   void error(String message, {String? details}) {
-    String fullMessage = _penError('Error: $message');
-    if (details != null && details.isNotEmpty) {
-      fullMessage += '\r\n${_penDim(details)}';
-    }
-    _writeWithNewlineAndPromptFix(fullMessage);
+    _emit(ConsoleStyle.error('Error: $message'));
+    if (details != null && details.isNotEmpty) _emit(ConsoleStyle.dim(details));
   }
 
   @override
-  void warning(String message) {
-    _writeWithNewlineAndPromptFix(_penWarning('Warning: $message'));
-  }
+  void warning(String message) => _emit(ConsoleStyle.warning('Warning: $message'));
 
   @override
-  void success(String message) {
-    _writeWithNewlineAndPromptFix(_penSuccess(message));
-  }
+  void success(String message) => _emit(ConsoleStyle.success(message));
 
   @override
-  void info(String message) {
-    _writeWithNewlineAndPromptFix(_penInfo(message));
-  }
+  void info(String message) => _emit(ConsoleStyle.info(message));
 
   @override
-  void printEmph(String message) {
-    _writeWithNewlineAndPromptFix(_penEmph(message));
-  }
+  void printEmph(String message) => _emit(ConsoleStyle.emphasis(message));
 
   @override
-  void printDim(String message) {
-    _writeWithNewlineAndPromptFix(_penDim(message));
-  }
+  void printDim(String message) => _emit(ConsoleStyle.dim(message));
 
   @override
-  void printHeading(String message) {
-    final heading = '${_penEmph(message.toUpperCase())}\r\n${'-' * message.length}';
-    _writeWithNewlineAndPromptFix(heading);
-  }
+  void printHeading(String message) => _emit('${ConsoleStyle.emphasis(message.toUpperCase())}\n${'-' * message.length}');
 
   @override
-  void printProperty(String key, dynamic value) {
-    _writeWithNewlineAndPromptFix('${_penEmph(key)}: $value');
-  }
+  void printProperty(String key, dynamic value) => _emit('${ConsoleStyle.emphasis(key)}: $value');
 
   @override
   void printList(List<String> items, {String title = 'Items:'}) {
-    String listOutput = title;
-    if (items.isEmpty) {
-      listOutput += ' (No items)';
-    } else {
-      for (final item in items) {
-        listOutput += '\r\n  - $item';
-      }
-    }
-    _writeWithNewlineAndPromptFix(listOutput);
+    _emit(items.isEmpty ? '$title (none)' : [title, for (final item in items) '  - $item'].join('\n'));
   }
 
   @override
   void printTable(List<List<String>> dataRows, {List<String>? headers}) {
     if (dataRows.isEmpty && (headers == null || headers.isEmpty)) {
-      _writeWithNewlineAndPromptFix('(Empty table)');
+      _emit('(empty table)');
       return;
     }
+    _emit(formatTable(dataRows, headers: headers).join('\n'));
+  }
 
-    StringBuffer sb = StringBuffer();
-    List<int> columnWidths = [];
+  // Input ---------------------------------------------------------------------
 
-    if (headers != null && headers.isNotEmpty) {
-      for (int i = 0; i < headers.length; i++) {
-        columnWidths.add(headers[i].length);
-      }
-    }
+  @override
+  Future<String> prompt(String message, {String? defaultValue, bool allowEmpty = false, FutureOr<bool> Function(String)? validator}) =>
+      _ask(message, defaultValue: defaultValue, allowEmpty: allowEmpty, validator: validator);
 
-    for (var row in dataRows) {
-      for (int i = 0; i < row.length; i++) {
-        if (i < columnWidths.length) {
-          if (row[i].length > columnWidths[i]) {
-            columnWidths[i] = row[i].length;
-          }
-        } else {
-          columnWidths.add(row[i].length);
-        }
-      }
-    }
-    if (headers != null && headers.isNotEmpty) {
-      for (int i = 0; i < headers.length; i++) {
-        sb.write(_penEmph(headers[i].padRight(columnWidths[i])) + '  ');
-      }
-      sb.write('\r\n');
-      for (int i = 0; i < headers.length; i++) {
-        sb.write('-'.padRight(columnWidths[i], '-') + '  ');
-      }
-      sb.write('\r\n');
-    }
-    for (var row in dataRows) {
-      for (int i = 0; i < row.length; i++) {
-        sb.write(row[i].padRight(columnWidths[i]) + '  ');
-      }
-      sb.write('\r\n');
-    }
-    _writeWithNewlineAndPromptFix(sb.toString().trimRight());
+  @override
+  Future<String> promptPassword(String message) => _ask(message, masked: true);
+
+  Future<String> _ask(String message, {String? defaultValue, bool allowEmpty = false, bool masked = false, FutureOr<bool> Function(String)? validator}) {
+    _pending?.completer.completeError(StateError('Another question was asked before this one was answered.'));
+    if (_promptVisible) terminal.write('\r\x1B[2K');
+
+    final pending = _PendingInput(allowEmpty: allowEmpty, masked: masked, validator: validator);
+    _pending = pending;
+    _inputBuffer = masked ? '' : defaultValue ?? '';
+    _showPrompt('$message ');
+    return pending.completer.future;
   }
 
   @override
-  Future<String> prompt(
-      String message, {
-        String? defaultValue,
-        bool allowEmpty = false,
-        FutureOr<bool> Function(String)? validator,
-      }) {
-    if (_isAwaitingPromptInput) {
-      _promptCompleter?.completeError(StateError('Another prompt was initiated.'));
-    }
-
-    _isAwaitingPromptInput = true;
-    _promptCompleter = Completer<String>();
-    _currentPromptValidator = validator;
-    _currentPromptAllowEmpty = allowEmpty;
-    _activeInputPromptMessage = message; // Store the specific prompt message
-    inputBuffer = defaultValue ?? '';
-
-    _writeTemporaryPrompt(message); // This will set _currentPromptText to the temporary message
-    terminal.write(inputBuffer);
-
-    return _promptCompleter!.future.whenComplete(() {
-      _currentPromptText = _mainCommandPrompt; // Reset visual prompt tracker to main prompt
-      _activeInputPromptMessage = null; // Clear active message
-    });
-  }
+  Future<bool> confirm(String message, {bool defaultValue = false}) => _popups.showConfirmationDialog(title: 'Confirm', message: message);
 
   @override
-  FutureOr<String> promptPassword(
-      String message, {
-        FutureOr<bool> Function(String)? validator,
-      }) {
-    return prompt(message, allowEmpty: false, validator: validator);
-  }
-
-  @override
-  Future<bool> confirm(String message, {bool defaultValue = false}) async {
-    return await popupService.showConfirmationDialog(title: 'Confirm', message: message);
-  }
-
-  @override
-  Future<String> select(
-      String message, {
-        required List<String> options,
-        String? defaultValue,
-      }) async {
-    final result = await popupService.showOptionSelectionDialog(
-        title: 'Select',
-        message: message,
-        options: options,
-        defaultSelections: defaultValue == null ? null : [defaultValue],
-        allowMultipleSelections: false,
+  Future<String> select(String message, {required List<String> options, String? defaultValue}) async {
+    final chosen = await _popups.showOptionSelectionDialog(
+      title: 'Select',
+      message: message,
+      options: options,
+      defaultSelections: defaultValue == null ? null : [defaultValue],
     );
-    if (result.isEmpty) {
-        if (defaultValue != null && options.contains(defaultValue)) return defaultValue;
-        if (options.isNotEmpty) return options.first;
-        throw StateError('Selection cancelled and no valid fallback option.');
-    }
-    return result.single;
+    if (chosen.isEmpty) throw const InputCancelled();
+    return chosen.single;
   }
 
   @override
-  Future<List<String>> multiSelect(
-      String message, {
-        required List<String> options,
-        List<String>? defaultSelection,
-      }) async {
-    return await popupService.showOptionSelectionDialog(
-    title: 'Select multiple',
-    message: message,
-    options: options,
-    defaultSelections: defaultSelection,
-    allowMultipleSelections: true,
+  Future<List<String>> multiSelect(String message, {required List<String> options, List<String>? defaultSelection}) {
+    return _popups.showOptionSelectionDialog(
+      title: 'Select',
+      message: message,
+      options: options,
+      defaultSelections: defaultSelection,
+      allowMultipleSelections: true,
     );
   }
 
   @override
-  Future<T> withSpinner<T>({
-    required String inProgressMessage,
-    String? completionMessage,
-    required Future<T> Function() task,
-  }) async {
-    return await popupService.executeWithSpinner(inProgressMessage: inProgressMessage, task: task);
+  Future<T> withSpinner<T>({required String inProgressMessage, String? completionMessage, required Future<T> Function() task}) async {
+    final result = await _popups.executeWithSpinner(inProgressMessage: inProgressMessage, task: task);
+    if (completionMessage != null) success(completionMessage);
+    return result;
   }
 
   @override
-  Future<List<dynamic>?> promptForm(
-      String formTitle,
-      List<FormFieldDescriptor> fields,
-      ) async {
-    return await popupService.showDynamicFormDialog(
-      title: formTitle,
-      fields: fields,
-    );
+  Future<List<dynamic>?> promptForm(String formTitle, List<FormFieldDescriptor> fields) {
+    return _popups.showDynamicFormDialog(title: formTitle, fields: fields);
   }
 }
-

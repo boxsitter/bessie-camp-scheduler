@@ -1,96 +1,88 @@
-import 'package:bessie/src/shared/constants/sizes.dart';
-import 'package:bessie/src/shared/styles/text_styles.dart';
-import 'package:bessie/src/shared/widgets/buttons/card_button.dart';
-import 'package:bessie/src/shared/widgets/header/menu_bar.dart';
-import 'package:bessie/src/features/session_manager/session_manager_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../shared/widgets/header/menu_bar.dart';
 import '../../shared/widgets/layouts/templates/site_layout.dart';
+import '../branch_manager/widgets/setup_page.dart';
+import 'session_manager_controller.dart';
+import 'session_setup_logic.dart';
+import 'widgets/cabins_section.dart';
+import 'widgets/limits_section.dart';
+import 'widgets/overview_section.dart';
+import 'widgets/schedule_section.dart';
 
+/// Session setup: cabins, preference limits and schedule of the current
+/// session, and creating new sessions.
 class SessionManager extends StatelessWidget {
   const SessionManager({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BessSiteTemplate(desktop: SessionManagerDesktop(), menuBar: BessMenuBar(),);
+    return BessSiteTemplate(desktop: const SessionManagerView(), menuBar: BessMenuBar());
   }
 }
 
-class SessionManagerDesktop extends StatelessWidget {
-  const SessionManagerDesktop({super.key});
+class SessionManagerView extends StatelessWidget {
+  const SessionManagerView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<SessionManagerController>(
-      builder: (controller) {
-        Widget content;
-        if (controller.isLoading) {
-          content = const Center(child: CircularProgressIndicator());
-        } else if (controller.cabinPrinIdsToNames.isEmpty) {
-          content = const Center(child: Text("No cabins found."));
-        } else {
-          content = SingleChildScrollView(
-            child: Wrap(
-              spacing: BessSizes.spaceBtwItems / 2,
-              runSpacing: BessSizes.spaceBtwItems / 2,
-              children: controller.cabinPrinIdsToNames.entries.map((entry) {
-                final String cabinPrinId = entry.key;
-                final String cabinName = entry.value;
+    final controller = Get.find<SessionManagerController>();
+    return Obx(() {
+      final canEdit = controller.canEdit;
+      final newSession = canEdit ? controller.openNewSession : null;
 
-                final isSelected = controller.selectedCabinPrinIds.contains(cabinPrinId);
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: BessSizes.xs, vertical: BessSizes.xs),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Checkbox(
-                        value: isSelected,
-                        onChanged: (bool? newValue) {
-                          controller.toggleCabinSelection(cabinPrinId);
-                        },
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      Flexible(
-                        child: Text(
-                          cabinName,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          softWrap: false,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
+      final setup = controller.setup.value;
+      if (setup == null) {
+        if (!controller.hasSession) {
+          return PageMessage(
+            message: 'This season has no sessions yet.',
+            actionLabel: canEdit ? 'Create the first session' : null,
+            onAction: newSession,
           );
         }
+        final error = controller.loadError.value;
+        if (controller.isLoading.value || error == null) return const PageMessage.loading();
+        return PageMessage(message: error, actionLabel: 'Try again', onAction: controller.reload);
+      }
 
-        return Padding(
-          padding: const EdgeInsets.all(BessSizes.defaultSpace),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Active Cabins',
-                style: BessTextStyles.tableHeader,
+      final busy = controller.isSaving.value;
+      return SetupPage(
+        title: 'Session setup',
+        subtitle: canEdit ? setup.session.name : '${setup.session.name}. You can look but not change it.',
+        trailing: newSession == null
+            ? null
+            : ShadButton.secondary(
+                size: ShadButtonSize.sm,
+                leading: const Icon(LucideIcons.plus, size: 16),
+                onPressed: newSession,
+                child: const Text('New session'),
               ),
-              const SizedBox(height: BessSizes.spaceBtwSections),
-              content,
-              const SizedBox(height: BessSizes.spaceBtwInputFields),
-              CardButton(
-                child: Text('Commit Changes', style: BessTextStyles.standard, maxLines: 1,),
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                onPressed: () => controller.commitSelection(),
-              ),
-            ],
+        children: [
+          OverviewSection(setup: setup, seasonName: controller.seasonName),
+          SessionCabinsSection(
+            setup: setup,
+            selected: controller.selectedCabinIds.toSet(),
+            canEdit: canEdit,
+            busy: busy,
+            onToggle: controller.toggleCabin,
+            onSetMany: controller.setCabinsSelected,
+            onSave: controller.saveCabins,
+            onReset: controller.resetCabins,
           ),
-        );
-      },
-    );
+          LimitsSection(
+            draft: controller.limitsDraft.value,
+            saved: LimitsDraft.fromLimits(setup.session.limits),
+            canEdit: canEdit,
+            busy: busy,
+            onChanged: controller.setLimits,
+            onSave: controller.saveLimits,
+            onReset: controller.resetLimits,
+          ),
+          ScheduleSection(setup: setup, canEdit: canEdit, busy: busy, onAdd: controller.addActivities, onRemove: controller.removeActivity),
+        ],
+      );
+    });
   }
 }

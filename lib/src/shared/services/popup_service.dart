@@ -4,7 +4,8 @@ import 'package:bessie/src/shared/constants/sizes.dart';
 import 'package:bessie/src/shared/utils/helpers/helper_functions.dart';
 import 'package:bessie/src/shared/widgets/loaders/circular_loader.dart';
 import 'package:bessie/src/cli/cli.dart';
-import 'package:bessie/src/ember_core.dart';
+import 'package:bessie/src/models/activity.dart';
+import 'toast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -220,38 +221,27 @@ class PopupService extends GetxService {
     String? title,
     String? message,
     Widget? action,
-    LogType? logType
-  }){
+    ToastType type = ToastType.info,
+  }) {
     final sonner = ShadSonner.of(Get.context!);
     final id = Random().nextInt(1000);
-    final Color? color;
-    switch(logType) {
-      case LogType.success:
-        color = BessColors.success;
-        break;
-      case LogType.error:
-        color = BessColors.error;
-        break;
-      case LogType.warning:
-        color = BessColors.warning;
-        break;
-      case LogType.critical:
-        color = BessColors.error;
-        break;
-      case LogType.unknownError:
-        color = BessColors.error;
-        break;
-      case LogType.failure:
-        color = BessColors.warning;
-        break;
-      default:
-        color = null;
-    }
+    final Color? color = switch (type) {
+      ToastType.success => BessColors.success,
+      ToastType.error => BessColors.error,
+      ToastType.warning => BessColors.warning,
+      ToastType.info => null,
+    };
+    final Duration duration = switch (type) {
+      ToastType.error => const Duration(milliseconds: 4500),
+      ToastType.warning => const Duration(milliseconds: 3500),
+      ToastType.success => const Duration(milliseconds: 2500),
+      ToastType.info => const Duration(milliseconds: 2500),
+    };
 
     sonner.show(
       ShadToast(
         showCloseIconOnlyWhenHovered: false,
-        duration: logType?.toastDuration ?? const Duration(milliseconds: 2500),
+        duration: duration,
         id: id,
         title: title != null ? Text(title) : null,
         description: message != null ?
@@ -274,7 +264,7 @@ class PopupService extends GetxService {
     );
   }
 
-  Future<bool> showActivityInfo(PrincipalActivity activity) async {
+  Future<bool> showActivityInfo(Activity activity) async {
     return await showFullScreenDialog(
       title: activity.name,
       description: activity.description,

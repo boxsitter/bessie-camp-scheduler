@@ -1,10 +1,16 @@
-/// A data class to hold the evaluation results for a single participant.
+/// The evaluation results for a single participant.
 class ParticipantEvaluationReport {
   final String participantId;
+
+  /// Whether the participant's whole week avoids every veto and contains every
+  /// request.
   final bool preferencesSatisfied;
+
+  /// Schedule variety in 0..1, or `null` when the participant has no
+  /// assignments at all.
   final double? noveltyScore;
 
-  ParticipantEvaluationReport({
+  const ParticipantEvaluationReport({
     required this.participantId,
     required this.preferencesSatisfied,
     required this.noveltyScore,

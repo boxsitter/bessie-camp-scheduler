@@ -1,331 +1,375 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:bessie/src/shared/services/popup_service.dart';
-import 'package:bessie/src/features/rosters/controllers/table_widths.dart';
-import 'package:bessie/src/cli/cli.dart';
-import 'package:bessie/src/ember_core.dart';
-import 'package:file_saver/file_saver.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
-import '../../../shared/constants/colors.dart';
+import '../../../data/roster_repository.dart';
+import '../../../data/session_repository.dart';
+import '../../../models/cabin.dart';
+import '../../../models/camper.dart';
+import '../../../models/enums.dart';
+import '../../../models/schedule.dart';
+import '../../../services/assignment_service.dart';
+import '../../../services/auth_service.dart';
+import '../../../services/context_service.dart';
 import '../../../shared/mixins/route_aware_controller_mixin.dart';
-import '../../console/controller/console_controller.dart';
+import '../../../shared/services/toast.dart';
+import '../models/activity_hints.dart';
+import '../models/roster_column.dart';
+import '../models/roster_context.dart';
+import '../models/roster_selection.dart';
+import '../models/roster_table_style.dart';
+import '../models/roster_view.dart';
+import '../models/table_layout.dart';
+import 'roster_actions.dart';
 
+/// State of the Rosters page: the session's live roster and schedule, how the
+/// table is arranged, which campers are selected, and the actions on them.
+///
+/// The roster is only watched while the page is on screen.
 class RostersController extends GetxController with RouteAwareControllerMixin {
-  // Dependencies
-  final ContextService contextService = Get.find<ContextService>();
-  final CabinService cabinsService = Get.find<CabinService>();
-  final RosterService rosterService = Get.find<RosterService>();
-  final ActivityPreferenceService preferenceService = Get.find<ActivityPreferenceService>();
-  final AssignmentService assignmentService = Get.find<AssignmentService>();
-  final CommitRepository commitRepo = Get.find<CommitRepository>();
-  final PullRepository pullRepo = Get.find<PullRepository>();
-  final ScheduleService scheduleService = Get.find<ScheduleService>();
-  final PopupService popupService = Get.find<PopupService>();
-  final IOService exportService = Get.find<IOService>();
+  final ContextService _context = Get.find<ContextService>();
+  final AuthService _auth = Get.find<AuthService>();
+  final RosterRepository _roster = Get.find<RosterRepository>();
+  final SessionRepository _sessions = Get.find<SessionRepository>();
+  late final RosterActions _actions = RosterActions();
 
-  // State Variables
-  // --- Core Data ---
-  List<Rosterable> roster = [];
-  Set<Rosterable> selectedItems = {};
-  List<AMABlock> _amas = [];
-  Map<PrincipalActivityId, PrincipalActivity> principalActivities = {};
-  List<ActivityDependent> activityDependents = [];
-  Map<String, bool> _isRosterGroupTitleExpanded = {};
+  // Data ----------------------------------------------------------------------
 
-  // --- Search & Filtering ---
-  String searchQuery = '';
-  final searchController = TextEditingController();
+  List<Camper> campers = const [];
+  RosterContext rosterContext = RosterContext.empty();
 
-  // --- UI State Flags ---
-  bool initializing = true;
-  bool importingCampers = false;
-  bool populatingActivities = false;
-  bool assigningCamper = false;
-  bool columnConfigOpened = false;
-  bool activitySwitcherOpened = false;
+  /// What the last smart assign did; kept so its evaluation can be downloaded.
+  AssignmentRunReport? lastRunReport;
 
-  // --- Table Configuration ---
-  final List<RosterField> fields = [RosterField.fullName, RosterField.gender, RosterField.age, RosterField.cabinName];
-  RosterField sortByField = RosterField.lastName;
+  bool _rosterLoaded = false;
+  bool _structureLoaded = false;
+  StreamSubscription<List<Camper>>? _rosterSubscription;
+  String? _watchedSessionId;
+  int _generation = 0;
+  bool _active = false;
+  Worker? _sessionWorker;
+
+  Schedule get schedule => rosterContext.schedule;
+  RosterView get view => RosterView(rosterContext);
+
+  bool get hasSession => _context.isLoaded;
+  bool get loading => hasSession && !(_rosterLoaded && _structureLoaded);
+
+  /// Whether the signed-in user may change session data.
+  bool get canEdit => _auth.profile.value?.role.canEditSessionData ?? false;
+
+  // Table configuration -------------------------------------------------------
+
+  List<RosterColumn> columns = [...RosterColumns.defaults];
+  RosterColumn sortBy = RosterColumns.lastName;
   SortDirection sortDirection = SortDirection.asc;
-  RosterField? groupByField;
-
-  // --- View Settings ---
-  bool alternateRowColors = true;
-  bool highContrast = false;
-  bool rowSeparators = false;
-  bool columnSeparators = false;
-  bool compact = true;
+  RosterColumn? groupBy;
+  RosterTableStyle style = const RosterTableStyle();
   bool expandedByDefault = false;
-  bool safeAssign = true;
   bool showAssignmentRepetition = false;
   bool showPreferenceColors = false;
 
-  // --- Activity Switcher State ---
-  AMABlock? selectedAma;
-  ActivityDependent? selectedActivity;
+  /// Group key -> whether the user expanded (true) or collapsed (false) it.
+  final Map<String, bool> _expanded = {};
 
-  // Private Internal State
-  Timer? _debounce;
-  StreamSubscription<Map<String, Camper>>? _campersSubscription;
-  static const double _checkboxColumnWidth = 50.0;
+  bool get isGrouped => groupBy != null;
+  bool get hasBlockColumns => columns.any((column) => column is BlockColumn);
 
-  // Computed Properties (Getters)
-  List<AMABlock> get amas {
-    _amas.sort((a, b) => a.start.compareTo(b.start));
-    return _amas;
-  }
+  List<FieldColumn> get hiddenFieldColumns => [
+    for (final column in RosterColumns.allFields)
+      if (!columns.contains(column)) column,
+  ];
 
-  List<Rosterable> getFilteredRoster() {
-    if (searchQuery.isEmpty) {
-      return roster;
-    } else {
-      return roster.where((item) {
-        final fullName = item.getFieldAsString(RosterField.fullName).toLowerCase();
-        final nickname = item.getFieldAsString(RosterField.firstName).toLowerCase();
-        return fullName.contains(searchQuery.toLowerCase()) || nickname.contains(searchQuery.toLowerCase());
-      }).toList();
-    }
-  }
+  List<BlockColumn> get hiddenBlockColumns => [
+    for (final block in schedule.blocks)
+      if (!columns.contains(BlockColumn(block))) BlockColumn(block),
+  ];
 
-  int get count => getFilteredRoster().length;
+  TableLayout layoutFor(double maxWidth) => TableLayout.fit(columns, maxWidth);
 
-  List<RosterField> availableFields(bool returnAmas) {
-    if (returnAmas) {
-      return amas.where((ama) => !fields.contains(ama)).toList();
-    }
-    return RosterField.values.where((field) => !fields.contains(field)).toList();
-  }
+  // Search --------------------------------------------------------------------
 
-  List<RosterGroup> get rosterGroups {
-    if (groupByField == null) {
-      return [
-        RosterGroup(
-          title: 'All Campers',
-          items: getFilteredRoster(),
-        )
-      ];
-    }
+  String searchQuery = '';
+  final TextEditingController searchController = TextEditingController();
+  Timer? _searchDebounce;
 
-    final Map<String, List<Rosterable>> groupsMap = {};
-    for (final item in getFilteredRoster()) {
-      final groupKey = item.getFieldAsString(groupByField!);
-      groupsMap.putIfAbsent(groupKey, () => []).add(item);
-    }
+  bool get noMatches => searchQuery.trim().isNotEmpty && filteredCampers.isEmpty;
 
-    final List<RosterGroup> groups = groupsMap.entries.map((entry) {
-      return RosterGroup(
-        title: entry.key.isEmpty ? 'Unspecified' : entry.key,
-        groupByField: groupByField!,
-        items: entry.value,
-      );
-    }).toList();
+  // Derived data, rebuilt lazily after any change ---------------------------
 
-    groups.sort((a, b) => a.title.compareTo(b.title));
-    return groups;
-  }
+  List<RosterGroup>? _groups;
+  Map<String, int>? _enrollment;
 
-  // Lifecycle Methods
-  @override
-  Future<void> onInit() async {
-    update();
-    super.onInit();
-    Debug.logInfo('RostersController initialized. Starting listener.');
+  /// The roster as shown: searched, sorted and grouped.
+  List<RosterGroup> get groups =>
+      _groups ??= view.arrange(campers, query: searchQuery, sortBy: sortBy, direction: sortDirection, groupBy: groupBy);
 
+  /// The campers that match the search, in table order.
+  List<Camper> get filteredCampers => [for (final group in groups) ...group.campers];
 
+  /// Scheduled activity id -> campers in it.
+  Map<String, int> get enrollment => _enrollment ??= ActivityHints.enrollment(campers);
+
+  void _refresh() {
+    _groups = null;
+    _enrollment = null;
     update();
   }
 
-  @override
-  void onClose() {
-    _debounce?.cancel();
-    super.onClose();
-  }
+  // Selection -----------------------------------------------------------------
 
-  @override
-  Future<void> onNavigateTo(String to, String? from) async {
-    Debug.logInfo('RostersController navigated to.');
-    initializing = true;
-    await rosterService.camperStream.then((stream) {
-      _campersSubscription?.cancel();
-      _campersSubscription = stream.listen((camperMap) {
-        roster = camperMap.values.toList();
-        sort(sortByField);
-        update();
-      });
-    });
-    await populateActivities();
-    initializing = false;
-  }
+  /// Selected camper ids; they survive the roster being re-emitted.
+  final Set<String> selectedIds = {};
 
-  @override
-  void onNavigateFrom(String to, String? from) {
-    _campersSubscription?.cancel();
-    Debug.logInfo('RostersController navigated from.');
-  }
+  bool get hasSelection => selectedIds.isNotEmpty;
+  bool get isSingleSelected => selectedIds.length == 1;
+  List<Camper> get selectedCampers => [
+    for (final camper in campers)
+      if (selectedIds.contains(camper.id)) camper,
+  ];
+  Camper? get singleSelected => isSingleSelected ? selectedCampers.firstOrNull : null;
 
-  // Public Methods
-  Future<void> populateActivities() async {
-    populatingActivities = true;
-    update();
-    final List<dynamic> activityData = (await scheduleService.getActivityData());
-    _amas = (activityData[0] as Set<AMABlock>).toList();
-    principalActivities = (activityData[2] as Map<PrincipalActivityId, PrincipalActivity>);
-    activityDependents = (activityData[1] as Set<ActivityDependent>).toList();
-    populatingActivities = false;
-    update();
-  }
+  bool isSelected(Camper camper) => selectedIds.contains(camper.id);
 
-  // --- Search ---
+  /// Checkbox state of [group]: true when all of it is selected, null when some is.
+  bool? groupSelectionState(RosterGroup group) => RosterSelection.stateOf(group.camperIds, selectedIds);
 
-  void setSearchQuery(String query) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 50), () {
-      searchQuery = query;
-      update();
-    });
-  }
+  bool get allVisibleSelected =>
+      filteredCampers.isNotEmpty && RosterSelection.stateOf(filteredCampers.map((c) => c.id), selectedIds) == true;
 
-  // --- Column, Sorting, & Grouping ---
-
-  void setColumnOrder(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) newIndex -= 1;
-    final item = fields.removeAt(oldIndex);
-    fields.insert(newIndex, item);
-    update();
-  }
-
-  void addVisibleColumn(RosterField field) {
-    if (!fields.contains(field)) {
-      fields.add(field);
-      update();
-    }
-  }
-
-  void removeVisibleColumn(RosterField field) {
-    if (fields.contains(field)) {
-      fields.remove(field);
-      update();
-    }
-  }
-
-  void sort(RosterField field) {
-    roster.sort((a, b) {
-      final aValue = a.getFieldAsString(field);
-      final bValue = b.getFieldAsString(field);
-      final compare = aValue.compareTo(bValue);
-      return sortDirection == SortDirection.asc ? compare : -compare;
-    });
-
-    update();
-  }
-
-  void setSortBy(RosterField field) {
-    if (sortByField != field) {
-      sortDirection = SortDirection.asc;
-    } else {
-      sortDirection = sortDirection == SortDirection.desc ? SortDirection.asc : SortDirection.desc;
-    }
-    sortByField = field;
-    sort(field);
-    update();
-  }
-
-  void setGroupBy(RosterField? field) {
-    groupByField = (groupByField == field) ? null : field;
-    update();
-  }
-
-  void toggleGroupExpanded(RosterGroup group) {
-    bool? expansionState = _isRosterGroupTitleExpanded[group.title];
-    if (expansionState == null) {
-      _isRosterGroupTitleExpanded[group.title] = !expandedByDefault;
-    } else {
-      _isRosterGroupTitleExpanded[group.title] = !expansionState;
-    }
-    update();
-  }
-
-  bool isGroupExpanded(RosterGroup group) {
-    if (rosterGroups.length == 1) {
-      return true;
-    }
-    return _isRosterGroupTitleExpanded[group.title] == null ? expandedByDefault : _isRosterGroupTitleExpanded[group.title]!;
-  }
-
-  // --- Selection ---
-
-  void toggleRowSelection(Rosterable rosterable) {
-    selectedItems.contains(rosterable) ? selectedItems.remove(rosterable) : selectedItems.add(rosterable);
+  void toggleSelection(Camper camper) {
+    if (!selectedIds.remove(camper.id)) selectedIds.add(camper.id);
     update();
   }
 
   void toggleSelectAll() {
-    if (selectedItems.isEmpty) {
-      selectedItems.addAll(getFilteredRoster());
+    final visible = filteredCampers.map((c) => c.id);
+    if (selectedIds.isEmpty) {
+      selectedIds.addAll(visible);
     } else {
-      selectedItems.removeAll(getFilteredRoster());
+      selectedIds.removeAll(visible);
     }
     update();
   }
 
   void toggleSelectGroup(RosterGroup group) {
-    if (selectedItems.intersection(group.items.toSet()).isEmpty) {
-      selectedItems.addAll(group.items);
+    if (group.camperIds.any(selectedIds.contains)) {
+      selectedIds.removeAll(group.camperIds);
     } else {
-      selectedItems.removeAll(group.items);
+      selectedIds.addAll(group.camperIds);
     }
     update();
   }
 
+  /// Selects what is shown and unselected, and unselects the rest of what is shown.
   void invertSelection() {
-    selectedItems = roster.toSet().difference(selectedItems);
+    final visible = filteredCampers.map((c) => c.id).toList();
+    final inverted = RosterSelection.invert(visible, selectedIds);
+    selectedIds
+      ..removeAll(visible)
+      ..addAll(inverted);
     update();
   }
 
-  bool isNothingSelected() => selectedItems.isEmpty;
-  bool isSingleSelected() => selectedItems.length == 1;
-  bool isMultiSelected() => selectedItems.length > 1;
+  void clearSelection() {
+    selectedIds.clear();
+    update();
+  }
 
-  // --- UI & View Toggles ---
+  // Lifecycle -----------------------------------------------------------------
 
-  void toggleSecondaryPage(int page) {
-    if (page == 1) {
-      columnConfigOpened = !columnConfigOpened;
-      activitySwitcherOpened = false;
-    } else if (page == 2) {
-      activitySwitcherOpened = !activitySwitcherOpened;
-      columnConfigOpened = false;
+  @override
+  void onInit() {
+    super.onInit();
+    _sessionWorker = ever(_context.session, (_) => _onSessionChanged());
+  }
+
+  @override
+  void onClose() {
+    _sessionWorker?.dispose();
+    _searchDebounce?.cancel();
+    _stopWatching();
+    searchController.dispose();
+    super.onClose();
+  }
+
+  @override
+  void onNavigateTo(String to, String? from) => activate();
+
+  @override
+  void onNavigateFrom(String from, String to) {
+    _active = false;
+    _stopWatching();
+  }
+
+  /// Starts watching the session's roster; harmless when already watching.
+  void activate() {
+    _active = true;
+    unawaited(_start());
+  }
+
+  Future<void> _start() async {
+    if (!_context.isLoaded) {
+      update();
+      return;
     }
+    final sessionId = _context.sessionId;
+    if (_rosterSubscription != null && _watchedSessionId == sessionId) return;
+
+    _stopWatching();
+    final generation = ++_generation;
+    _watchedSessionId = sessionId;
+    _rosterLoaded = false;
+    _structureLoaded = false;
+    update();
+
+    _rosterSubscription = _roster.watchCampers(sessionId).listen(_onCampers, onError: _onWatchError);
+
+    final structure = await attempt(
+      () => Future.wait<Object>([_sessions.fetchSchedule(sessionId), _sessions.listSessionCabins(sessionId)]),
+    );
+    if (generation != _generation) return;
+
+    if (structure != null) {
+      rosterContext = RosterContext(
+        schedule: structure[0] as Schedule,
+        cabinsById: {for (final cabin in structure[1] as List<Cabin>) cabin.id: cabin},
+      );
+    }
+    _remapColumns();
+    _structureLoaded = true;
+    _refresh();
+  }
+
+  void _stopWatching() {
+    _generation++;
+    unawaited(_rosterSubscription?.cancel());
+    _rosterSubscription = null;
+    _watchedSessionId = null;
+  }
+
+  void _onCampers(List<Camper> latest) {
+    campers = latest;
+    selectedIds.retainAll({for (final camper in latest) camper.id});
+    _rosterLoaded = true;
+    _refresh();
+  }
+
+  void _onWatchError(Object error, StackTrace stackTrace) {
+    Toast.failure(error, stackTrace);
+    _rosterLoaded = true;
     update();
   }
 
-  void toggleAlternateRowColors() {
-    alternateRowColors = !alternateRowColors;
+  /// Forgets everything that belongs to the previous session.
+  void _onSessionChanged() {
+    _stopWatching();
+    campers = const [];
+    rosterContext = RosterContext.empty();
+    selectedIds.clear();
+    selectedBlockId = null;
+    selectedScheduledId = null;
+    lastRunReport = null;
+    _expanded.clear();
+    _rosterLoaded = false;
+    _structureLoaded = false;
+    _refresh();
+    if (_active) unawaited(_start());
+  }
+
+  /// Points block columns (and the sort and group column) at the loaded
+  /// schedule's blocks.
+  void _remapColumns() {
+    columns = RosterColumns.remapToSchedule(columns, schedule);
+    sortBy = RosterColumns.remap(sortBy, schedule) ?? RosterColumns.lastName;
+    final grouping = groupBy;
+    if (grouping != null) groupBy = RosterColumns.remap(grouping, schedule);
+  }
+
+  // Search --------------------------------------------------------------------
+
+  void setSearchQuery(String query) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 100), () {
+      searchQuery = query;
+      _refresh();
+    });
+  }
+
+  // Columns, sorting and grouping ---------------------------------------------
+
+  void setColumnOrder(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex -= 1;
+    columns.insert(newIndex, columns.removeAt(oldIndex));
     update();
   }
 
-  void toggleHighContrast() {
-    highContrast = !highContrast;
+  void addColumn(RosterColumn column) {
+    if (columns.contains(column)) return;
+    columns.add(column);
     update();
   }
 
-  void toggleRowSeparators() {
-    rowSeparators = !rowSeparators;
+  void removeColumn(RosterColumn column) {
+    if (columns.remove(column)) update();
+  }
+
+  /// Sorts by [column]; choosing the column that is already sorted by flips the direction.
+  void setSortBy(RosterColumn column) {
+    if (sortBy == column) {
+      sortDirection = sortDirection == SortDirection.asc ? SortDirection.desc : SortDirection.asc;
+    } else {
+      sortBy = column;
+      sortDirection = SortDirection.asc;
+    }
+    _refresh();
+  }
+
+  /// Groups by [column]; choosing the column that is already grouped by ungroups.
+  void setGroupBy(RosterColumn column) {
+    groupBy = groupBy == column ? null : column;
+    _refresh();
+  }
+
+  bool isGroupExpanded(RosterGroup group) => _expanded[group.key] ?? (expandedByDefault || groups.length == 1);
+
+  void toggleGroupExpanded(RosterGroup group) {
+    _expanded[group.key] = !isGroupExpanded(group);
     update();
   }
 
-  void toggleColumnSeparators() {
-    columnSeparators = !columnSeparators;
+  // View toggles --------------------------------------------------------------
+
+  bool columnConfigOpened = false;
+  bool activitySwitcherOpened = false;
+
+  void toggleColumnConfig() {
+    columnConfigOpened = !columnConfigOpened;
+    activitySwitcherOpened = false;
     update();
   }
 
-  void toggleCompact() {
-    compact = !compact;
+  void toggleActivitySwitcher() {
+    activitySwitcherOpened = !activitySwitcherOpened;
+    columnConfigOpened = false;
+    update();
+  }
+
+  void toggleAlternateRowColors() => _style(style.copyWith(alternateRowColors: !style.alternateRowColors));
+  void toggleHighContrast() => _style(style.copyWith(highContrast: !style.highContrast));
+  void toggleRowSeparators() => _style(style.copyWith(rowSeparators: !style.rowSeparators));
+  void toggleColumnSeparators() => _style(style.copyWith(columnSeparators: !style.columnSeparators));
+  void toggleCompact() => _style(style.copyWith(compact: !style.compact));
+
+  void _style(RosterTableStyle next) {
+    style = next;
+    update();
+  }
+
+  void toggleExpandedByDefault() {
+    expandedByDefault = !expandedByDefault;
+    _expanded.clear();
     update();
   }
 
@@ -339,561 +383,167 @@ class RostersController extends GetxController with RouteAwareControllerMixin {
     update();
   }
 
-  // --- Activity Switcher Actions ---
+  // Activity switcher ---------------------------------------------------------
 
-  // Activity Switcher Actions
-  void setSelectedAma(Titled block) {
-    if (block is AMABlock) {
-      selectedAma = (selectedAma == block) ? null : block;
-      selectedActivity = null;
-      update();
-    }
+  String? selectedBlockId;
+  String? selectedScheduledId;
+
+  Block? get selectedBlock => selectedBlockId == null ? null : schedule.blockById(selectedBlockId!);
+  ScheduledActivity? get selectedScheduled => selectedScheduledId == null ? null : schedule.scheduledActivityById(selectedScheduledId!);
+
+  /// The activities offered in the selected block, by name.
+  List<ScheduledActivity> get selectedBlockActivities {
+    final block = selectedBlock;
+    if (block == null) return const [];
+    return schedule.scheduledIn(block.id)..sort((a, b) => activityName(a).toLowerCase().compareTo(activityName(b).toLowerCase()));
   }
 
-  void setSelectedActivity(ActivityDependent activity) {
-    selectedActivity = (selectedActivity == activity) ? null : activity;
+  void selectBlock(Block block) {
+    selectedBlockId = selectedBlockId == block.id ? null : block.id;
+    selectedScheduledId = null;
     update();
   }
 
-  // Core User Actions
-  Future<void> importCsv() async {
-    importingCampers = true;
+  void selectScheduled(ScheduledActivity scheduled) {
+    selectedScheduledId = selectedScheduledId == scheduled.id ? null : scheduled.id;
     update();
+  }
 
+  String activityName(ScheduledActivity scheduled) => schedule.activityOf(scheduled)?.name ?? 'Unknown activity';
+
+  Seats seatsOf(ScheduledActivity scheduled) => ActivityHints.seats(
+    scheduled: scheduled,
+    capacity: schedule.activityOf(scheduled)?.capacity ?? 0,
+    selected: selectedCampers,
+    enrollment: enrollment,
+  );
+
+  /// How the selected camper fits [scheduled], when preference colors are on
+  /// and exactly one camper is selected.
+  PreferenceHint? preferenceHintFor(ScheduledActivity scheduled) {
+    final camper = singleSelected;
+    if (!showPreferenceColors || camper == null) return null;
+    return ActivityHints.preferenceHint(camper, scheduled, schedule);
+  }
+
+  /// For the repetition view of a block column.
+  RepetitionLevel? repetitionOf(Camper camper, RosterColumn column) {
+    if (!showAssignmentRepetition || column is! BlockColumn) return null;
+    return ActivityHints.repetition(camper, column.block.id, schedule);
+  }
+
+  /// What the activity switcher would do to [camper] if committed, or null when nothing.
+  ({String? from, String to})? plannedChange(Camper camper) {
+    final target = selectedScheduled;
+    if (target == null) return null;
+    final currentId = camper.assignments[target.blockId];
+    if (currentId == target.id) return null;
+    final current = currentId == null ? null : schedule.scheduledActivityById(currentId);
+    return (from: current == null ? null : activityName(current), to: activityName(target));
+  }
+
+  // Actions -------------------------------------------------------------------
+
+  final RxBool importing = false.obs;
+
+  bool get canAssignToSelectedActivity => canEdit && hasSelection && selectedScheduled != null;
+  bool get canUnassignFromSelectedBlock => canEdit && hasSelection && selectedBlock != null;
+
+  /// Asks for a roster file and imports it. True when it was imported.
+  Future<bool> importCsv() async {
+    if (!canEdit || importing.value || !_context.isLoaded) return false;
+    importing.value = true;
     try {
-      await commitRepo.commit(await rosterService.importFromCsv());
-    } on Exception catch (e, st) {
-      Error.throwWithStackTrace(Debug.parseException(e), st);
+      return await _actions.importCsv(_context.sessionId);
     } finally {
-      importingCampers = false;
-      Get.back();
-      update();
+      importing.value = false;
     }
   }
 
-  Future<void> exportCamperBackup() async {
-    if (selectedItems.isEmpty) {
-      Get.snackbar('No Campers Selected', 'Please select at least one camper to back up.');
-      return;
-    }
+  Future<void> exportCsv() => _actions.exportCsv(groups: groups, columns: columns, view: view, grouped: isGrouped);
 
-    // 1. Get the JSON string from the service
-    final String jsonBackup = await rosterService.backupSelectedCampers(selectedItems.map((rosterable) => rosterable.id).toSet());
-
-    // 2. Convert the string to bytes (UTF-8)
-    final Uint8List bytes = utf8.encode(jsonBackup);
-
-    // 3. Use file_saver to open the save dialog
-    final String fileName = 'camper_backup_${DateTime.now().toIso8601String()}.json';
-    await FileSaver.instance.saveFile(name: fileName, bytes: bytes, ext: 'json', mimeType: MimeType.json);
+  Future<void> exportBackup() async {
+    if (!hasSelection || !_context.isLoaded) return;
+    await _actions.exportBackup(sessionId: _context.sessionId, campers: selectedCampers, schedule: schedule);
   }
 
-  // Updated method for RostersController
-  Future<void> exportAsCsv() async {
-    final String csvData = exportService.exportToCsv(
-      groups: rosterGroups,
-      columns: fields,
-      activityDependents: activityDependents,
-      principalActivities: principalActivities,
-      selectedItems: roster.toSet(),
-    );
-
-    final Uint8List bytes = utf8.encode(csvData);
-    final String fileName = 'roster_export_${DateTime.now().toIso8601String()}';
-    await FileSaver.instance.saveFile(
-      name: fileName,
-      bytes: bytes,
-      ext: 'csv',
-      mimeType: MimeType.csv,
-    );
+  Future<void> exportEvaluationReport() async {
+    final report = lastRunReport;
+    if (report == null) return;
+    await _actions.exportEvaluationReport(report, campers);
   }
 
   Future<void> deleteSelected() async {
-    try {
-      Commit commit = Commit(
-          disarmRequirementsLevel: 1,
-          confirmationMessage:
-              'Once deleted, campers cannot be restored. Their activity assignments and preferences for this session will be gone. Are you sure you want to proceed?');
-      commit.addObjectsToDelete(selectedItems);
-      await commitRepo.commit(commit);
-    } finally {
-      selectedItems.clear();
-      update();
-    }
-  }
-
-  Future<void> assignSelected() async {
-    if (selectedItems.isEmpty || selectedAma == null || selectedActivity == null) {
-      Debug.logWarning('Can\'t assign selected campers');
-      return;
-    }
-    assigningCamper = true;
-    update();
-    Commit commit = Commit(disarmRequirementsLevel: 0);
-    for (Rosterable rosterable in selectedItems) {
-      if (rosterable is Camper) {
-        await rosterService.assignCamperToActivity(commit, rosterable.id, selectedActivity!.id, false);
-      }
-    }
-    await commitRepo.commit(commit);
-    await populateActivities();
-    assigningCamper = false;
-    update();
-  }
-
-  Future<void> unassignSelectedFromActivity() async {
-    if (selectedItems.isEmpty || selectedActivity == null) {
-      Debug.logWarning('Can\'t unassign selected campers');
-      return;
-    }
-    try {
-      Commit commit = Commit(disarmRequirementsLevel: 0);
-      for (Rosterable rosterable in selectedItems) {
-        if (rosterable is Camper && rosterable.activityAssignmentRefs.containsValue(selectedActivity!.id)) {
-          await rosterService.removeCamperFromActivity(commit, rosterable.id, selectedActivity!.id);
-        }
-      }
-      await commitRepo.commit(commit);
-      await populateActivities();
-    } catch (e, st) {
-      Error.throwWithStackTrace(Debug.parseException(e), st);
-    } finally {
-      update();
-    }
-  }
-
-  Future<void> unassignSelectedFromAma() async {
-    if (selectedItems.isEmpty || selectedAma == null) {
-      Debug.logWarning('Can\'t unassign selected campers');
-      return;
-    }
-    try {
-      Commit commit = Commit(disarmRequirementsLevel: 0);
-      for (Rosterable rosterable in selectedItems) {
-        if (rosterable is Camper && rosterable.activityAssignmentRefs.containsKey(selectedAma!.id)) {
-          await rosterService.unassignCamperFromAmaBlock(commit, rosterable.id, selectedAma!.id);
-        }
-      }
-      await commitRepo.commit(commit);
-      await populateActivities();
-    } catch (e, st) {
-      Error.throwWithStackTrace(Debug.parseException(e), st);
-    } finally {
-      update();
-    }
-  }
-
-  Future<void> unassignSelectedFromAll() async {
-    if (selectedItems.isEmpty) {
-      Debug.logWarning('Can\'t unassign selected campers');
-      return;
-    }
-    Commit commit = Commit(
-        disarmRequirementsLevel: 1,
-        confirmationMessage:
-            'Are you sure you want to unassign the selected campers from all of their activities? This action cannot be undone.');
-
-    await rosterService.removeAllActivitiesFromCampers(
-        commit,
-      selectedItems.map((e) => e.id).toSet(),
-      amas.toSet(),
-      activityDependents.toSet(),
-    );
-    await commitRepo.commit(commit);
-    await populateActivities();
-    update();
-  }
-
-  Future<void> rankRandomSelected() async {
-    if (selectedItems.isEmpty) {
-      Debug.logWarning('Can\'t rank selected campers');
-      return;
-    }
-    try {
-      Commit commit = Commit(
-          disarmRequirementsLevel: 1,
-          confirmationMessage: 'Are you sure you want to overwrite these activity preferences? This action cannot be undone.');
-      for (Rosterable rosterable in selectedItems) {
-        if (rosterable is Camper) {
-          await preferenceService.rankRandom(commit, rosterable.id);
-        }
-      }
-      await commitRepo.commit(commit);
-      await populateActivities();
-    } catch (e, st) {
-      Error.throwWithStackTrace(Debug.parseException(e), st);
-    } finally {
-      update(); // Update UI to clear selections
-    }
-  }
-
-  Future<void> clearPrefsSelected() async {
-    if (selectedItems.isEmpty) {
-      Debug.logWarning('Can\'t clear selected campers\' preferences');
-      return;
-    }
-    try {
-      Commit commit = Commit(
-          disarmRequirementsLevel: 1,
-          confirmationMessage: 'Are you sure you want to remove these activity preferences? This action cannot be undone.');
-      for (Rosterable rosterable in selectedItems) {
-        if (rosterable is Camper) {
-          await preferenceService.clearPreference(commit, rosterable.id);
-        }
-      }
-      await commitRepo.commit(commit);
-      await populateActivities();
-    } catch (e, st) {
-      Error.throwWithStackTrace(Debug.parseException(e), st);
-    } finally {
-      update();
-    }
-  }
-
-  Future<void> smartAssignAll() async {
-    try {
-      Commit commit = Commit(
-          disarmRequirementsLevel: 1,
-          confirmationMessage: 'Are you sure you want to commit these assignments? This action cannot be undone.');
-      bool allCampersRanked = await rosterService.allCampersRanked();
-      if (allCampersRanked == false) {
-        bool? confirmResult = await popupService.showConfirmationDialog(
-            title: 'Confirm',
-            message: 'Some campers have not finished indicating their preferences yet. '
-                'Their preference for these activities will be treated as neutral which could cause fully random assignments. Are you sure you want to proceed?');
-        if (confirmResult != true) {
-          return;
-        }
-      }
-      Debug.logInfo('Auto assignment starting', userMessage: 'This process could take some time, please wait');
-      await assignmentService.runAlgorithm(
-        commit,
-        roster.map((e) => e.id).toSet(),
-        _amas.map((e) => e.id).toSet(),
-      );
-      await commitRepo.commit(commit);
-      await populateActivities();
-      Debug.logSuccess('Auto assignment complete', userMessage: 'Auto assignment complete!');
-    } catch (e, st) {
-      Error.throwWithStackTrace(Debug.parseException(e), st);
-    } finally {
-      update();
-    }
-  }
-
-  Future<void> smartAssignSelected() async {
-    if (selectedItems.isEmpty) {
-      Debug.logWarning('Can\'t assign selected campers');
-      return;
-    }
-    try {
-      Commit commit = Commit(
-          disarmRequirementsLevel: 1,
-          confirmationMessage: 'Are you sure you want to commit selected camper assignments? This action cannot be undone.');
-      bool selectedCampersRanked = await rosterService.selectedCampersRanked(selectedItems.map((r) => r.id).toSet());
-      if (selectedCampersRanked == false) {
-        bool? confirmResult = await popupService.showConfirmationDialog(
-            title: 'Confirm',
-            message: 'Some selected campers have not finished indicating their preferences yet. '
-                'Their preference for these activities will be treated as neutral which could cause fully random assignments. Are you sure you want to proceed?');
-        if (confirmResult != true) {
-          return;
-        }
-      }
-      Debug.logInfo('Auto assignment starting', userMessage: 'This process could take some time, please wait');
-      final List<FormFieldDescriptor> formFieldDescriptors2 = [
-        MultiSelectFormFieldDescriptor(
-          optionLabelBuilder: (value) => value,
-          options: amas.map((e) => e.displayTitle).toList(),
-          isRequired: false,
-          label: 'Periods',
-        ),
-      ];
-      final prompt2Output = await Get.find<ConsoleController>().promptForm('Select Activities', formFieldDescriptors2);
-      if (prompt2Output == null) {
-        return;
-      }
-
-      List<AMABlock> selectedBlocks = [];
-      final selectedBlockNames = prompt2Output[0] as List<String>?;
-      if (selectedBlockNames != null) {
-        selectedBlocks.addAll(amas.where((element) => selectedBlockNames.contains(element.displayTitle)));
-      }
-      await assignmentService.runAlgorithm(
-        commit,
-        selectedItems.map((e) => e.id).toSet(),
-        selectedBlocks.map((e) => e.id).toSet(),
-      );
-      await commitRepo.commit(commit);
-      await populateActivities();
-      Debug.logSuccess('Auto assignment complete', userMessage: 'Auto assignment complete!');
-    } catch (e, st) {
-      Error.throwWithStackTrace(Debug.parseException(e), st);
-    } finally {
-      update();
-    }
-  }
-
-  Future<void> swapCabinsOfSelected() async {
-    // 1. --- VALIDATION ---
-    // A. Ensure items are selected.
-    if (selectedItems.isEmpty) {
-      Debug.logWarning('No campers selected');
-      return;
-    }
-
-    final List<Camper> selectedCampers = [];
-    final Set<CabinId> cabinIds = {};
-
-    // B. Ensure all selected items are campers and are in a cabin.
-    for (final item in selectedItems) {
-      if (item is! Camper) {
-        Debug.logWarning('Invalid Selection');
-        return;
-      }
-      if (item.cabinRef == null) {
-        Debug.logWarning('Invalid Selection');
-        return;
-      }
-      selectedCampers.add(item);
-      cabinIds.add(item.cabinRef!);
-    }
-
-    // C. Ensure there are exactly two cabins among the selected campers.
-    if (cabinIds.length != 2) {
-      Debug.logWarning('Invalid Selection');
-      return;
-    }
-
-    // 2. --- PREPARATION ---
-    assigningCamper = true;
-    update();
-
-    // Keep track of original selection to re-select after roster refresh
-    final originalSelectedIds = selectedItems.map((e) => e.id).toSet();
-
-    // Group campers by their respective cabins.
-    final cabin1Id = cabinIds.first;
-    final cabin2Id = cabinIds.last;
-    final List<Camper> campersInCabin1 = selectedCampers.where((c) => c.cabinRef == cabin1Id).toList();
-    final List<Camper> campersInCabin2 = selectedCampers.where((c) => c.cabinRef == cabin2Id).toList();
-
-    final commit = Commit(disarmRequirementsLevel: 0);
-
-    // 3. --- EXECUTION ---
-    // Add campers from cabin 1 to cabin 2. The service handles the removal.
-    for (final camper in campersInCabin1) {
-      await cabinsService.addCamperToCabin(commit, cabin2Id, camper.id);
-    }
-    // Add campers from cabin 2 to cabin 1.
-    for (final camper in campersInCabin2) {
-      await cabinsService.addCamperToCabin(commit, cabin1Id, camper.id);
-    }
-
-    await commitRepo.commit(commit);
-    Debug.logSuccess('Swap Successful!');
-
-    // 4. --- STATE REFRESH ---
-    update();
-    selectedItems.clear();
-    for (final rosterable in roster) {
-      if (originalSelectedIds.contains(rosterable.id)) {
-        selectedItems.add(rosterable);
-      }
-    }
-    assigningCamper = false;
-    update();
+    if (!canEdit || !hasSelection) return;
+    if (await _actions.deleteCampers(selectedCampers)) clearSelection();
   }
 
   Future<void> toggleArrived() async {
-    if (selectedItems.isEmpty) {
-      Debug.logWarning('No campers selected to toggle arrival status.');
-      return;
-    }
-    Commit commit = Commit(disarmRequirementsLevel: 0);
-    for (final rosterable in selectedItems) {
-      if (rosterable is Camper) {
-        // Treat null as false, and toggle the boolean value.
-        rosterable.arrived = !(rosterable.arrived ?? false);
-        commit.addObjectToPush(rosterable);
-      }
-    }
-    await commitRepo.commit(commit);
-    update(); // It is good practice to call update() after a state change.
+    if (!canEdit || !hasSelection) return;
+    await _actions.toggleArrived(selectedCampers);
   }
 
-  Future<void> setCabin() async{
-    if (selectedItems.isEmpty) {
-      Debug.logWarning('No campers selected to set cabin.');
-      return;
-    }
-    Commit commit = Commit(disarmRequirementsLevel: 0);
-    Set<CabinDependent> cabinDependents = await cabinsService.cabinDependents;
-    final List<FormFieldDescriptor> formFieldDescriptors1 = [
-      SelectFormFieldDescriptor(
-        optionLabelBuilder: (value) => value,
-        options: cabinDependents.map((e) => e.id).toList(),
-        isRequired: true,
-        label: 'Activity Periods',
-      ),
-    ];
-    final prompt1Output = (await Get.find<ConsoleController>().promptForm('Select Cabin', formFieldDescriptors1))?.first;
-    if (prompt1Output == null) {
-      return;
-    }
-    CabinDependent cabinDependent = cabinDependents.firstWhere((element) => element.id == prompt1Output as String);
-
-    for (final rosterable in selectedItems) {
-      if (rosterable is Camper) {
-        await cabinsService.addCamperToCabin(commit, cabinDependent.id, rosterable.id);
-      }
-    }
-    commitRepo.commit(commit);
+  Future<void> setCabin() async {
+    if (!canEdit || !hasSelection) return;
+    await _actions.setCabin(selectedCampers, rosterContext.cabinsById.values.toList());
   }
 
-  // Helper & Utility Methods
-  /// Pure calculation to determine table and column widths based on available space.
-  TableWidths calculateTableWidths(double maxWidth, double indentWidth) {
-    if (fields.isEmpty) {
-      return TableWidths(adjustedDataWidths: [], actualTableWidth: _checkboxColumnWidth);
-    }
-
-    final List<double> defaultDataWidths = fields.map((field) => field.defaultWidth).toList();
-    final double minDataWidthSum = defaultDataWidths.reduce((a, b) => a + b);
-    final double totalMinWidth = minDataWidthSum + _checkboxColumnWidth;
-
-    List<double> adjustedDataWidths = List.from(defaultDataWidths);
-    double actualTableWidth;
-
-    if (maxWidth >= totalMinWidth) {
-      final double excessSpace = maxWidth - totalMinWidth;
-      adjustedDataWidths[adjustedDataWidths.length - 1] += excessSpace;
-      actualTableWidth = maxWidth;
-    } else {
-      actualTableWidth = totalMinWidth;
-    }
-
-    if (groupByField != null) {
-      actualTableWidth += indentWidth;
-    }
-
-    return TableWidths(adjustedDataWidths: adjustedDataWidths, actualTableWidth: actualTableWidth);
+  Future<void> swapCabinsOfSelected() async {
+    if (!canEdit || !hasSelection) return;
+    await _actions.swapCabins(selectedCampers);
   }
 
-  String getActivityDependentName(Rosterable rosterItem, RosterField field) {
-    if (populatingActivities) {
-      return 'loading...';
-    }
-
-    String activityDependentId = rosterItem.getFieldAsString(field);
-    if (activityDependentId.isEmpty) {
-      return 'Unassigned';
-    }
-
-    final activityDependent = activityDependents.firstWhereOrNull((dep) => dep.id == activityDependentId);
-    if (activityDependent == null) {
-      return 'Error (not found)';
-    }
-
-    final principalActivity = principalActivities[activityDependent.principalPar];
-    return principalActivity?.name ?? 'Error (no principal)';
+  Future<void> assignSelected() async {
+    final target = selectedScheduled;
+    if (!canAssignToSelectedActivity || target == null) return;
+    await _actions.assign(campers: selectedCampers, target: target, activityName: activityName(target), seats: seatsOf(target));
   }
 
-  List<Color?> getRepetitionColors(Rosterable rosterItem) {
-    if (!showAssignmentRepetition || rosterItem is! Camper) {
-      return List.filled(fields.length, null);
-    }
-
-    final camper = rosterItem;
-    final Map<PrincipalActivityId, int> counts = {};
-
-    // Count principal activities
-    for (final activityDependentId in camper.activityAssignmentRefs.values) {
-      if (activityDependentId != null) {
-        final dependent = activityDependents.firstWhereOrNull((d) => d.id == activityDependentId);
-        if (dependent != null) {
-          counts[dependent.principalPar] = (counts[dependent.principalPar] ?? 0) + 1;
-        }
-      }
-    }
-
-    final List<Color?> colors = [];
-    for (final field in fields) {
-      if (field is AMABlock) {
-        final activityDependentId = camper.activityAssignmentRefs[field.dataId];
-        if (activityDependentId != null) {
-          final dependent = activityDependents.firstWhereOrNull((d) => d.id == activityDependentId);
-          if (dependent != null) {
-            final count = counts[dependent.principalPar] ?? 0;
-            if (count == 1) {
-              colors.add(BessColors.green.withOpacity(0.5));
-            } else if (count == 2) {
-              colors.add(BessColors.yellow.withOpacity(0.5));
-            } else if (count >= 3) {
-              colors.add(BessColors.red.withOpacity(0.5));
-            } else {
-              colors.add(null);
-            }
-          } else {
-            colors.add(null);
-          }
-        } else {
-          colors.add(null);
-        }
-      } else {
-        colors.add(null);
-      }
-    }
-    return colors;
+  Future<void> unassignSelectedFromActivity() async {
+    final target = selectedScheduled;
+    if (!canAssignToSelectedActivity || target == null) return;
+    await _actions.unassignFromActivity(selectedCampers, target, activityName(target));
   }
 
-  Color? getActivityPreferenceColor(ActivityDependent activity) {
-    if (!showPreferenceColors || !isSingleSelected()) {
-      return null;
-    }
-
-    final camper = selectedItems.first as Camper;
-
-    // --- CHANGED LINES ---
-    final principalActivityId = activity.principalPar;
-    int assignmentCount = 0;
-
-    for (final assignedActivityId in camper.activityAssignmentRefs.values) {
-      if (assignedActivityId != null) {
-        final dependent = activityDependents.firstWhereOrNull((d) => d.id == assignedActivityId);
-        if (dependent != null && dependent.principalPar == principalActivityId) {
-          assignmentCount++;
-        }
-      }
-    }
-
-    if (assignmentCount >= 2) {
-      return BessColors.red;
-    }
-    // --- END CHANGED LINES ---
-
-    final preference = camper.preferenceRefs[activity.principalPar];
-
-    if (preference == 1.0) {
-      return BessColors.green;
-    } else if (preference == 0.0) {
-      return BessColors.red;
-    } else if (preference == 0.5 || preference == null) {
-      return BessColors.yellow;
-    }
-
-    return null;
+  Future<void> unassignSelectedFromBlock() async {
+    final block = selectedBlock;
+    if (!canUnassignFromSelectedBlock || block == null) return;
+    await _actions.unassignFromBlock(selectedCampers, block);
   }
 
-  List<String> getRowDataFromItem(Rosterable rosterItem) {
-    final List<String> rowData = [];
-    for (final field in fields) {
-      if (field is AMABlock) {
-        rowData.add(getActivityDependentName(rosterItem, field));
-      } else {
-        rowData.add(rosterItem.getFieldAsString(field));
-      }
-    }
-    return rowData;
+  Future<void> unassignSelectedFromAll() async {
+    if (!canEdit || !hasSelection) return;
+    await _actions.unassignFromAll(selectedCampers);
+  }
+
+  Future<void> smartAssignAll() => _smartAssign(selected: null);
+
+  Future<void> smartAssignSelected() async {
+    if (!hasSelection) return;
+    await _smartAssign(selected: selectedCampers);
+  }
+
+  Future<void> _smartAssign({required List<Camper>? selected}) async {
+    if (!canEdit || !_context.isLoaded) return;
+    final report = await _actions.smartAssign(
+      sessionId: _context.sessionId,
+      schedule: schedule,
+      everyone: campers,
+      selected: selected,
+    );
+    if (report == null) return;
+    lastRunReport = report;
+    update();
+  }
+
+  /// Testing aid: gives the selected campers random preferences.
+  Future<void> rankRandomSelected() async {
+    if (!canEdit || !hasSelection || !_context.isLoaded) return;
+    await _actions.rankRandom(campers: selectedCampers, schedule: schedule, limits: _context.currentSession.limits);
+  }
+
+  Future<void> clearPreferencesOfSelected() async {
+    if (!canEdit || !hasSelection) return;
+    await _actions.clearPreferences(selectedCampers);
   }
 }

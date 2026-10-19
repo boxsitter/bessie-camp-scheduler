@@ -1,173 +1,104 @@
+import 'package:collection/collection.dart';
 
-import 'dart:math';
-
-import '../../data_models/assignment_result.dart';
-import '../../data_models/enums.dart';
-import '../../data_models/interfaces/Constraint.dart';
 import '../../data_models/interfaces/algorithm_step.dart';
+import '../constraints/constraint_checks.dart';
+import '../../data_models/interfaces/assignment_scorer.dart';
+import '../../data_models/interfaces/constraint.dart';
 import '../../data_models/pipeline_state.dart';
 import '../../data_models/potential_assignment.dart';
-import '../../evaluation/step_report.dart';
 
-/// The final step, updated to correctly handle merged double-assignments and configurable stalemates.
+/// The main selection pass: a lazy-greedy loop over a priority queue.
 ///
-/// This step iterates through the sorted list. When it encounters a successful
-/// assignment, it checks if it's a double. If so, it confirms both halves
-/// and blocks both periods simultaneously. It then handles any unassigned
-/// slots based on the selected StalemateStrategy.
+/// Candidates sit in a priority queue ordered by (score desc, tiebreak asc,
+/// sequence asc). Repeatedly:
+///
+///  1. pop the best candidate;
+///  2. skip it for good if the participant is already busy in any period it
+///     occupies;
+///  3. recompute its score against the CURRENT ledger;
+///  4. if, with that fresh score, it no longer beats the next candidate in
+///     the queue, put it back with the fresh score and continue;
+///  5. otherwise evaluate every hard constraint, for BOTH halves of a
+///     double-schedule block, and either accept it (it is recorded in the
+///     ledger) or drop it for good.
+///
+/// Because scores never rise as assignments are made (see [AssignmentScorer])
+/// a stale queue entry is always an upper bound of the true score, so the
+/// candidate accepted in step 5 is exactly the one an eager "re-score
+/// everything every round" greedy would pick, at a tiny fraction of the work.
+/// Constraint violations are monotone too, so a dropped candidate can never
+/// become acceptable later.
+///
+/// Stalemates are NOT handled here; see `ResolveStalematesStep`.
 class ProcessAssignmentsStep extends AlgorithmStep {
   final List<Constraint> constraints;
-  final StalemateStrategy stalemateStrategy;
+  final AssignmentScorer scorer;
 
-  ProcessAssignmentsStep({
-    required this.constraints,
-    this.stalemateStrategy = StalemateStrategy.leaveUnassigned,
-    Random? random,
-  });
+  ProcessAssignmentsStep({required this.constraints, required this.scorer});
 
   @override
   String get stepName => 'Process & Finalize Assignments';
 
   @override
-  StepReport execute(PipelineState state) {
-    final assignedInPeriod = _getInitialAssignments(state.result);
-    int newSuccessCount = 0;
+  StepOutcome execute(PipelineState state) {
+    final context = state.context;
+    final ledger = state.ledger;
 
-    for (final assignment in state.potentialAssignments) {
-      final participantId = assignment.participant.id;
+    final queue = HeapPriorityQueue<PotentialAssignment>(PotentialAssignment.byPriority)
+      ..addAll(state.potentialAssignments);
 
-      // --- Check Primary Period ---
-      if (assignedInPeriod[assignment.period.id]?.contains(participantId) ?? false) {
+    var accepted = 0;
+    var placements = 0;
+    var skippedBusy = 0;
+    var droppedByConstraint = 0;
+    var rescored = 0;
+
+    while (queue.isNotEmpty) {
+      final candidate = queue.removeFirst();
+
+      // The participant got something else in the meantime: this candidate is
+      // gone for good.
+      if (!ledger.isFree(candidate)) {
+        skippedBusy++;
         continue;
       }
 
-      // --- Handle Double Assignments ---
-      if (assignment.isDoubleAssignment) {
-        final linkedPeriodId = assignment.linkedPeriod!.id;
+      final fresh = scorer.score(candidate, context, ledger);
+      assert(
+        fresh <= candidate.score + 1e-9,
+        'A scorer must never raise a score as assignments are made '
+        '(${candidate.score} -> $fresh for $candidate).',
+      );
+      candidate.score = fresh;
 
-        // Check if the participant is already busy during the second period.
-        if (assignedInPeriod[linkedPeriodId]?.contains(participantId) ?? false) {
-          continue;
-        }
-
-        // Check constraints ONLY for the primary half of the assignment.
-        final primaryViolation = _getViolationReason(assignment, state);
-        if (primaryViolation != null) {
-          continue;
-        }
-
-        // SUCCESS: The double assignment is valid.
-        // Create the linked assignment without further checks.
-        final linkedAssignment = PotentialAssignment(
-          participant: assignment.participant,
-          activity: assignment.activity,
-          scheduledActivity: assignment.linkedScheduledActivity!,
-          period: assignment.linkedPeriod!,
-        );
-
-        // Add both halves to the result.
-        state.result.addSuccess(assignment);
-        state.result.addSuccess(linkedAssignment);
-        newSuccessCount += 2;
-
-        // Mark the participant as assigned in both periods.
-        (assignedInPeriod[assignment.period.id] ??= {}).add(participantId);
-        (assignedInPeriod[linkedPeriodId] ??= {}).add(participantId);
-      } else {
-        // --- Handle Single Assignments ---
-        if (_getViolationReason(assignment, state) != null) {
-          continue;
-        }
-
-        // SUCCESS: The single assignment is valid.
-        state.result.addSuccess(assignment);
-        newSuccessCount++;
-        (assignedInPeriod[assignment.period.id] ??= {}).add(participantId);
+      if (queue.isNotEmpty &&
+          PotentialAssignment.byPriority(candidate, queue.first) > 0) {
+        queue.add(candidate);
+        rescored++;
+        continue;
       }
+
+      if (constraints.firstViolation(candidate, context, ledger) != null) {
+        droppedByConstraint++;
+        continue;
+      }
+
+      ledger.place(candidate);
+      accepted++;
+      placements += candidate.isDoubleAssignment ? 2 : 1;
     }
 
-    final Map<String, String> stalemateDetails = _handleStalemates(state, assignedInPeriod);
-    if (stalemateStrategy == StalemateStrategy.fail && stalemateDetails.isNotEmpty) {
-      final summary = 'Algorithm failed with ${stalemateDetails.length} stalemates.';
-      final details = stalemateDetails.entries.map((e) => '${e.key}: ${e.value}').join('\n\n');
-      throw Exception('$summary\n\nStalemate Details:\n$details');
-    }
-
-    return StepReport(
-      stepName: stepName,
-      summary: 'Created $newSuccessCount new assignments. Encountered ${stalemateDetails.length} stalemates.',
+    return StepOutcome(
+      summary: 'Accepted $accepted assignments ($placements placements); '
+          'dropped $droppedByConstraint on constraints and $skippedBusy '
+          'because the participant was already busy.',
       details: {
-        'newlyAssignedCount': newSuccessCount,
-        'stalemateCount': stalemateDetails.length,
-        'stalemateStrategy': stalemateStrategy.toString().split('.').last,
+        'accepted': accepted,
+        'placements': placements,
+        'droppedByConstraint': droppedByConstraint,
+        'skippedBusy': skippedBusy,
+        'rescored': rescored,
       },
-      duration: Duration.zero,
     );
   }
-
-  Map<String, String> _handleStalemates(PipelineState state, Map<String, Set<String>> assignedInPeriod) {
-    final stalemateDetails = <String, String>{};
-    for (final participant in state.context.participants.values) {
-      for (final period in state.context.targetPeriods.values) {
-        if (!(assignedInPeriod[period.id]?.contains(participant.id) ?? false)) {
-          final stalemateKey = 'Participant: ${participant.id}, Period: ${period.id}';
-          final reason = _getStalemateReason(participant.id, period.id, state);
-          stalemateDetails[stalemateKey] = reason;
-          state.result.addStalemate(participant.id, period.id, reason);
-        }
-      }
-    }
-    return stalemateDetails;
-  }
-
-  String _getStalemateReason(String participantId, String periodId, PipelineState state) {
-    final potentialAssignmentsForSlot = state.potentialAssignments
-        .where((pa) => pa.participant.id == participantId && pa.period.id == periodId)
-        .toList();
-
-    if (potentialAssignmentsForSlot.isEmpty) {
-      return 'No potential assignments were generated for this slot. The participant may have vetoed all available activities.';
-    }
-
-    final violationReasons = <String, List<String>>{};
-    for (final pa in potentialAssignmentsForSlot) {
-      final reasons = <String>[];
-      for (final constraint in constraints) {
-        if (constraint.isViolated(pa, state.context, state.result)) {
-          reasons.add(constraint.violationMessage);
-        }
-    }
-      if (reasons.isNotEmpty) {
-        violationReasons[pa.activity.id] = reasons;
-      }
-    }
-
-    if (violationReasons.isEmpty) {
-      return 'An unknown error occurred. Potential assignments existed but none were chosen.';
-    }
-
-    final reasonDetails = violationReasons.entries
-        .map((e) => 'Activity ${e.key} violated: [${e.value.join(', ')}]')
-        .join('; ');
-
-    return 'All potential assignments violated constraints: $reasonDetails';
-  }
-
-  String? _getViolationReason(
-      PotentialAssignment assignment, PipelineState state) {
-    for (final constraint in constraints) {
-      if (constraint.isViolated(assignment, state.context, state.result)) {
-        return constraint.violationMessage;
-      }
-    }
-    return null;
-  }
-
-  Map<String, Set<String>> _getInitialAssignments(AssignmentResult result) {
-    final map = <String, Set<String>>{};
-    for (final success in result.successfulAssignments) {
-      (map[success.period.id] ??= {}).add(success.participant.id);
-    }
-    return map;
-  }
-  }
+}
